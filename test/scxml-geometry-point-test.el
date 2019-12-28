@@ -27,7 +27,9 @@
   (should (scxml-cardinal-direction-vector? (scxml-point- 1 0)))
   (should (scxml-cardinal-direction-vector? (scxml-point- 0 -2)))
   (should-not (scxml-cardinal-direction-vector? (scxml-point- 1 -2)))
-  (should-not (scxml-cardinal-direction-vector? (scxml-point- 0 0))))
+  ;; For now, scxml-cardinal-direction-vector should consider zero
+  ;; displacement as a cardinal-direction-vector
+  (should (scxml-cardinal-direction-vector? (scxml-point- 0 0))))
 
 (ert-deftest scxml-geometry-point-cardinal-displacement ()
   (should (scxml-cardinal-displacement? (scxml-point- 0 0)

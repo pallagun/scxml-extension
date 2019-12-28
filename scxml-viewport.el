@@ -47,9 +47,9 @@ The scaling slot represents how that space should be scaled before rendering")
 
 Return the viewport after modification"
   (setf (scxml-x-min viewport) (scxml-x-min area)
-        (scxml-x-max viewport) (ceiling (+ scxml--almost-zero (scxml-x-max area)))
+        (scxml-x-max viewport) (float (ceiling (+ scxml--almost-zero (scxml-x-max area))))
         (scxml-y-min viewport) (scxml-y-min area)
-        (scxml-y-max viewport) (ceiling (+ scxml--almost-zero (scxml-y-max area)))))
+        (scxml-y-max viewport) (float (ceiling (+ scxml--almost-zero (scxml-y-max area))))))
 (cl-defmethod scxml-zoom ((viewport scxml-viewport) (alpha number))
   "Zoom the VIEWPORT by ALPHA, modifies viewport, returns viewport.
 
