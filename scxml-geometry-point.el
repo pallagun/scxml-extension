@@ -102,9 +102,11 @@ RHR => Right Hand Rule."
 (cl-defmethod scxml-cardinal-direction-vector? ((A scxml-point))
   "Return non-nil if A is vertical or horizontal (but not zero)."
   (with-slots (x y) A
-    (and (equal 0.0 (abs (* x y)))
-         (not (and (equal 0.0 x)
-                   (equal 0.0 y))))))
+    (or (scxml-almost-zero x)
+        (scxml-almost-zero y))))
+    ;; (and (equal 0.0 (abs (* x y)))
+    ;;      (not (and (equal 0.0 x)
+    ;;                (equal 0.0 y))))))
 (cl-defmethod scxml-cardinal-displacement? ((A scxml-point) (B scxml-point))
   "Return non-nil if the displacement from A to B is a cardinal
 vector.
@@ -154,6 +156,14 @@ This can be viewed as:
             ((> abs-x abs-y) (scxml-point :x -1.0 :y 0.0))
             ((> abs-y abs-x) (scxml-point :x 0.0 :y -1.0))
             ('t 'nil)))))
+(cl-defmethod scxml-leaving-segment-collision-edge ((source scxml-point) (dest scxml-point))
+  "If you leave SOURCE headed towards DEST, which edge do you hit?
+
+Returned as one of 4 symbols: 'up, 'down, 'left, 'right."
+  ;; TODO - this is really a drawing function and it should probabyl
+  ;; be on that level, not geometry level.
+  (scxml-coarse-direction (scxml-subtract dest source)))
+
 
 (provide 'scxml-geometry-point)
 ;;; scxml-geometry-point.el ends here

@@ -134,7 +134,7 @@ proceeding counterclockwise around the rectangle."
   "If you leave centroid of RECT headed towards PT, which edge do you hit?
 
 Returned as one of 4 symbols: 'up, 'down, 'left, 'right."
-  ;; TODO: this seems to be more of a drawing concern and possibly it
+  ;; TODO- this seems to be more of a drawing concern and possibly it
   ;; should not be in the base rect file.
   (let* ((centroid (scxml-centroid rect))
          (path (scxml-segment :start centroid :end pt))
@@ -256,6 +256,19 @@ bottom left."
           (scxml-point :x x-max :y y-min)
           (scxml-point :x x-max :y y-max)
           (scxml-point :x x-min :y y-max))))
+
+(cl-defmethod scxml-snap-shrink ((rect scxml-rect))
+  "Build a scxml-rect based off RECT but snap all points to never grow the rectangle.
+
+This is intented to be used as a 'safe snap' for drawing so you never get to big
+to fit in whatever contains you."
+  ;; TODO - delete this and remove all calls to it.  It should no longer
+  ;; be needed.
+  (with-slots (x-min x-max y-min y-max) rect
+    (scxml-rect :x-min (float (ceiling x-min))
+                :x-max (float (floor x-max))
+                :y-min (float (ceiling y-min))
+                :y-max (float (floor y-max)))))
 
 
 (provide 'scxml-geometry-rect)
