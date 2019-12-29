@@ -257,19 +257,5 @@ bottom left."
           (scxml-point :x x-max :y y-max)
           (scxml-point :x x-min :y y-max))))
 
-(cl-defmethod scxml-snap-shrink ((rect scxml-rect))
-  "Build a scxml-rect based off RECT but snap all points to never grow the rectangle.
-
-This is intented to be used as a 'safe snap' for drawing so you never get to big
-to fit in whatever contains you."
-  ;; TODO - delete this and remove all calls to it.  It should no longer
-  ;; be needed.
-  (with-slots (x-min x-max y-min y-max) rect
-    (scxml-rect :x-min (float (ceiling x-min))
-                :x-max (float (floor x-max))
-                :y-min (float (ceiling y-min))
-                :y-max (float (floor y-max)))))
-
-
 (provide 'scxml-geometry-rect)
 ;;; scxml-geometry-rect.el ends here

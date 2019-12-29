@@ -38,14 +38,6 @@
             'scxml-scratch
           'scxml-buffer-and-point))
   (message "SCXML render mode set to %s" (symbol-name scxml-render-mode)))
-(defvar scxml-snap-states 't
-  "Do or do not snap states whenever they're in automatic mode.
-
-I think this should always be on.  Sometimes you'll get annoying
-rounding errors and the arrows and rectangles won't line up
-exactly.  There's probably a better way to fix this, but for now
-I'm just going to round everything to ints")
-
 (defvar scxml-draw--diagram nil
   "Where the diagram is stored for the diagram buffer.")
 (make-variable-buffer-local 'scxml-draw--diagram)
@@ -391,18 +383,6 @@ Will throw if it can't move it. will not render!!"
   (let ((child-nodes (seq-filter 'scxml---is-renderable-as-node (scxml-children element)))
         (node (scxml--update-drawing element canvas)))
     (scxml---drawing-logger "scxml--plot-node: has-hint: %s" (when (scxml--hint element) t))
-    (when (and scxml-snap-states             ;TODO - if this is going to be here it should probably be called snap-rectangles.
-               (not (scxml-drawing-noshell-rect-p node))
-               (not (scxml-drawing-point-p node))
-               (not (scxml-drawing-null-p node))
-               (null (scxml--hint element))) ;apparently don't snap for hinted stuff, that will cause issues.
-      (let ((snapped (scxml-snap-shrink node)))
-        (scxml---drawing-logger "scxml--plot-node: snapping %s\nscxml--plot-node: snapped  %s" (scxml-print node) (scxml-print snapped))
-        (with-slots (x-min x-max y-min y-max) snapped
-          (setf (scxml-x-min node) x-min
-                (scxml-x-max node) x-max
-                (scxml-y-min node) y-min
-                (scxml-y-max node) y-max))))
     (scxml---drawing-logger "\tDrawing: %s" (scxml-print node))
     (when child-nodes
       (let ((divided-canvases (scxml---get-canvas-divisions node

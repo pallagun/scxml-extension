@@ -1,6 +1,5 @@
 (require 'cl-lib)
 
-
 (cl-pushnew default-directory load-path :test 'equal)
 
 (require 'scxml)
