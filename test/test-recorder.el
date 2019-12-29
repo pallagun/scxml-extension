@@ -25,7 +25,7 @@ Optionally set the root canvas size to X-SIZE by Y-SIZE."
   (let* ((x-size (or x-size 100))
          (y-size (or y-size 40))
          (root (prog2
-                   (find-file test-file)
+                   (find-file (scxml-resolve-file test-file))
                    (scxml-read-buffer)
                  (kill-this-buffer)))
          (buffer (get-buffer-create (format "%s-scxml-replay" (abs (random)))))
@@ -74,7 +74,10 @@ The intention of this function is for recording tests."
   "Replay the scxml-recording file: RECORDING-FILE.
 
 When PERFORM-ASSERTS is non-nil the replay will use the ert
-should macro to enforce recorded screen asserts."
+should macro to enforce recorded screen asserts.
+
+If recording-file isn't found it'll try to be resolevd
+using (scxml-resolve-file)."
   (interactive "fOpen Recording File: ")
   ;; TODO - this shouldn't be an exists check, it should be an exists
   ;; and is readable check
@@ -84,7 +87,6 @@ should macro to enforce recorded screen asserts."
   (with-temp-buffer
     (find-file recording-file)
     (scxml-replay-test-in-buffer perform-asserts)))
-
 
 (defun scxml-replay-test-in-buffer (&optional perform-asserts)
   "Replay the scxml-recording file in the current buffer.

@@ -1,7 +1,7 @@
 (require 'ert)
 (require 'scxml-drawing-rect)
 
-(ert-deftest scxml-geometry-rect-leaving-segment-collision-edge ()
+(ert-deftest scxml-drawing-rect-leaving-segment-collision-edge ()
   "test distance between two segments given they are parallel"
   (let* ((state (scxml-state :id "test-state"))
          (rect (scxml-drawing-rect :parent state
