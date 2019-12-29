@@ -12,8 +12,8 @@
 ;;   render
 
 ;;; Code:
+;; TODO - don't require artist mode.
 (require 'artist)
-(require 's)
 
 (require 'scxml-element)
 (require 'scxml-drawable-element)
@@ -192,7 +192,7 @@ Will throw if it can't move it. will not render!!"
   (with-slots (x y) pixel
     (let ((additional-lines (forward-line y)))
       (when (> additional-lines 0)
-        (insert (s-repeat additional-lines "\n"))))
+        (insert (mapconcat 'identity (make-list additional-lines "\n") ""))))
     (move-to-column x 't)))
 (cl-defmethod scxml-draw--point-at-pixel ((pixel scxml-pixel))
   "Go to X Y and return buffer point."
