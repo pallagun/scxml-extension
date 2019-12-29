@@ -255,11 +255,6 @@ Right now this only properly works with single character labels."
                         'scxml-highlight
                       'scxml-arrow-head))
         (transformers (scxml-get-scratch-int-transformers viewport)))
-    ;; TODO: remove this test at soume pointn.
-    ;; (unless (scxml-is-cardinal-path? points)
-    ;;   (error "Non cardinal path in arrow: %s"
-    ;;          (mapconcat 'scxml-print points ", ")))
-    ;; (message "arrow pts: %s" points)
     (let ((x-transformer (car transformers))
           (y-transformer (cdr transformers)))
       (let ((last-pt-x (funcall x-transformer (scxml-x (first points))))
