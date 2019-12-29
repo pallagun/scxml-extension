@@ -1,5 +1,6 @@
 ;;; scxml?
 
+(require 'eieio)
 (require 'scxml-geometry)
 (require 'scxml-element)
 (require 'scxml-element-serialization)
