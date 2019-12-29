@@ -14,7 +14,8 @@
 (require 'nxml-mode)                    ;for nxml-forward-element
 (require 'scxml-xml)
 
-(defvar scxml--diagram 'nil)
+(defvar scxml--diagram 'nil
+  "Buffer local variable which holds the scxml-diagram being drawn.")
 (make-variable-buffer-local 'scxml--diagram)
 
 (defclass scxml-diagram ()

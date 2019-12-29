@@ -591,7 +591,9 @@ Will throw if it can't move it. will not render!!"
   (let ((start-time (float-time)))
     (with-slots (canvas root buffer viewport (element display-element)) diagram
       (switch-to-buffer buffer)
+      ;; TODO - don't need both of these, use the scxml--diagram.
       (setq-local scxml-draw--diagram diagram)
+      (setq-local scxml--diagram diagram)
       (cond ((eq scxml-render-mode 'scxml-buffer-and-point)
              ;; TODO - completely remove this drawing mode.
              (scxml-canvas-clear canvas)

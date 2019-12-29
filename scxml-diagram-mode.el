@@ -29,6 +29,30 @@ elements.")
 
 (defvar scxml-diagram-mode-hook 'nil)
 
+(defvar scxml-recording 'nil)
+(defun scxml-start-recording ()
+  (interactive)
+  (setq scxml-recording (list 'start)))
+(defun scxml-reset-recording ()
+  (interactive)
+  (setq scxml-recording nil))
+(defmacro scxml-record (&rest recordable)
+  `(when (and (called-interactively-p 'any) scxml-recording)
+     (push (list ,@recordable) scxml-recording)))
+(defun scxml-write-recording (buffer-name)
+  "Write the recording out to a buffer."
+  (interactive "sRecording Buffer Name: ")
+  (let ((buffer (get-buffer-create buffer-name)))
+    (switch-to-buffer buffer)
+    (mapc (lambda (command-list)
+            (insert (prin1-to-string command-list) "\n"))
+          (reverse scxml-recording))))
+
+;; `(when (called-interactively-p 'any)
+  ;;    (push ,recordable scxml-recording)))
+;; (defun scxml-record (&rest anything)
+;;   (push anything scxml-recording))
+
 ;; note: how to make that mouse popup menus.
 ;;     (x-popup-menu t (list "Menu title" (list "" '("yes" . 'yes) '("no" . 'no))))
 (defvar scxml-diagram-mode-map
@@ -198,6 +222,7 @@ elements.")
 (defun scxml-diagram-mode--next-element ()
   "Head to the next thing"
   (interactive)
+  (scxml-record 'scxml-diagram-mode--next-element)
   (when scxml-diagram-mode--marked-element
     (if (scxml-diagram-mode--edit-idx)
         (scxml-diagram-mode--edit-idx-next)
@@ -205,26 +230,28 @@ elements.")
 (defun scxml-diagram-mode--prev-element ()
   "Head to the previous thing"
   (interactive)
-    (when scxml-diagram-mode--marked-element
-      (if (scxml-diagram-mode--edit-idx)
-          (scxml-diagram-mode--edit-idx-prev)
-        (scxml-diagram-mode--mark-prev))))
+  (scxml-record 'scxml-diagram-mode--prev-element)
+  (when scxml-diagram-mode--marked-element
+    (if (scxml-diagram-mode--edit-idx)
+        (scxml-diagram-mode--edit-idx-prev)
+      (scxml-diagram-mode--mark-prev))))
 (defun scxml-diagram-mode--descend-element ()
   "Head to the first child of the thing"
   (interactive)
+  (scxml-record 'scxml-diagram-mode--descend-element)
   (when (and scxml-diagram-mode--marked-element
              (not (scxml-diagram-mode--edit-idx)))
     (scxml-diagram-mode--mark-first-child)))
 (defun scxml-diagram-mode--ascend-element ()
-  "ascend element"
+  "Head to the parent of the thing."
   (interactive)
+  (scxml-record 'scxml-diagram-mode--ascend-element)
   (when scxml-diagram-mode--marked-element
     (if (scxml-diagram-mode--edit-idx)
         (scxml-diagram-mode--disable-edit-mode)
       (scxml-diagram-mode--mark-parent))))
 (defun scxml-diagram-mode--modify (move-vector)
   "Modify the selected drawing element by move-vector"
-  (interactive)
   (when scxml-diagram-mode--marked-element
     (unless (scxml-point-p move-vector)
       (error "Must supply an scxml-point as MOVE-VECTOR"))
@@ -233,23 +260,28 @@ elements.")
 (defun scxml-diagram-mode--modify-right ()
   "Modify rightward"
   (interactive)
+  (scxml-record 'scxml-diagram-mode--modify-right)
   (scxml-diagram-mode--modify (scxml-point :x 1.0 :y 0.0)))
 (defun scxml-diagram-mode--modify-left ()
   "Modify leftward"
   (interactive)
+  (scxml-record 'scxml-diagram-mode--modify-left)
   (scxml-diagram-mode--modify (scxml-point :x -1.0 :y 0.0)))
 (defun scxml-diagram-mode--modify-up ()
   "Modify upward"
   (interactive)
+  (scxml-record 'scxml-diagram-mode--modify-up)
   (scxml-diagram-mode--modify (scxml-point :x 0.0 :y 1.0)))
 (defun scxml-diagram-mode--modify-down ()
   "Modify downward"
   (interactive)
+  (scxml-record 'scxml-diagram-mode--modify-down)
   (scxml-diagram-mode--modify (scxml-point :x 0.0 :y -1.0)))
 
 (defun scxml-diagram-mode--redraw ()
   "Redraw the screen."
   (interactive)
+  (scxml-record 'scxml-diagram-mode--redraw)
   (let ((start (float-time)))
     (scxml-draw scxml-draw--diagram)
     (let ((duration-ms (- (float-time) start)))
@@ -336,11 +368,16 @@ elements.")
             (mouse-set-point event)
             (cond
              ((eq event-type 'mouse-1)
+              (scxml-record 'goto-char (point))
+              (scxml-record 'scxml-diagram-mode--mark-at-point)
               (scxml-diagram-mode--mark-at-point))
              ((eq event-type 'double-mouse-1)
+              (scxml-record 'goto-char (point))
+              (scxml-record 'scxml-diagram-mode--mark-at-point t)
               (scxml-diagram-mode--mark-at-point t)))))))))
 (defun scxml-diagram-mode--toggle-mouse-mode ()
   (interactive)
+  (scxml-record 'scxml-diagram-mode--toggle-mouse-mode)
   (setq scxml-diagram-mode--mouse-mode
         (if (eq scxml-diagram-mode--mouse-mode 'viewport)
             nil
@@ -350,15 +387,19 @@ elements.")
 
 (defun scxml-diagram-mode--pan-left (&optional delta)
   (interactive)
+  (scxml-record 'scxml-diagram-mode--pan-left)
   (scxml-diagram-mode--pan (- (or delta 1)) 0))
 (defun scxml-diagram-mode--pan-right (&optional delta)
   (interactive)
+  (scxml-record 'scxml-diagram-mode--pan-right)
   (scxml-diagram-mode--pan (or delta 1) 0))
 (defun scxml-diagram-mode--pan-up (&optional delta)
   (interactive)
+  (scxml-record 'scxml-diagram-mode--pan-up)
   (scxml-diagram-mode--pan 0 (or delta 1)))
 (defun scxml-diagram-mode--pan-down (&optional delta)
   (interactive)
+  (scxml-record 'scxml-diagram-mode--pan-down)
   (scxml-diagram-mode--pan 0 (- (or delta 1))))
 (defun scxml-diagram-mode--pan (delta-scratch-x delta-scratch-y)
   "Pan display by DELTA-SCRATCH-X, DELTA-SCRATCH-Y pixel in scratch coordinates."
@@ -372,6 +413,7 @@ elements.")
 (defun scxml-diagram-mode--zoom-reset ()
   "Reset viewport to be exactly the display element canvas"
   (interactive)
+  (scxml-record 'scxml-diagram-mode--zoom-reset)
   (oset scxml-draw--diagram
         viewport
         (scxml-build-viewport (scxml-diagram-mode--canvas)))
@@ -379,10 +421,12 @@ elements.")
 (defun scxml-diagram-mode--zoom-in (&optional ratio)
   "Zoom in by RATIO, defaulting to 10%"
   (interactive)
+  (scxml-record 'scxml-diagram-mode--zoom-in)
   (scxml-diagram-mode--zoom (+ 1.0 (or ratio 0.1))))
 (defun scxml-diagram-mode--zoom-out (&optional ratio)
   "Zoom out by RATIO, defaulting to 10%"
   (interactive)
+  (scxml-record 'scxml-diagram-mode--zoom-out)
   (scxml-diagram-mode--zoom (- 1.0 (or ratio 0.1))))
 (defun scxml-diagram-mode--zoom (alpha)
   "Zoom the viewport by alpha"
@@ -391,7 +435,6 @@ elements.")
 
 (defun scxml-diagram-mode--unmark-all (&optional do-redraw)
   "Unmark all elements"
-  (interactive)
   (let ((element (scxml-diagram-mode--display-element)))
     (when element
       (scxml-visit
@@ -403,6 +446,7 @@ elements.")
   "whatever is marked, mark the next one at the same level"
   ;; TODO - refactor this, it's almost the same as mark-prev
   (interactive)
+  (scxml-record 'scxml-diagram-mode--mark-next)
   (let* ((parent (scxml-parent scxml-diagram-mode--marked-element))
          (children (scxml-children parent))
          (current-element scxml-diagram-mode--marked-element)
@@ -421,6 +465,7 @@ elements.")
 (defun scxml-diagram-mode--mark-prev ()
   "Whatever is marked, mark the previous one at the same level"
   (interactive)
+  (scxml-record 'scxml-diagram-mode--mark-prev)
   (let* ((parent (scxml-parent scxml-diagram-mode--marked-element))
          (children (scxml-children parent))
          (current-element scxml-diagram-mode--marked-element)
@@ -437,6 +482,7 @@ elements.")
 (defun scxml-diagram-mode--mark-first-child ()
   "Whatever is marked, mark the first child of it"
   (interactive)
+  (scxml-record 'scxml-diagram-mode--mark-first-child)
   (let ((children (scxml-children scxml-diagram-mode--marked-element)))
     (if children
         (scxml-diagram-mode--mark-element (car children))
@@ -444,6 +490,7 @@ elements.")
 (defun scxml-diagram-mode--mark-parent ()
   "Whatever is marked, mark the parent of it"
   (interactive)
+  (scxml-record 'scxml-diagram-mode--mark-parent)
   (let* ((parent (scxml-parent scxml-diagram-mode--marked-element)))
     (when parent
       (scxml-diagram-mode--mark-element parent))))
@@ -459,7 +506,7 @@ If no elements are marked, attempt to mark thing at point.
 If an element is already marked _and_ in edit-mode then see if
 the user is attempting to mark an edit idx."
   (interactive)
-  ;; TODO: Better pixel/point handling.
+  (scxml-record 'scxml-diagram-mode--mark-at-point)
   (let* ((pixel (scxml-draw--get-pixel-at-point))
          (viewport (scxml-diagram-mode--viewport))
          (drawing-coord (scxml-get-coord viewport pixel)))
@@ -549,6 +596,7 @@ the user is attempting to mark an edit idx."
 (defun scxml-diagram-mode--simplify ()
   "Simplify the marked drawing if possible."
   (interactive)
+  (scxml-record 'scxml-diagram-mode--simplify)
   (when scxml-diagram-mode--marked-element
     (scxml--simplify-drawing-hint scxml-diagram-mode--marked-element)
     (when (scxml-diagram-mode--edit-idx)
@@ -559,6 +607,7 @@ the user is attempting to mark an edit idx."
 (defun scxml-diagram-mode--automatic ()
   "Set the marked element to 'automatic' mode (not manually hinted)."
   (interactive)
+  (scxml-record 'scxml-diagram-mode--automatic)
   (when scxml-diagram-mode--marked-element
     (scxml--set-edit-idx scxml-diagram-mode--marked-element 'nil)
     (scxml--set-hint scxml-diagram-mode--marked-element 'nil)
@@ -576,7 +625,6 @@ the user is attempting to mark an edit idx."
 (defun scxml-diagram-mode--disable-edit-mode ()
   ;; TODO - can this function be removed?
   "Disable edit mode, if you're in edit mode mark the parent."
-  (interactive)
   (when (null scxml-diagram-mode--marked-element)
     (error "Unable to un-edit drawing, no selection"))
   (scxml-save-excursion
@@ -585,7 +633,6 @@ the user is attempting to mark an edit idx."
 (defun scxml-diagram-mode--enable-edit-mode ()
   ;; TODO - can this function be removed?
   "If you have a marked drawing, enter edit mode."
-  (interactive)
   (when (null scxml-diagram-mode--marked-element)
     (error "Unable to edit drawing, no element marked"))
   (if (> (scxml-num-edit-idxs (scxml-diagram-mode--marked-drawing)) 0)
@@ -597,6 +644,7 @@ the user is attempting to mark an edit idx."
   ;; TODO - can this function be removed?
   "Toggle edit idx flag of the drawing of the currently marked element."
   (interactive)
+  (scxml-record 'scxml-diagram-mode--toggle-edit-mode)
   (if (scxml-diagram-mode--edit-idx)
       (scxml-diagram-mode--disable-edit-mode)
     (scxml-diagram-mode--enable-edit-mode)))
@@ -605,6 +653,7 @@ the user is attempting to mark an edit idx."
   ;; TODO - this is duplicated with the edit-idx-prev code.
   "Jump to the next edit idx point."
   (interactive)
+  (scxml-record 'scxml-diagram-mode--edit-idx-next)
   (when (or (null scxml-diagram-mode--marked-element)
             (not (scxml--edit-idx scxml-diagram-mode--marked-element)))
     (error "Unable to move to next edit index, not in edit mode"))
@@ -612,6 +661,7 @@ the user is attempting to mark an edit idx."
 (defun scxml-diagram-mode--edit-idx-prev ()
   "Jump to the prev edit idx point."
   (interactive)
+  (scxml-record 'scxml-diagram-mode--edit-idx-prev)
   (when (or (null scxml-diagram-mode--marked-element)
             (not (scxml--edit-idx scxml-diagram-mode--marked-element)))
     (error "Unable to move to next edit index, not in edit mode"))
@@ -774,7 +824,10 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
          (format "-Hint   : %s\n" (scxml-diagram-mode--debug-hint marked))
          (format "-GeoType: %s\n" (eieio-object-class (scxml-element-drawing marked)))
          (format "-Geometf: %s\n" (scxml-print (scxml-element-drawing marked))))
-      (insert "No marked element\n\n"))))
+      (insert "No marked element\n\n")))
+  (when scxml-recording
+    (let ((step 0))
+    (insert (mapconcat (lambda (x) (format "REC[%d]: %s" (incf step) x)) scxml-recording "\n")))))
 
 (provide 'scxml-diagram-mode)
 ;;; scxml-diagram-mode.el ends here
