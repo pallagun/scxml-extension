@@ -156,14 +156,6 @@ This can be viewed as:
             ((> abs-x abs-y) (scxml-point :x -1.0 :y 0.0))
             ((> abs-y abs-x) (scxml-point :x 0.0 :y -1.0))
             ('t 'nil)))))
-(cl-defmethod scxml-leaving-segment-collision-edge ((source scxml-point) (dest scxml-point))
-  "If you leave SOURCE headed towards DEST, which edge do you hit?
-
-Returned as one of 4 symbols: 'up, 'down, 'left, 'right."
-  ;; TODO - this is really a drawing function and it should probabyl
-  ;; be on that level, not geometry level.
-  (scxml-coarse-direction (scxml-subtract dest source)))
-
 
 (provide 'scxml-geometry-point)
 ;;; scxml-geometry-point.el ends here

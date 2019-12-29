@@ -177,6 +177,26 @@ parent).  Currently used to draw child <state> elements of a
   ;; TODO - delete this??
   (error "is this even used?"))
 
+(cl-defmethod scxml-leaving-segment-collision-edge ((rect scxml-drawing-rect) (pt scxml-point))
+  "If you leave centroid of RECT headed towards PT, which edge do you hit?
+
+Returned as one of 4 symbols: 'up, 'down, 'left, 'right."
+  (let* ((centroid (scxml-centroid rect))
+         (path (scxml-segment :start centroid :end pt))
+         (char-vector (scxml-characteristic-vector path))
+         (to-tl (scxml-segment :start centroid :end (scxml-TL rect)))
+         (to-tr (scxml-segment :start centroid :end (scxml-TR rect)))
+         (cross-tl (scxml-cross-prod char-vector (scxml-characteristic-vector to-tl)))
+         (cross-tr (scxml-cross-prod char-vector (scxml-characteristic-vector to-tr))))
+    (cond ((and (>= cross-tl 0.0) (>= cross-tr 0.0))
+           'right)
+          ((and (<= cross-tl 0.0) (<= cross-tr 0.0))
+           'left)
+          ((and (>= cross-tl 0.0) (<= cross-tr 0.0))
+           'up)
+          ((and (<= cross-tl 0.0) (>= cross-tr 0.0))
+           'down)
+          ('t (error "Impossible?")))))
 
 (provide 'scxml-drawing-rect)
 ;;; scxml-drawing-rect.el ends here

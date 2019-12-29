@@ -74,6 +74,11 @@
 (cl-defmethod scxml--get-inner-canvas ((pt scxml-drawing-point))
   "It's a point, there's no space inside it."
   nil)
+(cl-defmethod scxml-leaving-segment-collision-edge ((source scxml-drawing-point) (dest scxml-point))
+  "If you leave SOURCE headed towards DEST, which edge do you hit?
+
+Returned as one of 4 symbols: 'up, 'down, 'left, 'right."
+  (scxml-coarse-direction (scxml-subtract dest source)))
 
 (provide 'scxml-drawing-point)
 ;;; scxml-drawing-point.el ends here
