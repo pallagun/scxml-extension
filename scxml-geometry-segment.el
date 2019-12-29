@@ -134,9 +134,7 @@ segments hit (non-parallel segments)."
 (cl-defmethod scxml---segment-collision-parametrics-vectorized ((A-start scxml-point) (A-char-vec scxml-point) (B-start scxml-point) (B-char-vec scxml-point))
   "Find the per-segment parametric coordinates where these two segments hit (non-parallel segments).
 
-This is returned as a plist of the form:
-('b-parametric b-parametric 'a-parametric a-parametric)
-TODO: this should probably just return a cons?"
+This is returned as (cons a-parametric b-parametric)."
   ;; (Ax(t), Ay(t)) = (Bx(s), By(s))
   ;; -------------------------
   ;; Asx + t Adx = Bsx + Bdx s
@@ -175,13 +173,12 @@ TODO: this should probably just return a cons?"
              (S2 (- (scxml-y Bs) (scxml-y As)))
              (a-parametric (/ (+ (* -1.0 Bdy S1) (* Bdx S2)) determinant))
              (b-parametric (/ (+ (* -1.0 Ady S1) (* Adx S2)) determinant)))
-        (plist-put (plist-put '() 'b-parametric b-parametric)
-                   'a-parametric a-parametric)))))
+        (cons a-parametric b-parametric)))))
 (cl-defmethod scxml-distance ((A scxml-segment) (B scxml-segment))
   "Return  the minimum distances between A and B"
   (let* ((parametrics (scxml---segment-collision-parametrics A B))
-         (a-parametric (plist-get parametrics 'a-parametric))
-         (b-parametric (plist-get parametrics 'b-parametric)))
+         (a-parametric (car parametrics))
+         (b-parametric (cdr parametrics)))
     (cond
      ;; A-start voronoi region
      ((< a-parametric 0.0)
@@ -330,8 +327,8 @@ That should be sorted out before calling this."
                    (and allow-B-end
                         (scxml-intersection end-range b-parametric)))))))
       (let* ((parametrics (scxml---segment-collision-parametrics A B))
-             (a-parametric (plist-get parametrics 'a-parametric))
-             (b-parametric (plist-get parametrics 'b-parametric)))
+             (a-parametric (car parametrics))
+             (b-parametric (cdr parametrics)))
         (if (and (> a-parametric a-min)
                  (< a-parametric a-max)
                  (> b-parametric b-min)
