@@ -1,7 +1,14 @@
+;; TODO - clean this up a bit.  It's a test recorder and replayer with
+;; asserts on what the screen looks like.
+
+;; TODO - rename this scxml-test-recorder?  I'm not sure if it's important if it's only used in tests.
+
+;;; Code:
+(require 'ert)
 (require 'scxml)
 
 (defun scxml-capture-screen (viewport)
-  "Grab the contents of canvas from buffer"
+  "Return the VIEWPORT content as a list of strings, by row."
   (save-excursion
     (let ((width (scxml-required-pixel-width viewport))
           (height (scxml-required-pixel-height viewport)))
@@ -12,7 +19,9 @@
                     "\n"))))
 
 (defun scxml-begin-replay-session (test-file &optional x-size y-size)
-  "Given an scxml TEST-FILE open it up in a drawing buffer."
+  "Open TEST-FILE in a diagram session, returning the diagram.
+
+Optionally set the root canvas size to X-SIZE by Y-SIZE."
   (let* ((x-size (or x-size 100))
          (y-size (or y-size 40))
          (root (prog2
@@ -34,21 +43,24 @@
     diagram))
 
 (defun scxml-begin-diagram-recording-session (test-file)
-  "Supply a file with valid scxml data to start a recording session"
+  "Begin a recording session started by loading TEST-FILE.
+
+Recordinng sessions are initialized with a default main canavas
+size of 100x40.  Returns the diagram."
   (interactive "fFile: ")
-  (let ((x-size 100)
-        (y-size 40))
-    (scxml-begin-replay-session test-file x-size y-size)
+  (let* ((x-size 100)
+         (y-size 40)
+         (diagram (scxml-begin-replay-session test-file x-size y-size)))
     (setq scxml-recording
           (list (list 'open-with-canvas-size test-file x-size y-size)))
-    (scxml-diagram-mode--redraw)))
-
-;; (defun scxml-assert-screen (expected-screen)
-;;   (let* ((viewport (scxml-diagram-viewport scxml--diagram))
-;;          (actual-screen (scxml-capture-screen viewport)))
-;;     (should (equal expected-screen actual-screen))))
+    (scxml-diagram-mode--redraw)
+    diagram))
 
 (defun scxml-record-assert-screen ()
+  "Insert the current viewport data as an assert into the current recording.
+
+This will only insert the assertion if you are already recording.
+The intention of this function is for recording tests."
   (interactive)
   (let ((buffer (scxml-buffer scxml--diagram))
         (viewport (scxml-diagram-viewport scxml--diagram)))
@@ -59,6 +71,10 @@
         (scxml-diagram-mode--redraw)))))
 
 (defun scxml-replay-test (recording-file &optional perform-asserts)
+  "Replay the scxml-recording file: RECORDING-FILE.
+
+When PERFORM-ASSERTS is non-nil the replay will use the ert
+should macro to enforce recorded screen asserts."
   (interactive "fOpen Recording File: ")
   ;; TODO - this shouldn't be an exists check, it should be an exists
   ;; and is readable check
@@ -69,8 +85,12 @@
     (find-file recording-file)
     (scxml-replay-test-in-buffer perform-asserts)))
 
+
 (defun scxml-replay-test-in-buffer (&optional perform-asserts)
-  "Replay a test in the current buffer"
+  "Replay the scxml-recording file in the current buffer.
+
+When PERFORM-ASSERTS is non-nil the replay will use the ert
+should macro to enforce recorded screen asserts."
   (interactive)
   ;; disable global recording, no need to record if you're replaying.
   (setq scxml-recording nil)
@@ -100,3 +120,5 @@
                         (t
                          ;; normal instruction router.
                          (eval instruction)))))))
+
+(provide 'test-recorder)

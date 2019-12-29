@@ -88,3 +88,5 @@
     (should (scxml-contains rect test-TL nil))
     (should-not (scxml-contains rect test-TL 'stacked))
     (should-not (scxml-contains rect test-TL 'strict))))
+
+(provide 'scxml-geometry-rect-test)

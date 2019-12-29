@@ -7,3 +7,6 @@
          (num-children 3)
          (divisions (scxml---get-canvas-divisions rect num-children)))
     (should (>= (length divisions) num-children))))
+
+
+(provide 'scxml-draw-test)

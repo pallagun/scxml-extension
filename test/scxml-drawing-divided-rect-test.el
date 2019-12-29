@@ -29,3 +29,5 @@
                              (division-equal cell expected-BR))
                            divisions))))
     ))
+
+(provide 'scxml-drawing-divided-rect-test)

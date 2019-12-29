@@ -323,3 +323,5 @@
         (scxml-cardinal-path :points invalid-cardinal-path)
       (error (setq found-expected-error t)))
     (should found-expected-error)))
+
+(provide 'scxml-geometry-path-test)

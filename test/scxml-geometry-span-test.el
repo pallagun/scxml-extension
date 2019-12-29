@@ -44,3 +44,5 @@
       (should (scxml-contains span not-strict-flipped nil))
       (should (scxml-contains span not-strict-flipped 'stacked))
       (should-not (scxml-contains span not-strict-flipped 'strict)))))
+
+(provide 'scxml-geometry-span-test)

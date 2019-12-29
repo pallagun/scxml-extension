@@ -41,3 +41,5 @@
                    (eql (scxml-node-edge derived-right) 'right)
                    (equal (scxml-edge-parametric derived-right) 0.5)))
       (should (not shouldnt-work)))))
+
+(provide 'scxml-drawing-connector-rect-test)

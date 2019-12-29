@@ -36,3 +36,5 @@
                                         (scxml-point- 20 0)))
   (should (scxml-cardinal-displacement? (scxml-point- 0 -20)
                                         (scxml-point- 0 20))))
+
+(provide 'scxml-geometry-point-test)

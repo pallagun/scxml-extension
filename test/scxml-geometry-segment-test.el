@@ -434,3 +434,5 @@
       (should (scxml-pierced? piercer test-segment t t t nil))
       (should (scxml-pierced? piercer test-segment t t t t)))
     ))
+
+(provide 'scxml-geometry-segment-test)

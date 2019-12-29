@@ -1,7 +1,6 @@
 (require 'ert)
 (require 'scxml-element)
 
-
 (ert-deftest scxml-element-root-element-test ()
   (let* ((transition-to-b (scxml-transition :target "subB"))
          (transition-to-a (scxml-transition :target "subA"))
@@ -84,3 +83,5 @@
       (should (eql (length id-list) 1))
       (should (equal (first id-list) "subA"))
       (should (eql count 2)))))
+
+(provide 'scxml-element-test)
