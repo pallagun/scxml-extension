@@ -192,7 +192,7 @@ nil."
                   additive-operations)
             (push (list 'goto-char addition-point)
                   additive-operations))
-          (filter (lambda (attribute-keyval)
+          (seq-filter (lambda (attribute-keyval)
                     (and (not (memq attribute-keyval found-properties))
                          ;; Additionally, only add in missing attributes
                          ;; if their values are non-nil

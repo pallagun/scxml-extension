@@ -79,7 +79,7 @@ Generally filters out symbols that start with 'scxml---'."
         (children (scxml-children element))
         (attribute-list (mapcar (lambda (name-value)
                                   (format "%s=\"%s\"" (car name-value) (cdr name-value)))
-                                (filter 'cdr
+                                (seq-filter 'cdr
                                         (scxml-xml-attributes element)))))
     (let ((start-tag (format "<%s" xml-name))
           (attribute-string (if attribute-list
@@ -425,10 +425,10 @@ No it doesn't.  By definition this must always return nil"
   (let ((test-id (if (scxml-state-p other-state-or-state-id)
                      (scxml-element-id other-state-or-state-id)
                    other-state-or-state-id)))
-    (filter (lambda (element)
-              (and (scxml-transition-p element)
-                   (equal (scxml-transition-target element) test-id)))
-            (scxml-children state))))
+    (seq-filter (lambda (element)
+                  (and (scxml-transition-p element)
+                       (equal (scxml-transition-target element) test-id)))
+                (scxml-children state))))
 (cl-defmethod scxml-get-all-transitions-to ((state scxml-state-type))
   "Collect all transition elements which target STATE"
   (let ((target-id (scxml-element-id state)))

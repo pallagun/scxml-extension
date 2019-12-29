@@ -17,9 +17,9 @@
   (when (object-of-class-p element 'scxml-drawable-element)
     (scxml--set-hint-from-attrib-list element attrib-alist))
 
-  (let ((filtered-alist (filter (lambda (cell)
-                                  (scxml---visible-xml-attribute-name (car cell)))
-                                attrib-alist)))
+  (let ((filtered-alist (seq-filter (lambda (cell)
+                                      (scxml---visible-xml-attribute-name (car cell)))
+                                    attrib-alist)))
     (cl-loop for prop-cell in filtered-alist
              for prop-name = (car prop-cell)
              do (unless (member prop-name exclude-list)
