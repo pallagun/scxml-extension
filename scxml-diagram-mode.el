@@ -252,11 +252,16 @@ elements.")
       (scxml-diagram-mode--mark-parent))))
 (defun scxml-diagram-mode--modify (move-vector)
   "Modify the selected drawing element by move-vector"
-  (when scxml-diagram-mode--marked-element
-    (unless (scxml-point-p move-vector)
-      (error "Must supply an scxml-point as MOVE-VECTOR"))
-    (scxml-save-excursion
-     (scxml-diagram-mode--move move-vector))))
+  (if (eq scxml-diagram-mode--mouse-mode 'viewport)
+      ;; You're in viewport mode, modify the viewport.
+      (let ((flipped (scxml-additive-inverse move-vector)))
+        (scxml-diagram-mode--pan (scxml-x flipped) (scxml-y flipped)))
+    ;; else, normal view/edit mode.
+    (when scxml-diagram-mode--marked-element
+      (unless (scxml-point-p move-vector)
+        (error "Must supply an scxml-point as MOVE-VECTOR"))
+      (scxml-save-excursion
+       (scxml-diagram-mode--move move-vector)))))
 (defun scxml-diagram-mode--modify-right ()
   "Modify rightward"
   (interactive)
