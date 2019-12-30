@@ -19,7 +19,11 @@
            :accessor scxml-points
            :initform '()
            :type (or null list)))
-  ;; TODO - add a make-instance override here that validates each element of the list is actually an scxml-point
+  ;; TODO - Should there be a make-instance for this class which
+  ;; validates that all things in the points slot are actually points?
+  ;; If so, would there be some way to circumvent that check when it's
+  ;; called by a trustworthy source such as the make-instance for
+  ;; scxml-cardinal-path?
 )
 (defclass scxml-cardinal-path (scxml-path)
   ())
@@ -155,8 +159,9 @@ End points are considered by their flags."
        a-segments)
       'nil)))
 (cl-defmethod scxml-distance ((path scxml-path) (point scxml-point))
-  "Return the minimum distance between PATh and POINT."
-  ;; TODO - seems like a Very inefficient distance calculation
+  "Return the minimum distance between PATH and POINT.
+
+The implementation is not efficient, use caution."
   (cl-loop for segment in (scxml-segments path)
            for distance = (scxml-distance segment point)
            with best = 'nil
@@ -210,10 +215,9 @@ Something of the opposite of scml---get-deltas."
   "Make a path which is a single straight line from START to END.
 
 This might be an scxml-path or an scxml-cardinal-path."
-  ;; TODO - skip the cardinality check in the scxml-cardinal-path make-instance?
-  (if (scxml-cardinal-displacement? start end)
-      (scxml-cardinal-path :points (list start end))
-    (scxml-path :points (list start end))))
+  (condition-case nil
+      (scxml-cardinal-path :points `(,start ,end))
+    (error (scxml-path :points `(,start ,end)))))
 (defun scxml---path-cardinal-direction (start-pt entry-direction destination-pt)
   "Given a START-PT point coming from ENTRY-DIRECTION find a vector to get closer to DESTINATION-PT.
 

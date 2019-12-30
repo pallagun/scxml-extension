@@ -324,4 +324,13 @@
       (error (setq found-expected-error t)))
     (should found-expected-error)))
 
+(ert-deftest scxml-geometry-path-build-straight-line ()
+  (let ((start (scxml-point- 1 1))
+        (end (scxml-point- 2 2))
+        (cardinal-end (scxml-point- 2 1)))
+    (should (scxml-cardinal-path-p
+             (scxml-build-path-straight-line start cardinal-end)))
+    (should (scxml-path-p
+             (scxml-build-path-straight-line start end)))))
+
 (provide 'scxml-geometry-path-test)
