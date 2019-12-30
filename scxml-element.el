@@ -20,14 +20,11 @@
                :accessor scxml-element-attributes
                :initform nil
                :type (or hash-table null))
-   (children :initform nil
-             :type (or list null)
-             ;; TODO - consider naming this -children to indicate that it's private-ish?
-             )
-   (parent :initform nil
-           :type (or null scxml-element)
-           ;; TODO - consider naming this -parent to indicate that it's private-ish?
-           ))
+   ;; _children and _parent are both "private" slots.
+   (_children :initform nil
+             :type (or list null))
+   (_parent :initform nil
+           :type (or null scxml-element)))
   :abstract 't)
 
 (cl-defgeneric scxml-print ((element scxml-element) &optional contents-only)
@@ -99,30 +96,30 @@ Generally filters out symbols that start with 'scxml---'."
                  ""))))
 (cl-defmethod scxml-children ((element scxml-element))
   "Return the children of ELEMENT."
-  (oref element children))
+  (oref element _children))
 (cl-defmethod scxml-num-children ((element scxml-element))
   "Return the number of child elements for ELEMENT."
-  (length (oref element children)))
+  (length (oref element _children)))
 (cl-defmethod scxml-parent ((element scxml-element))
   "Return the parent of ELEMENT."
-  (oref element parent))
+  (oref element _parent))
 (cl-defmethod scxml-make-orphan ((element scxml-element))
   "Break ELEMENT away from any parent elements."
-  (with-slots (parent) element
+  (with-slots (_parent) element
     ;; element has a parent, break the link from parent->child
-    (when parent
-      (oset parent children
+    (when _parent
+      (oset _parent _children
             (cl-remove-if (lambda (child) (eq child element))
-                          (scxml-children parent)
+                          (scxml-children _parent)
                           :count 1)))
-    (setf parent 'nil)))
+    (setf _parent 'nil)))
 (cl-defmethod scxml-add-child ((parent scxml-element) (new-child scxml-element) &optional append)
   "Make NEW-CHILD a child element of PARENT, returning PARENT"
   (scxml-make-orphan new-child)   ;; make sure new-child isn't connected someplace else.
-  (oset new-child parent parent)
+  (oset new-child _parent parent)
   (if append
-      (oset parent children (nconc (oref parent children) (list new-child)))
-    (push new-child (oref parent children)))
+      (oset parent _children (nconc (oref parent _children) (list new-child)))
+    (push new-child (oref parent _children)))
   parent)
 (cl-defmethod scxml-add-children ((parent scxml-element) &rest new-children)
   "Make NEW-CHILDREN into child elements of PARENT, returning PARENT."
