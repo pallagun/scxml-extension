@@ -9,40 +9,27 @@
 ;; <element with="attributes">or children</element> in a
 ;; valid <scxml> document.
 (defclass scxml-element ()
-  ((id :initarg :id
-       :accessor scxml-element-id
-       :initform nil
-       :type (or string null)
-       ;; TODO - some elements don't have first class id attributes.
-       ;; This should be moved to a mixin-type class?
-       )
-   (attributes :initarg :attributes
+  ((attributes :initarg :attributes
                :accessor scxml-element-attributes
                :initform nil
                :type (or hash-table null))
    ;; _children and _parent are both "private" slots.
    (_children :initform nil
-             :type (or list null))
+              :type (or list null))
    (_parent :initform nil
-           :type (or null scxml-element)))
+            :type (or null scxml-element)))
   :abstract 't)
 
-(cl-defgeneric scxml-print ((element scxml-element) &optional contents-only)
-  "Return a string representing ELEMENT for human eyeballs.
-
-When contents-only is true you'll receive a string you can concat
-with other desciptions."
-  (let ((contents-template "id:%s, children:%s attributes:[%s]"))
-    (format (if contents-only
-                contents-template
-              (format "element(%s)" contents-template))
-          (scxml-element-id element)
+(cl-defgeneric scxml-print ((element scxml-element))
+  "Return a string representing ELEMENT for human eyes"
+  (format "parent:%s children:%s attributes:[%s]"
+          (scxml-parent element)
           (scxml-num-children element)
           (let ((hash (scxml-element-attributes element)))
             (when hash
               (let ((parts 'nil))
-                (maphash (lambda (k v) (push (format "%s=%s" k v) parts)) hash)
-                (mapconcat 'identity parts ", ")))))))
+                (maphash (lambda (k v) (push (format "%s=%.10s" k v) parts)) hash)
+                (mapconcat 'identity parts ", "))))))
 (cl-defmethod cl-print-object ((object scxml-element) stream)
   "Pretty print the OBJECT to STREAM."
   (princ (scxml-print object) stream))
@@ -184,22 +171,6 @@ FILTER."
                  (lambda (x) (push x matches))
                  filter)
     matches))
-(cl-defmethod scxml-element-find-by-id ((search-root scxml-element) (id-to-find string))
-  "Find element with ID-TO-FIND starting at SEARCH-ROOT and going down.
-
-Function will not traverse the whole tree, only the portion at or
-below SEARCH-ROOT"
-  ;; TODO - this implementation might not be the best.
-  (if (string-equal (scxml-element-id search-root) id-to-find)
-      search-root
-    (let ((children (scxml-children search-root)))
-      (if children
-          (cl-reduce (lambda (accumulator child)
-                    (if accumulator accumulator
-                      (scxml-element-find-by-id child id-to-find)))
-                  children
-                  :initial-value 'nil)
-        'nil))))
 (cl-defmethod scxml-find-nearest-mutual-parent ((A scxml-element) (B scxml-element))
   "Given elements A and B return their closest mutual parent element."
   (cl-labels ((build-parent-list
@@ -215,6 +186,25 @@ below SEARCH-ROOT"
                 (when (cl-member A-element B-parents :test 'eq)
                   (return-from scxml-find-parent A-element)))
               A-parents)))))
+
+(cl-defmethod scxml-element-find-by-id ((search-root scxml-element) (id-to-find string))
+  "Find element with ID-TO-FIND starting at SEARCH-ROOT and going down.
+
+Function will not traverse the whole tree, only the portion at or
+below SEARCH-ROOT"
+  ;; TODO - this implementation might not be the best.
+  (if (and (object-of-class-p search-root 'scxml-idable-attribute)
+           (string-equal (scxml-element-id search-root) id-to-find))
+      search-root
+    (let ((children (scxml-children search-root)))
+      (if children
+          (cl-reduce (lambda (accumulator child)
+                    (if accumulator accumulator
+                      (scxml-element-find-by-id child id-to-find)))
+                  children
+                  :initial-value 'nil)
+        'nil))))
+
 
 ;; not actually an element, but needs to be here
 ;; for code structure sanity reasons.
@@ -252,13 +242,12 @@ below SEARCH-ROOT"
              ))
   :abstract 't
   :documentation "This is an element that can be drawn on a canvas")
-(cl-defmethod scxml-print ((element scxml-drawable-element) &optional contents-only)
+(cl-defmethod scxml-print ((element scxml-drawable-element))
   "Pretty print ELEMENT for human eyeballs."
-  (format (if contents-only
-              "%s, hasDrawing:%s"
-            "drawable(%s, hasDrawing:%s")
-          (cl-call-next-method)
-          (and (oref element drawing) 't)))
+  (format "hasDrawing:%s, %s"
+          (and (scxml-element-drawing element) t)
+          (cl-call-next-method)))
+
 (cl-defmethod scxml-xml-attributes ((element scxml-drawable-element))
   "Return an xml attribute alist for ELEMENT.
 
@@ -268,12 +257,27 @@ Push in the drawing hint attribute."
                  (scxml-get-attrib element scxml---hint-symbol nil)))
           (cl-call-next-method)))
 
+;; TODO - this is a very bad name, alter it.
+(defclass scxml-idable-attribute ()
+  ((id :initarg :id
+       :accessor scxml-element-id
+       :initform nil
+       :type (or string null)))
+  :abstract t
+  :documentation "Apply to an scxml element if it's capable of holding an 'id' child")
+(cl-defmethod scxml-print ((idable-element scxml-idable-attribute))
+  (format "id:%s, %s"
+          (scxml-element-id idable-element)
+          (cl-call-next-method)))
+
+;; TODO - this is a very bad name, alter it.
 (defclass scxml-initialable-attribute ()
   ((initial :initarg :initial
             :accessor scxml-element-initial
             :initform nil
             :type (or string null)))
   :abstract t
+  ;; TODO - initial child? or initial attribute??
   :documentation "Apply to an scxml element if it's capable of holding an 'initial' child")
 
 (defclass scxml-scxml (scxml-drawable-element scxml-initialable-attribute)
@@ -287,14 +291,14 @@ Recognized attributes: initial, name, xmlns, version, datamodel,
 binding")
 (cl-defmethod scxml-print ((scxml scxml-scxml))
   "Pretty print SCXML for human eyeballs."
-  (format "scxml(%s)"
-          (cl-call-next-method scxml 't)))
+  (format "scxml(name:%s, %s)"
+          (scxml-name scxml)
+          (cl-call-next-method)))
 (defun scxml---scxml-factory (attrib-alist)
   "Build an scxml-scxml element from the ATTRIBUTES alist."
   (let ((default-attribs (list (cons 'xmlns "http://www.w3.org/2005/07/scxml")
                                (cons 'version "1.0")))
-        (element (scxml-scxml :id (alist-get 'id attrib-alist)
-                              :initial (alist-get 'initial attrib-alist))))
+        (element (scxml-scxml :initial (alist-get 'initial attrib-alist))))
     (mapc (lambda (attrib)
             (unless (assoc (car attrib) attrib-alist)
               (push attrib attrib-alist)))
@@ -306,12 +310,12 @@ binding")
 Only doing xmlnns and version here."
   (let ((attributes (list ;; (cons 'xmlns "http://www.w3.org/2005/07/scxml")
                           ;; (cons 'version "1.0")
-                          (cons 'id (scxml-element-id element))
+                          (cons 'name (scxml-element-name element))
                           (cons 'initial (scxml-element-initial element)))))
     (append attributes
             (cl-call-next-method))))
 
-(defclass scxml-state-type (scxml-drawable-element)
+(defclass scxml-state-type (scxml-drawable-element scxml-idable-attribute)
   ()
   :abstract t
   :documentation "Abstract parent class for <state> and <final>, both of which are state-ish")
@@ -322,8 +326,7 @@ Only doing xmlnns and version here."
 Recognized attributes: id, initial")
 (cl-defmethod scxml-print ((state scxml-state))
   "Spit out a string representing ELEMENT for human eyeballs"
-  (format "state(%s)"
-          (cl-call-next-method state 't)))
+  (format "state(%s)" (cl-call-next-method)))
 (cl-defmethod scxml-xml-attributes ((element scxml-state))
   "attributes: id, initial"
   (append
@@ -361,14 +364,13 @@ Must contain a single child <transition> element indicating initial state.
 Child <transition> element may not have 'cond' or 'event' attributes and must be a valid state.")
 (cl-defmethod scxml-print ((initial scxml-initial))
   "Spit out a string representing ELEMENT for human eyeballs"
-  (format "initial(%s)"
-          (cl-call-next-method initial 't)))
+  (format "initial(%s)" (cl-call-next-method)))
 (defun scxml---initial-factory (&optional attrib-alist)
   "Build an scxml-initial element from the ATTRIBUTES alist."
   (let ((element (scxml-initial)))
     (scxml---append-extra-properties element attrib-alist)))
 
-(defclass scxml-parallel (scxml-drawable-element)
+(defclass scxml-parallel (scxml-drawable-element scxml-idable-attribute)
   ()
   ;; TODO - should this inherit from scxml-state-type??
   :documentation "Scxml <parallel> element.
@@ -378,8 +380,7 @@ Children:
   <onentry>, <onexit>, <transition>, <start>, <parallel>, <history>, <datamodel>, <invoke>")
 (cl-defmethod scxml-print ((parallel scxml-parallel))
   "Spit out a string representing ELEMENT for human eyeballs"
-  (format "parallel(%s)"
-          (cl-call-next-method parallel 't)))
+  (format "parallel(%s)" (cl-call-next-method)))
 (cl-defmethod scxml-xml-attributes ((element scxml-parallel))
   "attributes: id, initial"
   (append
@@ -403,9 +404,9 @@ Recognized attributes: event, cond, target, type
 Children must be executable content.")
 (cl-defmethod scxml-print ((transition scxml-transition))
   "Spit out a string representing ELEMENT for human eyeballs"
-  (format "transition(%s, targetId:%s)"
-          (cl-call-next-method transition 't)
-          (scxml-transition-target transition)))
+  (format "transition(targetId:%s, %s)"
+          (scxml-transition-target transition)
+          (cl-call-next-method)))
 (cl-defmethod scxml-xml-attributes ((element scxml-transition))
   "attributes: target"
   (append (list (cons 'target (scxml-transition-target element)))

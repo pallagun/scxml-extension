@@ -376,9 +376,8 @@ Will throw if it can't move it. will not render!!"
   "Plot rectangular elements (and any child elements), phase 1 of plotting."
   (when (not (or (scxml---is-renderable-as-node element) (scxml-scxml-p element)))
     (error "Wat?  shouldn't be calling this with thtat")) ;TODO - remove this check at some point?
-  (scxml---drawing-logger "scxml--plot-node: type/id: %s/%s"
-                          (scxml-xml-element-name element)
-                          (scxml-element-id element))
+  (scxml---drawing-logger "scxml--plot-node: type:%s"
+                          (scxml-xml-element-name element))
   (scxml---drawing-logger "scxml--plot-node: canvas: %s" (scxml-print canvas))
   (let ((child-nodes (seq-filter 'scxml---is-renderable-as-node (scxml-children element)))
         (node (scxml--update-drawing element canvas)))

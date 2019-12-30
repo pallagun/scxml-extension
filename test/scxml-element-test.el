@@ -49,7 +49,8 @@
       (scxml-visit my-scxml
                    (lambda (element)
                      (incf count)
-                     (let ((id (scxml-element-id element)))
+                     (let ((id (and (object-of-class-p element 'scxml-idable-attribute)
+                                    (scxml-element-id element))))
                        (when id
                          (push id id-list)))))
       (setq id-list (nreverse id-list))
@@ -77,11 +78,27 @@
       (scxml-visit state-a
                    (lambda (element)
                      (incf count)
-                     (let ((id (scxml-element-id element)))
+                     (let ((id (and (object-of-class-p element 'scxml-idable-attribute)
+                                    (scxml-element-id element))))
                        (when id
                          (push id id-list)))))
       (should (eql (length id-list) 1))
       (should (equal (first id-list) "subA"))
       (should (eql count 2)))))
+
+(ert-deftest scxml-element-print-test ()
+  (let* ((final (scxml-final :id "myFinalId"))
+         (state (scxml-state :id "myStateId" :initial "stateInitial"))
+         (scxml (scxml-scxml :name "myName" :initial "scxmlInitial"))
+         (parallel (scxml-parallel :id "myParallelId"))
+         (transition (scxml-transition :target "transitionTarget"))
+         (initial (scxml-add-child (scxml-initial)
+                                   transition)))
+    (scxml-print final)
+    (scxml-print state)
+    (scxml-print scxml)
+    (scxml-print parallel)
+    (scxml-print transition)
+    (scxml-print initial)))
 
 (provide 'scxml-element-test)

@@ -576,18 +576,7 @@ the user is attempting to mark an edit idx."
       (scxml-diagram-mode--redraw))
 
     (when scxml-diagram-mode--debug
-      (cond ((scxml-state-p element)
-             (message "Marking state(id:%s)" (scxml-element-id element)))
-            ((scxml-transition-p element)
-             (message "Marking transition(target:%s)" (scxml-transition-target element)))
-            ((scxml-parallel-p element)
-             (message "marking parallel(id:%s)" (scxml-element-id element)))
-            ((scxml-final-p element)
-             (message "marking final(id:%s)" (scxml-element-id element)))
-            ((scxml-scxml-p element)
-             (message "marking scxml(name:%s)" (scxml-name element)))
-            ('t
-             (message "Marking ???"))))))
+      (message "Marking %s" (scxml-print element)))))
 
 (defun scxml-diagram-mode--move (move-vector)
   "Whatever edit-idx you're at (or not at), move it by MOVE-VECTOR."
@@ -703,6 +692,8 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
   (when (not (object-of-class-p target 'scxml-element))
     (error "Invalid target for transition."))
   (let ((parent scxml-diagram-mode--marked-element))
+    ;; TODO - this seems unsafe, validate that the target can be the
+    ;; the target of a transition
     (scxml-add-child parent (scxml-transition :target (scxml-element-id target)))
     (scxml--set-drawing-invalid target 't)
     (scxml-visit parent
@@ -752,17 +743,6 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
       (push (funcall fn (car current) (cadr current)) accumulator)
       (setq current (cddr current)))
     accumulator))
-(defun scxml-diagram-mode--debug-element-name (element)
-  ;; human readable element identifier
-  (cond ((scxml-state-p element)
-         (scxml-element-id element))
-        ((scxml-transition-p element)
-         (format "%s -> %s"
-                 (scxml-diagram-mode--debug-element-name
-                  (scxml-parent element))
-                 (scxml-transition-target element)))
-        ('t
-         "Unknown thing?")))
 (defun scxml-diagram-mode--debug-hint (element)
   (let ((hint (scxml--hint element)))
     (if hint
@@ -815,14 +795,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
                                                                             (scxml-centroid (scxml-get-coord (scxml-diagram-mode--viewport)
                                                                                                              scxml-diagram-mode--last-click-pixel)))))
                                     "none"))
-         (format "Marked:   %s\n" (cond ((scxml-scxml-p marked)
-                                         "root <scxml>")
-                                        ((scxml-initial-p marked)
-                                         "Initial?")
-                                        ((scxml-final-p marked)
-                                         "Final?")
-                                        (t
-                                         (scxml-diagram-mode--debug-element-name marked))))
+         (format "Marked:   %s\n" (scxml-print marked))
          (format "-EditIdx: %s @ %s \n" (scxml-diagram-mode--edit-idx)
                  (when (scxml-diagram-mode--edit-idx)
                    (scxml-edit-idx-point (scxml-element-drawing marked) (scxml-diagram-mode--edit-idx))))
