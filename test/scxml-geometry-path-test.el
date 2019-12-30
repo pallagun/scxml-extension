@@ -150,7 +150,21 @@
       (should-be-almost-equal (scxml---path-append-simplify A B)
                               (list (scxml-point :x 0.0 :y 0.0)
                                     (scxml-point :x 2.0 :y 0.0)
-                                    (scxml-point :x 2.0 :y 2.0))))))
+                                    (scxml-point :x 2.0 :y 2.0))))
+    (let ((A (list (scxml-point- -2 0)
+                   (scxml-point- -1 0)
+                   (scxml-point- 0 0)
+                   (scxml-point- 4 3)))
+          (B (list (scxml-point- 4 3)
+                   (scxml-point- 8 6)
+                   (scxml-point- 8 6)
+                   (scxml-point- 9 6)
+                   (scxml-point- 10 6))))
+      (should-be-almost-equal (scxml---path-append-simplify A B)
+                              (list (scxml-point- -2 0)
+                                    (scxml-point- 0 0)
+                                    (scxml-point- 8 6)
+                                    (scxml-point- 10 6))))))
 
 (ert-deftest scxml-geometry-path-nudge-path ()
   (let ((path-pts (list (scxml-point :x 0.0 :y 0.0)
@@ -180,7 +194,7 @@
                                        (scxml-point :x 2.0 :y 1.2)
                                        (scxml-point :x 2.0 :y 2.0)))))))
 
-(ert-deftest scxml-geometryy-pathstretch ()
+(ert-deftest scxml-geometry-path-stretch ()
   (cl-flet ((should-be-almost-equal
              (A B)
              (should

@@ -434,7 +434,6 @@ parameter.  No promises are made.
 
 Remove duplicate points.
 Remove colinear intermediary points."
-  ;; TODO: this needs to be tested with non-cardinal paths.
   ;; TODO: this implementation can probably be sped up a bit.
   (let ((rev-s-points 'nil)           ;reverse order simplified points
         (last-vec 'nil)
