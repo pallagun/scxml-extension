@@ -434,23 +434,33 @@ parameter.  No promises are made.
 
 Remove duplicate points.
 Remove colinear intermediary points."
-  ;; TODO: this implementation can probably be sped up a bit.
   (let ((rev-s-points 'nil)           ;reverse order simplified points
         (last-vec 'nil)
         (last-point 'nil))
+
+    ;; Find the first non-null path and get the first point from it.
+    ;; Use that first point to start accumulation.
+    (cl-loop for paths-remaining on n-path-pts
+             for first-path = (first paths-remaining)
+             when first-path
+             return (progn
+                      (setf last-point (first first-path)
+                            n-path-pts paths-remaining)
+                      (push last-point rev-s-points)
+                      (setcar n-path-pts (cdr first-path))))
+
     (mapc (lambda (path-pts)
             (mapc (lambda (pt)
-                    (if (null last-point)
-                        (push pt rev-s-points)
-                      (when (not (scxml-almost-equal pt last-point))
-                        (let ((cur-vec (scxml-normalized (scxml-subtract pt last-point))))
-                          (if (and (not (null last-vec))
+                    (when (not (scxml-almost-equal pt last-point))
+                      (let ((cur-vec (scxml-normalized (scxml-subtract pt last-point))))
+                        (when (and last-vec
                                    (not (scxml-almost-equal cur-vec last-vec)))
-                              (push last-point rev-s-points))
-                          (setq last-vec cur-vec))))
+                            (push last-point rev-s-points))
+                        (setq last-vec cur-vec)))
                     (setq last-point pt))
                   path-pts))
           n-path-pts)
+    ;; Push the very last point on to the output.
     (nreverse
      (if (scxml-almost-equal last-point (first rev-s-points))
                  rev-s-points
