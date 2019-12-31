@@ -7,20 +7,10 @@
 
 (defclass scxml-drawing-rect (scxml-rect scxml-drawing)
   ((name :initarg :name
-         :accessor scxml-rectangle-name
-         :initform nil
-         ;; TODO - can this name come from the state/element that's the parent of this drawing.
-         ))
-  :documentation "Represents a rectangle which can be drawn on a canvas.")
-
-(defclass scxml-drawing-noshell-rect (scxml-drawing-rect)
-  ()
-  ;; TODO - break this out to a separate file.
-  :documentation "Exactly the same as a scxml-drawing-rect, but
-the outline is never drawn.  This rectangle delegates
-responsibility for drawing its bounds to someone else (probably a
-parent).  Currently used to draw child <state> elements of a
-<parallel>")
+         :accessor scxml-name
+         :initform nil))
+  :documentation "Represents a rectangle which can be drawn on a
+canvas.  It can optionally have a name.")
 
 (cl-defmethod scxml-num-edit-idxs ((rect scxml-drawing-rect))
   "How many edit idx points are there for this ARROW"

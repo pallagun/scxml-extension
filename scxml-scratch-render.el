@@ -216,7 +216,7 @@
           divider-list)))
 (defun scxml--scratch-rect (scratch viewport rect &optional exclude-lines)
   "Place RECT (an scxml-drawing-rect) on to SCRATCH for VIEWPORT, optionally EXCLUDE-LINES."
-  (scxml---drawing-logger "scratch rendering id: %s" (scxml-rectangle-name rect))
+  (scxml---drawing-logger "scratch rendering id: %s" (scxml-name rect))
   (let* ((transformers (scxml-get-scratch-int-transformers viewport))
          (x-transformer (car transformers))
          (y-transformer (cdr transformers)))
@@ -247,7 +247,7 @@
       (scxml---scratch-label scratch
                              (1+ x-min)
                              (1- y-max)
-                             (scxml---scratch-fit-string (scxml-rectangle-name rect)
+                             (scxml---scratch-fit-string (scxml-name rect)
                                                          (- x-max x-min 2))
                              'nil))))
 (defun scxml--scratch-point-label (scratch viewport pt-label)
