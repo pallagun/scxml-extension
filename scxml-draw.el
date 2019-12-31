@@ -13,7 +13,7 @@
 
 ;;; Code:
 ;; TODO - don't require artist mode.
-(require 'artist)
+;; (require 'artist)
 
 (require 'scxml-element)
 (require 'scxml-drawable-element)
@@ -27,17 +27,6 @@
 (require 'scxml-diagram)
 (require 'scxml-scratch-render)
 
-(defvar scxml-render-mode 'scxml-scratch
-  "The mode you want to use for drawing.  Can be 'scxml-buffer-and-point or 'scxml-scratch")
-(defun scxml-toggle-render-mode ()
-  ;; TODO - remove buffer-and-point mode entirel.
-  "Toggle scxml-render-mode."
-  (interactive)
-  (setq scxml-render-mode
-        (if (eq scxml-render-mode 'scxml-buffer-and-point)
-            'scxml-scratch
-          'scxml-buffer-and-point))
-  (message "SCXML render mode set to %s" (symbol-name scxml-render-mode)))
 (defvar scxml-draw--diagram nil
   "Where the diagram is stored for the diagram buffer.")
 (make-variable-buffer-local 'scxml-draw--diagram)
@@ -209,146 +198,6 @@ Will throw if it can't move it. will not render!!"
                                              (format "<diagram>%s" source-name)
                                            "<diagram>*scxml*"))))
         buffer)))
-(cl-defmethod scxml--place-string ((character string) (pixel scxml-pixel) &optional face)
-  ;; TODO: I think this is only related to artist mode rendering... so.. move it.
-  ;; TODO - delete this entirely.
-  (when (and face (not (facep face)))
-    (error "Error scxml--place-string: face must be a valid face"))
-  (scxml-draw--goto-pixel pixel)
-  (delete-char 1)
-  (insert character)
-  (when face
-    (let ((pt (point)))
-      (put-text-property (- pt 1) pt 'face face))))
-(defun scxml--arrow-head-char (direction)
-  ;; I think this in only related to artist mode
-  ;; TODO - delete this entirely.
-  "Return an arrow string (with a single char in it) for the DIRECTION provided."
-  (cond ((eq direction 'left) "<")
-        ((eq direction 'right) ">")
-        ;; these two are backwards because coord systems flip between
-        ;; normal cartesian and image coordinates
-        ((eq direction 'up) "v")
-        ((eq direction 'down) "^")
-        ('t (error "Invalid direction for arrow head"))))
-
-;; face functions
-(defun scxml-draw--set-sline-face (artist-sline face)
-  "Set the FACE for for the given ARTIST-SLINE."
-  ;; TODO - delete this.
-  ;; todo - apparently this function is super slow?
-  ;; will be of the form  '([46 33] [50 33] [46 33 5 0 32 32 32 32 32]))
-  ;; or (first point, last point, [...firstpoint, char length, ??, ...chars replaced])
-  (let* ((start (car artist-sline))
-         (start-x (elt start 0))
-         (start-y (elt start 1))
-         (end (cadr artist-sline))
-         (end-x (elt end 0))
-         (end-y (elt end 1)))
-    (cond
-     ;; horizontal line
-     ((eq start-y end-y)
-      (let ((start-pos (scxml-draw--point-at-pixel
-                        (scxml-pixel :x (min start-x end-x) :y start-y)))
-            (end-pos (scxml-draw--point-at-pixel
-                      (scxml-pixel :x (max start-x end-x) :y end-y))))
-        (put-text-property start-pos (+ 1 end-pos) 'face face)))
-     ;; vertical line
-     ((eq start-x end-x)
-      (mapc (lambda (y)
-              (let ((pt (scxml-draw--point-at-pixel (scxml-pixel :x start-x :y y))))
-                (put-text-property pt (+ 1 pt) 'face face)))
-            (number-sequence (min start-y end-y) (max start-y end-y))))
-     ('t
-      (error "Unable to set face on a non-cardinal line")))))
-(defun scxml-draw--set-rect-face (artist-rect outline-face)
-  ;; TODO - delete this.
-  "set the face(s ?) for an artist rectangle."
-  ;; will be of the form ( [top-left xy] [bottom-rigth xy] ( (edge-sline) (edge-sline) ...))
-  (mapc (lambda (edge-sline)
-          (scxml-draw--set-sline-face edge-sline outline-face))
-        (elt artist-rect 2)))
-
-;
-;; rectangle helper
-(cl-defmethod scxml-artist-render ((rect scxml-drawing-rect) (canvas scxml-canvas))
-  "Draw this rectangle on the canvas."
-  ;; TODO - delet this outright.
-  (when (not (scxml-canvas-p canvas))
-    (error "Unable to render to an interior canvas"))
-  (let ((name (scxml-rectangle-name rect))
-        ;; (edit-idx (scxml-drawing-edit-idx rect))
-        (face (if (scxml-drawing-highlight rect)
-                  'scxml-highlight
-                'scxml-state-outline)))
-    (let* ((pixel-TL (scxml-get-pixel canvas (scxml-TL rect)))
-           (pixel-BR (scxml-get-pixel canvas (scxml-BR rect)))
-           (x-min (scxml-x pixel-TL))
-           (y-min (scxml-y pixel-TL))
-           (x-max (scxml-x pixel-BR))
-           (y-max (scxml-y pixel-BR)))
-      (when (not (scxml-drawing-noshell-rect-p rect))
-        (oset rect artist-data (artist-draw-rect x-min y-min x-max y-max))
-        (scxml-draw--set-rect-face (scxml-drawing-artist-data rect) face))
-      (when (scxml-drawing-edit-idx rect)
-        ;; draw X's on the corners, draw arrow heads at the segment midpoints
-        (scxml--place-string "X" (scxml-pixel :x x-min :y y-min) 'scxml-drawing-edit)
-        (scxml--place-string "X" (scxml-pixel :x x-min :y y-max) 'scxml-drawing-edit)
-        (scxml--place-string "X" (scxml-pixel :x x-max :y y-min) 'scxml-drawing-edit)
-        (scxml--place-string "X" (scxml-pixel :x x-max :y y-max) 'scxml-drawing-edit)
-        (let* ((pixel-centroid (scxml-get-pixel canvas (scxml-centroid rect)))
-               (x-avg (scxml-x pixel-centroid))
-               (y-avg (scxml-y pixel-centroid)))
-          (scxml--place-string (scxml--arrow-head-char 'up)
-                               (scxml-pixel :x x-avg :y y-max) 'scxml-drawing-edit)
-          (scxml--place-string (scxml--arrow-head-char 'down)
-                               (scxml-pixel :x x-avg :y y-min) 'scxml-drawing-edit)
-          (scxml--place-string (scxml--arrow-head-char 'right)
-                               (scxml-pixel :x x-max :y y-avg) 'scxml-drawing-edit)
-          (scxml--place-string (scxml--arrow-head-char 'left)
-                               (scxml-pixel :x x-min :y y-avg) 'scxml-drawing-edit)))
-      (if name
-          (progn (goto-line (+ 2 y-min))
-                 (forward-char (+ 2 x-min))
-                 (insert name)
-                 (delete-char (length name)))))))
-(cl-defmethod scxml-artist-render ((arrow scxml-arrow) (canvas scxml-canvas))
-  ;; TODO - delete this entirely.
-  "Draw this arrow on the canvas."
-  (when (not (scxml-canvas-p canvas))
-    (error "Unable to render to an interior canvas"))
-  (let* ((highlight (scxml-drawing-highlight arrow))
-         (face (if highlight 'scxml-highlight 'scxml-arrow))
-         (face-head (if highlight 'scxml-highlight 'scxml-arrow-head))
-         (artist-slines 'nil)
-         (last-pixel 'nil))
-    (mapc (lambda (pt)
-            (let ((pixel (scxml-get-pixel canvas pt)))
-              (when last-pixel
-                (let ((sline (artist-draw-sline
-                              (scxml-x last-pixel)
-                              (scxml-y last-pixel)
-                              (scxml-x pixel)
-                              (scxml-y pixel))))
-                  (push sline artist-slines)
-                  (scxml-draw--set-sline-face sline face)))
-              (setq last-pixel pixel)))
-          (scxml--full-path arrow scxml-arrow-connector-offset))
-    (oset arrow artist-data artist-slines)
-    ;; place an arrow head on there too
-    (let* ((edge (scxml-node-edge (scxml-arrow-target arrow))))
-      ;; TODO - replace with scxml--arrow-head
-      (scxml--place-string (scxml--arrow-head-char (scxml--direction-inverse edge))
-                           last-pixel
-                           face-head))
-    (when (scxml-drawing-edit-idx arrow)
-      (seq-do (lambda (pix)
-                (scxml--place-string "X"
-                                     pix
-                                     'scxml-drawing-edit))
-              (mapcar (lambda (point)
-                        (scxml-get-pixel canvas point))
-                      (scxml--full-path arrow))))))
 
 (cl-defmethod scxml---get-canvas-divisions ((rectangle scxml-rect) (num-child-nodes integer))
   "First arg is scxml-rect type to catch scxml-drawing-rect as well as scxml-drawing-null"
@@ -573,26 +422,7 @@ Will throw if it can't move it. will not render!!"
       ;; TODO - don't need both of these, use the scxml--diagram.
       (setq-local scxml-draw--diagram diagram)
       (setq-local scxml--diagram diagram)
-      (cond ((eq scxml-render-mode 'scxml-buffer-and-point)
-             ;; TODO - completely remove this drawing mode.
-             (scxml-canvas-clear canvas)
-             (scxml-visit root
-                          (lambda (e) (scxml-artist-render (scxml-element-drawing e) canvas))
-                          (lambda (e) (scxml---is-renderable-as-node e)))
-
-             ;; draw non-highlighted transitons first so they aren't obscured by other
-             ;; non-highlighted transitions
-             (scxml-visit root
-                          (lambda (e) (scxml-artist-render (scxml-element-drawing e) canvas))
-                          (lambda (e) (and (scxml-transition-p e)
-                                           (not (scxml--highlight e)))))
-             (scxml-visit root
-                          (lambda (e) (scxml-artist-render (scxml-element-drawing e) canvas))
-                          (lambda (e) (and (scxml-transition-p e)
-                                           (scxml--highlight e))))
-             )
-            ((eq scxml-render-mode 'scxml-scratch)
-             (let ((scratch (scxml--get-scratch viewport)))
+      (let ((scratch (scxml--get-scratch viewport)))
                ;; erase the buffer
                (goto-char (point-min))
                (delete-char (- (point-max) (point-min)) nil)
@@ -639,9 +469,8 @@ Will throw if it can't move it. will not render!!"
                             (lambda (e) (and (scxml-transition-p e)
                                              (scxml--highlight e))))
 
-               (scxml--scratch-write scratch)))
-            ('t
-             (error "Invalid scxml-render-mode")))
+               (scxml--scratch-write scratch))
+
       (scxml---drawing-logger "scxml-draw %.5f ms" (- (float-time) start-time))
       diagram)))
 

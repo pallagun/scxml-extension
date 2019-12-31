@@ -102,9 +102,5 @@ drawing but not the exact pixels.  Something like box-on-the-left
 instead of an exact set of pixels/segments.  It may or may not be
 relative to the parent-canvas.")
 
-(cl-defgeneric scxml-artist-render ((drawing scxml-drawing) (canvas scxml-canvas))
-  ;; TODO - this should be removed.
-  "Render DRAWING with parent to CANVAS using artist-mode functions.")
-
 (provide 'scxml-drawing)
 ;;; scxml-drawing.el ends here

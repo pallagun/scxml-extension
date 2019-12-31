@@ -201,11 +201,7 @@ FILTER."
 ;; TODO - don't make all elements drawable.  Have it
 ;; as a mixin type thing in the future.
 (defclass scxml-drawing ()
-  ((artist-data :initarg :artist-data
-                :accessor scxml-drawing-artist-data
-                ;; TODO - I don't think this is used anymore??
-                )
-   (highlight :initarg :highlight
+  ((highlight :initarg :highlight
               :accessor scxml-drawing-highlight)
    (edit-idx :initarg :edit-idx
              :accessor scxml-drawing-edit-idx
