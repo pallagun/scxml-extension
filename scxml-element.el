@@ -71,9 +71,7 @@ Generally filters out symbols that start with 'scxml---'."
                                 (format " %s" (mapconcat 'identity attribute-list " "))
                               ""))
           (start-tag-ending (if children ">" " />"))
-          ;; TODO - I don't think I need a `when children` here?
-          (children-xml (when children
-                          (mapconcat 'scxml-xml-string children "")))
+          (children-xml (mapconcat 'scxml-xml-string children ""))
           (end-tag (when children (format "</%s>" xml-name))))
       (mapconcat 'identity
                  (list start-tag
@@ -101,8 +99,14 @@ Generally filters out symbols that start with 'scxml---'."
                           (scxml-children _parent)
                           :count 1)))
     (setf _parent 'nil)))
+(cl-defgeneric scxml-add-child ((parent scxml-element) (new-child scxml-element) &optional append)
+  "Make NEW-CHILD a child element of PARENT, returning PARENT.
+
+When APPEND is non-nil NEW-CHILD will become the last child.  When APPEND is nil NEW-CHILD will become the first child.")
 (cl-defmethod scxml-add-child ((parent scxml-element) (new-child scxml-element) &optional append)
-  "Make NEW-CHILD a child element of PARENT, returning PARENT"
+  "Make NEW-CHILD a child element of PARENT, returning PARENT.
+
+When APPEND is non-nil NEW-CHILD will become the last child.  When APPEND is nil NEW-CHILD will become the first child."
   (scxml-make-orphan new-child)   ;; make sure new-child isn't connected someplace else.
   (oset new-child _parent parent)
   (if append
@@ -125,6 +129,10 @@ Generally filters out symbols that start with 'scxml---'."
 Return is unspecified."
   (scxml---ensure-attributes element)
   (maphash function (oref element attributes)))
+(cl-defgeneric scxml-put-attrib ((element scxml-element) key value)
+  "Put VALUE into ELEMENT's attributes with a name of KEY.
+
+Return is unspecified.")
 (cl-defmethod scxml-put-attrib ((element scxml-element) key value)
   "Put VALUE into ELEMENT's attributes with a name of KEY.
 

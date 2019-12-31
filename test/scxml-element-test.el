@@ -101,4 +101,18 @@
     (scxml-print transition)
     (scxml-print initial)))
 
+(ert-deftest scxml-element-xml-string ()
+  (let ((state (scxml-state :id "test-state")))
+    (should (equal (scxml-xml-string state)
+                   "<state id=\"test-state\" />"))
+    (scxml-put-attrib state 'anything "really, anything")
+    (should (equal (scxml-xml-string state)
+                   "<state id=\"test-state\" anything=\"really, anything\" />"))
+    (scxml-add-child state (scxml-state :id "child-id"))
+    (should (equal (scxml-xml-string state)
+                   "<state id=\"test-state\" anything=\"really, anything\"><state id=\"child-id\" /></state>"))))
+
+
+
+
 (provide 'scxml-element-test)
