@@ -209,16 +209,16 @@ Will throw if it can't move it. will not render!!"
     (when child-nodes
       (let ((divided-canvases (scxml---get-canvas-divisions node
                                                             (length child-nodes))))
-      ;; (cond ((scxml-parallel-p element)
-      ;;        (error "Error????"))
-      ;;       ('t                         ; scxml-state and scxml-scxml
-      ;;        (let* ((num-child-nodes (length child-nodes))
-      ;;               (num-columns (ceiling (sqrt num-child-nodes)))
-      ;;               (num-rows (ceiling (/ num-child-nodes num-columns)))
-      ;;               (divided-canvases (scxml--split-canvas (scxml--get-inner-canvas node)
-      ;;                                                      num-rows
-      ;;                                                      num-columns
-      ;;                                                      10.0
+        ;; (cond ((scxml-parallel-p element)
+        ;;        (error "Error????"))
+        ;;       ('t                         ; scxml-state and scxml-scxml
+        ;;        (let* ((num-child-nodes (length child-nodes))
+        ;;               (num-columns (ceiling (sqrt num-child-nodes)))
+        ;;               (num-rows (ceiling (/ num-child-nodes num-columns)))
+        ;;               (divided-canvases (scxml--split-canvas (scxml--get-inner-canvas node)
+        ;;                                                      num-rows
+        ;;                                                      num-columns
+        ;;                                                      10.0
         ;;                                                      4.0)))
         ;; TODO: remove this when-error check once you can trust scmxl---get-canvas-divisions.
         (cl-loop for child in child-nodes
@@ -256,8 +256,8 @@ Will throw if it can't move it. will not render!!"
                      ;; no point is set, must set it.
                      (let ((exit-vector (scxml-vector-from-direction exit-direction)))
                        (scxml-set-point target-connector (scxml-add
-                                                      (scxml-connection-point source-connector)
-                                                      (scxml-scaled exit-vector 2.0))))))))))
+                                                          (scxml-connection-point source-connector)
+                                                          (scxml-scaled exit-vector 2.0))))))))))
     (let* ((all-transitions (scxml-collect start 'scxml-transition-p))
            (need-drawings (seq-filter (lambda (transition)
                                         (or (not (scxml-element-drawing transition))
@@ -386,7 +386,7 @@ Will throw if it can't move it. will not render!!"
                                 node-time
                                 link-time
                                 (+ node-time link-time)))))
-    diagram)
+  diagram)
 (cl-defmethod scxml-draw ((diagram scxml-diagram))
   "Render a DIAGRAM in some buffer"
   (scxml-plot diagram)
@@ -397,53 +397,53 @@ Will throw if it can't move it. will not render!!"
       (setq-local scxml-draw--diagram diagram)
       (setq-local scxml--diagram diagram)
       (let ((scratch (scxml--get-scratch viewport)))
-               ;; erase the buffer
-               (goto-char (point-min))
-               (delete-char (- (point-max) (point-min)) nil)
+        ;; erase the buffer
+        (goto-char (point-min))
+        (delete-char (- (point-max) (point-min)) nil)
 
-               ;; draw states, finals, parallels
-               (scxml-visit root
-                            (lambda (e)
-                              (let ((drawing (scxml-element-drawing e)))
-                                (scxml---drawing-logger "scxml-draw element:%s\n\tdrawing: %s\n"
-                                                        (when e (scxml-print e))
-                                                        (when drawing (scxml-print drawing)))
-                                (progn
-                                  (when (object-of-class-p drawing 'scxml-drawing-divided-rect)
-                                    (scxml--scratch-dividers scratch
-                                                             viewport
-                                                             (scxml-dividers drawing)))
-                                  (scxml--scratch-rect scratch
-                                                       viewport
-                                                       drawing
-                                                       ;; if it's a noshell-rect don't draw the actual rectangle
-                                                       (scxml-drawing-noshell-rect-p drawing)))))
-                            'scxml---is-renderable-as-rect)
+        ;; draw states, finals, parallels
+        (scxml-visit root
+                     (lambda (e)
+                       (let ((drawing (scxml-element-drawing e)))
+                         (scxml---drawing-logger "scxml-draw element:%s\n\tdrawing: %s\n"
+                                                 (when e (scxml-print e))
+                                                 (when drawing (scxml-print drawing)))
+                         (progn
+                           (when (object-of-class-p drawing 'scxml-drawing-divided-rect)
+                             (scxml--scratch-dividers scratch
+                                                      viewport
+                                                      (scxml-dividers drawing)))
+                           (scxml--scratch-rect scratch
+                                                viewport
+                                                drawing
+                                                ;; if it's a noshell-rect don't draw the actual rectangle
+                                                (scxml-drawing-noshell-rect-p drawing)))))
+                     'scxml---is-renderable-as-rect)
 
-               ;; draw non-highlighted transitons first so they aren't obscured by other
-               ;; non-highlighted transitions
-               (scxml-visit root
-                            (lambda (e)
-                              (scxml--scratch-arrow scratch
-                                                    viewport
-                                                    (scxml-element-drawing e)))
-                            (lambda (e) (and (scxml-transition-p e)
-                                             (not (scxml--highlight e)))))
-               (scxml-visit root
-                            (lambda (e)
-                              (scxml--scratch-point-label scratch
-                                                          viewport
-                                                          (scxml-element-drawing e)))
-                            'scxml-initial-p)
-               (scxml-visit root
-                            (lambda (e)
-                              (scxml--scratch-arrow scratch
-                                                     viewport
-                                                     (scxml-element-drawing e)))
-                            (lambda (e) (and (scxml-transition-p e)
-                                             (scxml--highlight e))))
+        ;; draw non-highlighted transitons first so they aren't obscured by other
+        ;; non-highlighted transitions
+        (scxml-visit root
+                     (lambda (e)
+                       (scxml--scratch-arrow scratch
+                                             viewport
+                                             (scxml-element-drawing e)))
+                     (lambda (e) (and (scxml-transition-p e)
+                                      (not (scxml--highlight e)))))
+        (scxml-visit root
+                     (lambda (e)
+                       (scxml--scratch-point-label scratch
+                                                   viewport
+                                                   (scxml-element-drawing e)))
+                     'scxml-initial-p)
+        (scxml-visit root
+                     (lambda (e)
+                       (scxml--scratch-arrow scratch
+                                             viewport
+                                             (scxml-element-drawing e)))
+                     (lambda (e) (and (scxml-transition-p e)
+                                      (scxml--highlight e))))
 
-               (scxml--scratch-write scratch))
+        (scxml--scratch-write scratch))
 
       (scxml---drawing-logger "scxml-draw %.5f ms" (- (float-time) start-time))
       diagram)))
