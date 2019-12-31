@@ -17,7 +17,7 @@
              :documentation "A list of all dividers in this rect as scxml-segments.  This is really only used for rendering."))
   :abstract 't
   :documentation "Represents a rectangle which can be drawn with divisions")
-(cl-defmethod scxml--get-inner-canvas ((rect scxml-drawing-divided-rect))
+(cl-defmethod scxml-get-inner-canvas ((rect scxml-drawing-divided-rect))
   "Given a rectangle, pull an inner canvas"
   (with-slots (x-min y-min x-max y-max) rect
     (scxml-inner-canvas :x-min x-min
@@ -245,9 +245,9 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
            :type scxml---nest-stripe)))
 
 (cl-defmethod scxml-get-divisions ((divided-rect scxml-drawing-nest-rect))
-  (scxml---get-divisions divided-rect (scxml--get-inner-canvas divided-rect)))
+  (scxml---get-divisions divided-rect (scxml-get-inner-canvas divided-rect)))
 (cl-defmethod scxml---set-dividers ((divided-rect scxml-drawing-nest-rect))
-  (let ((inner-rect (scxml--get-inner-canvas divided-rect)))
+  (let ((inner-rect (scxml-get-inner-canvas divided-rect)))
     (oset divided-rect
           dividers
           (cons (scxml-top inner-rect)
@@ -357,7 +357,7 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
                (parent-drawing (when (object-of-class-p parent 'scxml-drawable-element)
                                  (scxml-element-drawing parent)))
                (parent-drawing-canvas (if parent-drawing
-                                          (scxml--get-inner-canvas parent-drawing)
+                                          (scxml-get-inner-canvas parent-drawing)
                                         canvas)))
           (when (not (scxml-inner-canvas-p parent-drawing-canvas))
             ;; welp, I'm really hoping you're _in_ a rectangle

@@ -15,7 +15,7 @@
 stable inner canvas.  Should serve as reference for other
 drawings.")
 
-(cl-defmethod scxml--get-inner-canvas ((container scxml-drawing-null))
+(cl-defmethod scxml-get-inner-canvas ((container scxml-drawing-null))
   "Return an inner-canvas of CONTAINER."
   (with-slots (x-min y-min x-max y-max) container
     (scxml-inner-canvas :x-min x-min

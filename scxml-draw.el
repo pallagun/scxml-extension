@@ -67,7 +67,7 @@ Will throw if it can't move it."
                                                       move-vector))
              (parent (scxml-parent element))
              (parent-drawing (scxml-element-drawing parent))
-             (parent-drawing-canvas (scxml--get-inner-canvas parent-drawing)))
+             (parent-drawing-canvas (scxml-get-inner-canvas parent-drawing)))
         ;; any element inside of this one must be marked as possibly invalid as well.
         (when (and
                ;; Ensure your edit didn't make you extend outside of your parent.
@@ -102,7 +102,7 @@ Will throw if it can't move it. will not render!!"
                                                    move-vector))
          (parent (scxml-parent transition))
          (parent-drawing (scxml-element-drawing parent))
-         (parent-drawing-canvas (or (scxml--get-inner-canvas parent-drawing)
+         (parent-drawing-canvas (or (scxml-get-inner-canvas parent-drawing)
                                     (scxml-inner-canvas)))) ;note - injects a totally bogus canvas when the parent is <initial>
     ;; TODO - fix the above note.
     (if edited-arrow
@@ -124,7 +124,7 @@ Will throw if it can't move it. will not render!!"
          (snapped (scxml-snap drawing))
          (parent (scxml-parent state))
          (parent-drawing (scxml-element-drawing parent))
-         (parent-drawing-canvas (scxml--get-inner-canvas parent-drawing)))
+         (parent-drawing-canvas (scxml-get-inner-canvas parent-drawing)))
     (scxml--set-drawing-invalid state 't)
     (scxml--set-hint state (scxml-build-hint snapped parent-drawing-canvas))))
 (cl-defmethod scxml--simplify-drawing-hint ((transition scxml-transition))
@@ -133,7 +133,7 @@ Will throw if it can't move it. will not render!!"
       (let* ((arrow (scxml-element-drawing transition))
              (parent (scxml-parent transition))
              (parent-drawing (scxml-element-drawing parent))
-             (parent-drawing-canvas (scxml--get-inner-canvas parent-drawing)))
+             (parent-drawing-canvas (scxml-get-inner-canvas parent-drawing)))
         (when (null arrow)
           (error "No drawing set for this transition element"))
         (let ((snapped-arrow (scxml-snap arrow t)))
@@ -179,7 +179,7 @@ Will throw if it can't move it. will not render!!"
   ;; TODO - this should probably be moved to the rect drawing file?
   (let* ((num-columns (ceiling (sqrt num-child-nodes)))
          (num-rows (ceiling (/ (float num-child-nodes) (float num-columns)))))
-    (scxml--split-canvas (scxml--get-inner-canvas rectangle)
+    (scxml--split-canvas (scxml-get-inner-canvas rectangle)
                          num-rows
                          num-columns
                          10.0
@@ -216,7 +216,7 @@ Will throw if it can't move it. will not render!!"
         ;;        (let* ((num-child-nodes (length child-nodes))
         ;;               (num-columns (ceiling (sqrt num-child-nodes)))
         ;;               (num-rows (ceiling (/ num-child-nodes num-columns)))
-        ;;               (divided-canvases (scxml--split-canvas (scxml--get-inner-canvas node)
+        ;;               (divided-canvases (scxml--split-canvas (scxml-get-inner-canvas node)
         ;;                                                      num-rows
         ;;                                                      num-columns
         ;;                                                      10.0

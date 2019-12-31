@@ -132,7 +132,7 @@ canvas.  It can optionally have a name.")
              (parent-drawing (when (object-of-class-p parent 'scxml-drawable-element)
                                (scxml-element-drawing parent)))
              (parent-drawing-canvas (if parent-drawing
-                                        (scxml--get-inner-canvas parent-drawing)
+                                        (scxml-get-inner-canvas parent-drawing)
                                       canvas)))
         (when (not (scxml-inner-canvas-p parent-drawing-canvas))
           (error "Not sure how to continue here :("))
@@ -149,12 +149,11 @@ canvas.  It can optionally have a name.")
                      :highlight highlight
                      :edit-idx edit-idx
                      :parent parent)))))))
-
 (cl-defmethod scxml-build-hint ((rect scxml-rect) (parent-canvas scxml-inner-canvas))
   "Build a hint for RECT inside of PARENT-CANVAS."
   (scxml-relative-coordinates parent-canvas rect))
 
-(cl-defmethod scxml--get-inner-canvas ((rect scxml-drawing-rect))
+(cl-defmethod scxml-get-inner-canvas ((rect scxml-drawing-rect))
   "Given a rectangle, pull an inner canvas"
   (with-slots (x-min y-min x-max y-max) rect
     (scxml-inner-canvas :x-min (+ x-min 2.0)
@@ -162,10 +161,6 @@ canvas.  It can optionally have a name.")
                         :x-max (- x-max 2.0)
                         :y-max (- y-max 3.0)
                         :drawing rect)))
-(cl-defmethod scxml--get-inner-canvas-layout ((rect scxml-drawing-rect) (num-elements integer))
-  "Given RECT which needs to have NUM-ELEMENTS drawn in it determine canvases for each element"
-  ;; TODO - delete this??
-  (error "is this even used?"))
 
 (cl-defmethod scxml-leaving-segment-collision-edge ((rect scxml-drawing-rect) (pt scxml-point))
   "If you leave centroid of RECT headed towards PT, which edge do you hit?

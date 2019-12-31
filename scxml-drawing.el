@@ -82,5 +82,11 @@ drawing but not the exact pixels.  Something like box-on-the-left
 instead of an exact set of pixels/segments.  It may or may not be
 relative to the parent-canvas.")
 
+(cl-defgeneric scxml-get-inner-canvas ((drawing scxml-drawing))
+  "Return the inner canvas of DRAWING.
+
+Drawings which have no inner space will return nil here."
+  nil)
+
 (provide 'scxml-drawing)
 ;;; scxml-drawing.el ends here

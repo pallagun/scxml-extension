@@ -56,7 +56,7 @@
              (parent-drawing (when (object-of-class-p parent 'scxml-drawable-element)
                                (scxml-element-drawing parent)))
              (parent-drawing-canvas (if parent-drawing
-                                        (scxml--get-inner-canvas parent-drawing)
+                                        (scxml-get-inner-canvas parent-drawing)
                                       canvas)))
         (when (not (scxml-inner-canvas-p parent-drawing-canvas))
           (error "Not sure how to continue here :("))
@@ -71,7 +71,7 @@
 (cl-defmethod scxml-build-hint ((pt scxml-point) (parent-canvas scxml-inner-canvas))
   "Build a hint for PT inside of PARENT-CANVAS."
   (scxml-relative-coordinates parent-canvas pt))
-(cl-defmethod scxml--get-inner-canvas ((pt scxml-drawing-point))
+(cl-defmethod scxml-get-inner-canvas ((pt scxml-drawing-point))
   "It's a point, there's no space inside it."
   nil)
 (cl-defmethod scxml-leaving-segment-collision-edge ((source scxml-drawing-point) (dest scxml-point))
