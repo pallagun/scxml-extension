@@ -5,9 +5,8 @@
 
 ;;; Code:
 
-;; The scxml-element us used as the base class for any
-;; <element with="attributes">or children</element> in a
-;; valid <scxml> document.
+;; The scxml-element is used as the base class for any <element
+;; with="attributes">or child</element> in a valid <scxml> document.
 (defclass scxml-element ()
   ((attributes :initarg :attributes
                :accessor scxml-element-attributes
@@ -278,8 +277,7 @@ below SEARCH-ROOT"
             :initform nil
             :type (or string null)))
   :abstract t
-  ;; TODO - initial child? or initial attribute??
-  :documentation "Apply to an scxml element if it's capable of holding an 'initial' child")
+  :documentation "Apply to an scxml element if it's capable of holding an 'initial' xml attribute.")
 
 (defclass scxml-scxml (scxml-drawable-element scxml-element-with-initial)
   ((name :initarg :name
@@ -343,8 +341,9 @@ Recognized attributes: id, initial")
 (defclass scxml-final (scxml-state-type)
   ()
   :documentation "Scxml <final> element.
-Recognized attributes: id"
-  ;; TODO: <final> can't have children other than <onentry>, <onexit> or <donedata>
+Recognized attributes: id
+Children:
+  <onentry>, <onexit>, <donedata>"
   )
 (cl-defmethod scxml-xml-attributes ((element scxml-final))
   "attributes: id"
@@ -373,7 +372,7 @@ Child <transition> element may not have 'cond' or 'event' attributes and must be
 
 (defclass scxml-parallel (scxml-drawable-element scxml-element-with-id)
   ()
-  ;; TODO - should this inherit from scxml-state-type??
+  ;; TODO - should this inherit from scxml-state-type - yes, probably.
   :documentation "Scxml <parallel> element.
 Recognized attributes: id
 No attrubtes required.
@@ -394,7 +393,7 @@ Children:
 
 (defclass scxml-transition (scxml-drawable-element)
   ((target :initarg :target
-           :accessor scxml-transition-target
+           :accessor scxml-target-id
            :type string
            :documentation "This is actually the target ID value from scxml, not the target scxml-element"))
   :documentation "Scxml <transition> element.
@@ -406,39 +405,24 @@ Children must be executable content.")
 (cl-defmethod scxml-print ((transition scxml-transition))
   "Spit out a string representing ELEMENT for human eyeballs"
   (format "transition(targetId:%s, %s)"
-          (scxml-transition-target transition)
+          (scxml-target-id transition)
           (cl-call-next-method)))
 (cl-defmethod scxml-xml-attributes ((element scxml-transition))
   "attributes: target"
-  (append (list (cons 'target (scxml-transition-target element)))
+  (append (list (cons 'target (scxml-target-id element)))
           (cl-call-next-method)))
 
-;; TODO - should this be renamed to scxml-has-transition-to?
-(cl-defmethod scxml-state-has-transition-to? ((final scxml-final) (other-state-or-state-id t))
-  "Does this <final> state have a transition to OTHER-STATE-OR-STATE-id?
-
-No it doesn't.  By definition this must always return nil"
-  nil)
-(cl-defmethod scxml-state-has-transition-to? ((state scxml-state) (other-state-or-state-id t))
-  "If this state has a transition to OTHER-STATE-OR-STATE-ID, of so return, else 'nil"
-  (let ((test-id (if (scxml-state-p other-state-or-state-id)
-                     (scxml-element-id other-state-or-state-id)
-                   other-state-or-state-id)))
-    (seq-filter (lambda (element)
-                  (and (scxml-transition-p element)
-                       (equal (scxml-transition-target element) test-id)))
-                (scxml-children state))))
-(cl-defmethod scxml-get-all-transitions-to ((state scxml-state-type))
+(cl-defmethod scxml-get-all-transitions-to ((element scxml-state-type))
   "Collect all transition elements which target STATE"
-  (let ((target-id (scxml-element-id state)))
-    (scxml-collect (scxml-root-element state)
-                   (lambda (element)
-                     (and (scxml-transition-p element)
-                          (equal target-id (scxml-transition-target element)))))))
+  (let ((target-id (scxml-element-id element)))
+    (scxml-collect (scxml-root-element element)
+                   (lambda (other)
+                     (and (scxml-transition-p other)
+                          (equal target-id (scxml-target-id other)))))))
 (cl-defmethod scxml-target ((transition scxml-transition))
   "Return the target element for TRANSITIONs target."
   (scxml-element-find-by-id (scxml-root-element transition)
-                            (scxml-transition-target transition)))
+                            (scxml-target-id transition)))
 (cl-defmethod scxml-source ((transition scxml-transition))
   "Return the source element for TRANSITION."
   (scxml-parent transition))

@@ -66,7 +66,7 @@
       (scxml-visit my-scxml
                    (lambda (element)
                      (should (scxml-transition-p element))
-                     (push (scxml-transition-target element) targets)
+                     (push (scxml-target-id element) targets)
                      (incf count))
                    'scxml-transition-p)
       (should (eql (length targets) 2))
