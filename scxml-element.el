@@ -22,14 +22,15 @@
 
 (cl-defgeneric scxml-print ((element scxml-element))
   "Return a string representing ELEMENT for human eyes"
-  (format "parent:%s children:%s attributes:[%s]"
-          (scxml-parent element)
-          (scxml-num-children element)
-          (let ((hash (scxml-element-attributes element)))
-            (when hash
-              (let ((parts 'nil))
-                (maphash (lambda (k v) (push (format "%s=%.10s" k v) parts)) hash)
-                (mapconcat 'identity parts ", "))))))
+  (with-slots (_parent) element
+    (format "parent:%s children:%s attributes:[%s]"
+            (and _parent (scxml-xml-element-name _parent))
+            (scxml-num-children element)
+            (let ((hash (scxml-element-attributes element)))
+              (when hash
+                (let ((parts 'nil))
+                  (maphash (lambda (k v) (push (format "%s=%.10s" k v) parts)) hash)
+                  (mapconcat 'identity parts ", ")))))))
 (cl-defmethod cl-print-object ((object scxml-element) stream)
   "Pretty print the OBJECT to STREAM."
   (princ (scxml-print object) stream))
