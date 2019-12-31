@@ -12,9 +12,6 @@
 ;;   render
 
 ;;; Code:
-;; TODO - don't require artist mode.
-;; (require 'artist)
-
 (require 'scxml-element)
 (require 'scxml-drawable-element)
 (require 'scxml-geometry)
@@ -34,29 +31,6 @@
 (defvar scxml-draw--buffer-name "*scxml-diagram*"
   ;; TODO - I don't think this is used anymore.
   "Buffer name for scxml drawing.")
-
-;; TODO - I don't think these faces are used anymore?
-;; If they are they should be moved out to scratch-render
-(defface scxml-highlight
-  '((t :foreground "yellow"))
-  "scxml highlight color."
-  :group 'scxml-faces)
-(defface scxml-drawing-edit
-  '((t :foreground "light green"))
-  "scxml drawing edit point/feature face"
-  :group 'scxml-faces)
-(defface scxml-state-outline
-  '((t :foreground "red"))
-  "scxml-state outlines default."
-  :group 'scxml-faces)
-(defface scxml-arrow
-  '((t :foreground "blue"))
-  "it's the face for scxml-arrows?"
-  :group 'scxml-faces)
-(defface scxml-arrow-head
-  '((t :foreground "light blue"))
-  "it's the face for the arrowhhead of an scxml arrow"
-  :group 'scxml-faces)
 
 (defun scxml---is-renderable-as-node (element)
   "Return non-nil if ELEMENT can be rendered as a node (non-transition)"

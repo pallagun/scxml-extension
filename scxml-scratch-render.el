@@ -8,9 +8,31 @@
 ;;  - and i'll even let you use floats as scratch coordinates
 ;;    cause I'm gonna round 'em for you.
 
+;;; Code:
+
 (require 'scxml-geometry)
 
-;;; Code:
+(defface scxml-highlight
+  '((t :foreground "yellow"))
+  "scxml highlight color."
+  :group 'scxml-faces)
+(defface scxml-drawing-edit
+  '((t :foreground "light green"))
+  "scxml drawing edit point/feature face"
+  :group 'scxml-faces)
+(defface scxml-state-outline
+  '((t :foreground "red"))
+  "scxml-state outlines default."
+  :group 'scxml-faces)
+(defface scxml-arrow
+  '((t :foreground "blue"))
+  "it's the face for scxml-arrows?"
+  :group 'scxml-faces)
+(defface scxml-arrow-head
+  '((t :foreground "light blue"))
+  "it's the face for the arrowhhead of an scxml arrow"
+  :group 'scxml-faces)
+
 (defconst scxml---vertical (get-byte 0 "|"))
 (defconst scxml---horizontal (get-byte 0 "-"))
 (defconst scxml---cross (get-byte 0 "+"))
