@@ -49,7 +49,7 @@
       (scxml-visit my-scxml
                    (lambda (element)
                      (incf count)
-                     (let ((id (and (object-of-class-p element 'scxml-idable-attribute)
+                     (let ((id (and (object-of-class-p element 'scxml-element-with-id)
                                     (scxml-element-id element))))
                        (when id
                          (push id id-list)))))
@@ -78,7 +78,7 @@
       (scxml-visit state-a
                    (lambda (element)
                      (incf count)
-                     (let ((id (and (object-of-class-p element 'scxml-idable-attribute)
+                     (let ((id (and (object-of-class-p element 'scxml-element-with-id)
                                     (scxml-element-id element))))
                        (when id
                          (push id id-list)))))

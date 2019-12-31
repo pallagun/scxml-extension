@@ -188,25 +188,6 @@ FILTER."
                   (return-from scxml-find-parent A-element)))
               A-parents)))))
 
-(cl-defmethod scxml-element-find-by-id ((search-root scxml-element) (id-to-find string))
-  "Find element with ID-TO-FIND starting at SEARCH-ROOT and going down.
-
-Function will not traverse the whole tree, only the portion at or
-below SEARCH-ROOT"
-  ;; TODO - this implementation might not be the best.
-  (if (and (object-of-class-p search-root 'scxml-idable-attribute)
-           (string-equal (scxml-element-id search-root) id-to-find))
-      search-root
-    (let ((children (scxml-children search-root)))
-      (if children
-          (cl-reduce (lambda (accumulator child)
-                    (if accumulator accumulator
-                      (scxml-element-find-by-id child id-to-find)))
-                  children
-                  :initial-value 'nil)
-        'nil))))
-
-
 ;; not actually an element, but needs to be here
 ;; for code structure sanity reasons.
 ;; TODO - don't make all elements drawable.  Have it
@@ -258,18 +239,34 @@ Push in the drawing hint attribute."
                  (scxml-get-attrib element scxml---hint-symbol nil)))
           (cl-call-next-method)))
 
-;; TODO - this is a very bad name, alter it.
-(defclass scxml-idable-attribute ()
+(defclass scxml-element-with-id ()
   ((id :initarg :id
        :accessor scxml-element-id
        :initform nil
        :type (or string null)))
   :abstract t
   :documentation "Apply to an scxml element if it's capable of holding an 'id' child")
-(cl-defmethod scxml-print ((idable-element scxml-idable-attribute))
+(cl-defmethod scxml-print ((idable-element scxml-element-with-id))
   (format "id:%s, %s"
           (scxml-element-id idable-element)
           (cl-call-next-method)))
+(cl-defmethod scxml-element-find-by-id ((search-root scxml-element) (id-to-find string))
+  "Find element with ID-TO-FIND starting at SEARCH-ROOT and going down.
+
+Function will not traverse the whole tree, only the portion at or
+below SEARCH-ROOT"
+  ;; TODO - this implementation might not be the best.
+  (if (and (object-of-class-p search-root 'scxml-element-with-id)
+           (string-equal (scxml-element-id search-root) id-to-find))
+      search-root
+    (let ((children (scxml-children search-root)))
+      (if children
+          (cl-reduce (lambda (accumulator child)
+                    (if accumulator accumulator
+                      (scxml-element-find-by-id child id-to-find)))
+                  children
+                  :initial-value 'nil)
+        'nil))))
 
 ;; TODO - this is a very bad name, alter it.
 (defclass scxml-initialable-attribute ()
@@ -316,7 +313,7 @@ Only doing xmlnns and version here."
     (append attributes
             (cl-call-next-method))))
 
-(defclass scxml-state-type (scxml-drawable-element scxml-idable-attribute)
+(defclass scxml-state-type (scxml-drawable-element scxml-element-with-id)
   ()
   :abstract t
   :documentation "Abstract parent class for <state> and <final>, both of which are state-ish")
@@ -371,7 +368,7 @@ Child <transition> element may not have 'cond' or 'event' attributes and must be
   (let ((element (scxml-initial)))
     (scxml---append-extra-properties element attrib-alist)))
 
-(defclass scxml-parallel (scxml-drawable-element scxml-idable-attribute)
+(defclass scxml-parallel (scxml-drawable-element scxml-element-with-id)
   ()
   ;; TODO - should this inherit from scxml-state-type??
   :documentation "Scxml <parallel> element.
