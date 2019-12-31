@@ -352,8 +352,11 @@ That should be sorted out before calling this."
 (cl-defmethod scxml-coarse-direction ((segment scxml-segment))
   (scxml-coarse-direction (scxml-characteristic-vector segment)))
 (cl-defmethod scxml-get-parametric ((segment scxml-segment) (pt scxml-point) &optional distance-tolerance)
-  ;; todo - should this be a relative/global coordinate thing? I think it should...
-  "Get the parametric coordinate of this point along the segment."
+  "Get the parametric coordinate of this point along the segment.
+
+Note: this is similar to scxml-relative-coordinate but as it
+could return a nil value it's differentiated with the
+-get-parametric name."
   (with-slots (start) segment
     (let* ((seg-start-to-pt (scxml-subtract pt start))
            (char-vec (scxml-characteristic-vector segment))
