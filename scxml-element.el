@@ -268,8 +268,7 @@ below SEARCH-ROOT"
                   :initial-value 'nil)
         'nil))))
 
-;; TODO - this is a very bad name, alter it.
-(defclass scxml-initialable-attribute ()
+(defclass scxml-element-with-initial ()
   ((initial :initarg :initial
             :accessor scxml-element-initial
             :initform nil
@@ -278,7 +277,7 @@ below SEARCH-ROOT"
   ;; TODO - initial child? or initial attribute??
   :documentation "Apply to an scxml element if it's capable of holding an 'initial' child")
 
-(defclass scxml-scxml (scxml-drawable-element scxml-initialable-attribute)
+(defclass scxml-scxml (scxml-drawable-element scxml-element-with-initial)
   ((name :initarg :name
          :accessor scxml-name
          :type (or string null)
@@ -318,7 +317,7 @@ Only doing xmlnns and version here."
   :abstract t
   :documentation "Abstract parent class for <state> and <final>, both of which are state-ish")
 
-(defclass scxml-state (scxml-state-type scxml-initialable-attribute)
+(defclass scxml-state (scxml-state-type scxml-element-with-initial)
   ()
   :documentation "Scxml <state> element.
 Recognized attributes: id, initial")
