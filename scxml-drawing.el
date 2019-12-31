@@ -23,26 +23,6 @@
   (when scxml---debug-drawing
     (apply 'message (cons format-string message-args))))
 
-;; possibly useful in the future for an scxml-scxml?
-;; TODO - this should be broken out into a separate file.
-(defclass scxml-drawing-null (scxml-drawing scxml-rect)
-  ()
-  :documentation "A drawing that can not be drawn but has a
-  stable inner canvas.  Should serve as the home for other
-  drawings.")
-(cl-defmethod scxml--get-inner-canvas ((container scxml-drawing-null))
-  (with-slots (x-min y-min x-max y-max) container
-    (scxml-inner-canvas :x-min x-min
-                        :y-min y-min
-                        :x-max x-max
-                        :y-max y-max
-                        :drawing container)))
-(cl-defmethod scxml-build-drawing ((root scxml-scxml) (canvas scxml-canvas))
-  (scxml-drawing-null  :x-min (scxml-x-min canvas)
-                       :y-min (scxml-y-min canvas)
-                       :x-max (scxml-x-max canvas)
-                       :y-max (scxml-y-max canvas)
-                       :parent root))
 (cl-defgeneric scxml-num-edit-idxs ((drawing scxml-drawing))
   "How many edit idx points are there for this DRAWING.
 

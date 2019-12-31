@@ -195,10 +195,10 @@ FILTER."
                   (return-from scxml-find-parent A-element)))
               A-parents)))))
 
-;; not actually an element, but needs to be here
-;; for code structure sanity reasons.
-;; TODO - don't make all elements drawable.  Have it
-;; as a mixin type thing in the future.
+;; This is not actually an element, but needs to be here for code
+;; structure sanity reasons.
+;; TODO - don't make all elements drawable.
+;; Have it as a mixin type thing in the future.
 (defclass scxml-drawing ()
   ((highlight :initarg :highlight
               :accessor scxml-drawing-highlight)

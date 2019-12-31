@@ -16,6 +16,7 @@
 (require 'scxml-drawable-element)
 (require 'scxml-geometry)
 (require 'scxml-canvas)
+(require 'scxml-drawing-null)
 (require 'scxml-drawing-rect)
 (require 'scxml-drawing-arrow)
 (require 'scxml-drawing-noshell-rect)
