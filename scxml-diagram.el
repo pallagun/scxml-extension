@@ -29,7 +29,7 @@
              :documentation "The viewport to the canvas for this diagram")
    (root :initarg :root
          :accessor scxml-diagram-root
-         :type scxml-scxml
+         :type scxml-drawable-scxml
          :documentation "Root of the document containing the display-element")
    (buffer :initarg :buffer
            :accessor scxml-buffer
@@ -74,8 +74,8 @@ search-parent."
                          (scxml-has-intersection selection-rect drawing 'stacked))
                 (return-from scxml---find-selection
                   (scxml---find-other selection-rect child)))))
-          (seq-filter (lambda (element) (and (not (scxml-transition-p element))
-                                             (not (scxml-initial-p element))))
+          (seq-filter (lambda (element) (and (not (object-of-class-p element 'scxml-transition))
+                                             (not (object-of-class-p element 'scxml-initial))))
                       (scxml-children search-parent)))
     search-parent))
 (defun scxml---find-transition (selection-rect search-parent)
@@ -102,8 +102,9 @@ nil."
                    (let ((drawing (scxml-element-drawing element)))
                      (when (and drawing
                                 (scxml-has-intersection selection-rect drawing 'stacked)
-                       (return-from scxml---find-selection element)))))
-                 'scxml-initial-p)
+                                (return-from scxml---find-selection element)))))
+                 (lambda (element)
+                   (object-of-class-p element 'scxml-initial)))
     nil))
 
 (cl-defmethod scxml-link-xml-buffer ((diagram scxml-diagram))

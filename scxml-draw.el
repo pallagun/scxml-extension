@@ -36,11 +36,11 @@
 (defun scxml---is-renderable-as-node (element)
   "Return non-nil if ELEMENT can be rendered as a node (non-transition)"
   (or (scxml---is-renderable-as-rect element)
-      (scxml-initial-p element)))
+      (object-of-class-p element 'scxml-initial)))
 (defun scxml---is-renderable-as-rect (element)
   "Return non-nil if ELEMENT can be rendered as a rectangle (state, parallel, final)."
   (or (object-of-class-p element 'scxml-state-type)
-      (scxml-parallel-p element)))
+      (object-of-class-p element 'scxml-parallel)))
 
 ;; enhancements to scxml-element& friends to support drawing
 (cl-defgeneric scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector scxml-point))
@@ -198,7 +198,8 @@ Will throw if it can't move it. will not render!!"
 
 (cl-defmethod scxml--plot-node ((element scxml-drawable-element) (canvas scxml-canvas))
   "Plot rectangular elements (and any child elements), phase 1 of plotting."
-  (when (not (or (scxml---is-renderable-as-node element) (scxml-scxml-p element)))
+  (when (not (or (scxml---is-renderable-as-node element)
+                 (object-of-class-p element 'scxml-scxml)))
     (error "Wat?  shouldn't be calling this with thtat")) ;TODO - remove this check at some point?
   (scxml---drawing-logger "scxml--plot-node: type:%s"
                           (scxml-xml-element-name element))
@@ -259,7 +260,7 @@ Will throw if it can't move it. will not render!!"
                        (scxml-set-point target-connector (scxml-add
                                                           (scxml-connection-point source-connector)
                                                           (scxml-scaled exit-vector 2.0))))))))))
-    (let* ((all-transitions (scxml-collect start 'scxml-transition-p))
+    (let* ((all-transitions (scxml-collect start (lambda (e) (object-of-class-p e 'scxml-transition))))
            (need-drawings (seq-filter (lambda (transition)
                                         (or (not (scxml-element-drawing transition))
                                             (scxml--drawing-invalid? transition)))
@@ -428,20 +429,20 @@ Will throw if it can't move it. will not render!!"
                        (scxml--scratch-arrow scratch
                                              viewport
                                              (scxml-element-drawing e)))
-                     (lambda (e) (and (scxml-transition-p e)
+                     (lambda (e) (and (object-of-class-p e 'scxml-transition)
                                       (not (scxml--highlight e)))))
         (scxml-visit root
                      (lambda (e)
                        (scxml--scratch-point-label scratch
                                                    viewport
                                                    (scxml-element-drawing e)))
-                     'scxml-initial-p)
+                     (lambda (e) (object-of-class-p e 'scxml-initial)))
         (scxml-visit root
                      (lambda (e)
                        (scxml--scratch-arrow scratch
                                              viewport
                                              (scxml-element-drawing e)))
-                     (lambda (e) (and (scxml-transition-p e)
+                     (lambda (e) (and (object-of-class-p e 'scxml-transition)
                                       (scxml--highlight e))))
 
         (scxml--scratch-write scratch))

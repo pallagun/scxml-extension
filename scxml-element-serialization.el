@@ -14,6 +14,8 @@
 (defun scxml---append-extra-properties (element &optional attrib-alist exclude-list)
   "Add attributes from ATTRIB-ALIST to ELEMENT as attributes, excluding EXCLUDE-LIST."
   ;; TODO - fix this, this is a parent-knowing-about-children situation.
+  ;; TODO - I think this can be done entirely with reflection when/if all the attributes
+  ;;        that are important to a specific class are noted somehow.
   (when (object-of-class-p element 'scxml-drawable-element)
     (scxml--set-hint-from-attrib-list element attrib-alist))
 

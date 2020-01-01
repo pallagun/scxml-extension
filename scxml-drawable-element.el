@@ -63,7 +63,7 @@ transition to shuffle connector points."
                        (lambda (other-transition)
                          (scxml--set-drawing-invalid other-transition 't 't))
                        (lambda (element)
-                         (and (scxml-transition-p element)
+                         (and (object-of-class-p element 'scxml-transition)
                               (or (member (scxml-source element)
                                           touched-states)
                                   (member (scxml-target element)

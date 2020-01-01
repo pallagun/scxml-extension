@@ -18,7 +18,6 @@
    (_parent :initform nil
             :type (or null scxml-element)))
   :abstract 't)
-
 (cl-defgeneric scxml-print ((element scxml-element))
   "Return a string representing ELEMENT for human eyes"
   (with-slots (_parent) element
@@ -242,7 +241,6 @@ FILTER."
   (format "hasDrawing:%s, %s"
           (and (scxml-element-drawing element) t)
           (cl-call-next-method)))
-
 (cl-defmethod scxml-xml-attributes ((element scxml-drawable-element))
   "Return an xml attribute alist for ELEMENT.
 
@@ -251,8 +249,13 @@ Push in the drawing hint attribute."
            (cons scxml---hint-symbol
                  (scxml-get-attrib element scxml---hint-symbol nil)))
           (cl-call-next-method)))
+(defclass scxml-element-attribute ()
+  ()
+  :abstract t
+  :documentation "Indicates that this is an add in class for a
+  specific attribute of import to an scxml-element")
 
-(defclass scxml-element-with-id ()
+(defclass scxml-element-with-id (scxml-element-attribute)
   ((id :initarg :id
        :accessor scxml-element-id
        :initform nil
@@ -278,33 +281,39 @@ below SEARCH-ROOT")
                  (lambda (element)
                    (object-of-class-p element 'scxml-element-with-id)))))
 
-(defclass scxml-element-with-initial ()
+(defclass scxml-element-with-initial (scxml-element-attribute)
   ((initial :initarg :initial
             :accessor scxml-element-initial
             :initform nil
             :type (or string null)))
   :abstract t
   :documentation "Apply to an scxml element if it's capable of holding an 'initial' xml attribute.")
-
-(defclass scxml-scxml (scxml-drawable-element scxml-element-with-initial)
+(defclass scxml-element-with-name (scxml-element-attribute)
   ((name :initarg :name
-         :accessor scxml-name
-         :type (or string null)
-         :initform nil))
+         :accessor scxml-element-name
+         :initform nil
+         :type (or string null)))
+  :abstract t
+  :documentation "Apply to an scxml element if it's capable of holding a 'name' xml attribute.")
+
+(defclass scxml-scxml (scxml-element scxml-element-with-initial scxml-element-with-name)
+  ()
   :documentation "The main <scxml /> element.
 
 Recognized attributes: initial, name, xmlns, version, datamodel,
 binding")
+(defclass scxml-drawable-scxml (scxml-scxml scxml-drawable-element)
+  ())
 (cl-defmethod scxml-print ((scxml scxml-scxml))
   "Pretty print SCXML for human eyeballs."
   (format "scxml(name:%s, %s)"
-          (scxml-name scxml)
+          (scxml-element-name scxml)
           (cl-call-next-method)))
 (defun scxml---scxml-factory (attrib-alist)
   "Build an scxml-scxml element from the ATTRIBUTES alist."
   (let ((default-attribs (list (cons 'xmlns "http://www.w3.org/2005/07/scxml")
                                (cons 'version "1.0")))
-        (element (scxml-scxml :initial (alist-get 'initial attrib-alist))))
+        (element (scxml-drawable-scxml :initial (alist-get 'initial attrib-alist))))
     (mapc (lambda (attrib)
             (unless (assoc (car attrib) attrib-alist)
               (push attrib attrib-alist)))
@@ -321,7 +330,7 @@ Only doing xmlnns and version here."
     (append attributes
             (cl-call-next-method))))
 
-(defclass scxml-state-type (scxml-drawable-element scxml-element-with-id)
+(defclass scxml-state-type (scxml-element scxml-element-with-id)
   ()
   :abstract t
   :documentation "Abstract parent class for <state> and <final>, both of which are state-ish")
@@ -330,6 +339,8 @@ Only doing xmlnns and version here."
   ()
   :documentation "Scxml <state> element.
 Recognized attributes: id, initial")
+(defclass scxml-drawable-state (scxml-state scxml-drawable-element)
+  ())
 (cl-defmethod scxml-print ((state scxml-state))
   "Spit out a string representing ELEMENT for human eyeballs"
   (format "state(%s)" (cl-call-next-method)))
@@ -341,7 +352,7 @@ Recognized attributes: id, initial")
    (cl-call-next-method)))
 (defun scxml---state-factory (attrib-alist)
   "Build an scxml-state element from the ATTRIBUTES alist."
-  (let ((element (scxml-state :id (alist-get 'id attrib-alist)
+  (let ((element (scxml-drawable-state :id (alist-get 'id attrib-alist)
                               :initial (alist-get 'initial attrib-alist))))
     (scxml---append-extra-properties element attrib-alist '(id initial))))
 
@@ -352,6 +363,8 @@ Recognized attributes: id
 Children:
   <onentry>, <onexit>, <donedata>"
   )
+(defclass scxml-drawable-final (scxml-final scxml-drawable-element)
+  ())
 (cl-defmethod scxml-xml-attributes ((element scxml-final))
   "attributes: id"
   (append
@@ -359,25 +372,27 @@ Children:
    (cl-call-next-method)))
 (defun scxml---final-factory (attrib-alist)
   "Build an scxml-final element from the ATTRIBUTES alist."
-  (let ((element (scxml-final :id (alist-get 'id attrib-alist))))
+  (let ((element (scxml-drawable-final :id (alist-get 'id attrib-alist))))
     (scxml---append-extra-properties element attrib-alist '(id))))
 
-(defclass scxml-initial (scxml-drawable-element)
+(defclass scxml-initial (scxml-element)
   ()
   :documentation "Scxml <initial> element.
 No attributes required.
 No attributes recognized.
 Must contain a single child <transition> element indicating initial state.
 Child <transition> element may not have 'cond' or 'event' attributes and must be a valid state.")
+(defclass scxml-drawable-initial (scxml-initial scxml-drawable-element)
+  ())
 (cl-defmethod scxml-print ((initial scxml-initial))
   "Spit out a string representing ELEMENT for human eyeballs"
   (format "initial(%s)" (cl-call-next-method)))
 (defun scxml---initial-factory (&optional attrib-alist)
   "Build an scxml-initial element from the ATTRIBUTES alist."
-  (let ((element (scxml-initial)))
+  (let ((element (scxml-drawable-initial)))
     (scxml---append-extra-properties element attrib-alist)))
 
-(defclass scxml-parallel (scxml-drawable-element scxml-element-with-id)
+(defclass scxml-parallel (scxml-element scxml-element-with-id)
   ()
   ;; TODO - should this inherit from scxml-state-type - yes, probably.
   :documentation "Scxml <parallel> element.
@@ -385,6 +400,8 @@ Recognized attributes: id
 No attrubtes required.
 Children:
   <onentry>, <onexit>, <transition>, <start>, <parallel>, <history>, <datamodel>, <invoke>")
+(defclass scxml-drawable-parallel (scxml-parallel scxml-drawable-element)
+  ())
 (cl-defmethod scxml-print ((parallel scxml-parallel))
   "Spit out a string representing ELEMENT for human eyeballs"
   (format "parallel(%s)" (cl-call-next-method)))
@@ -395,10 +412,10 @@ Children:
    (cl-call-next-method)))
 (defun scxml---parallel-factory (attrib-alist)
   "Build an scxml-parallel element from the ATTRIBUTES alist."
-  (let ((element (scxml-parallel :id (alist-get 'id attrib-alist))))
+  (let ((element (scxml-drawable-parallel :id (alist-get 'id attrib-alist))))
     (scxml---append-extra-properties element attrib-alist '(id initial))))
 
-(defclass scxml-transition (scxml-drawable-element)
+(defclass scxml-transition (scxml-element)
   ((target :initarg :target
            :accessor scxml-target-id
            :type string
@@ -409,6 +426,8 @@ No attributes are required.
 Recognized attributes: event, cond, target, type
   (note: one of 'event', 'cond' or 'target' must be present)
 Children must be executable content.")
+(defclass scxml-drawable-transition (scxml-transition scxml-drawable-element)
+  ())
 (cl-defmethod scxml-print ((transition scxml-transition))
   "Spit out a string representing ELEMENT for human eyeballs"
   (format "transition(targetId:%s, %s)"
@@ -424,7 +443,7 @@ Children must be executable content.")
   (let ((target-id (scxml-element-id element)))
     (scxml-collect (scxml-root-element element)
                    (lambda (other)
-                     (and (scxml-transition-p other)
+                     (and (object-of-class-p other 'scxml-transition)
                           (equal target-id (scxml-target-id other)))))))
 (cl-defmethod scxml-target ((transition scxml-transition))
   "Return the target element for TRANSITIONs target."
@@ -435,7 +454,7 @@ Children must be executable content.")
   (scxml-parent transition))
 (defun scxml---transition-factory (attrib-alist)
   "Build an scxml-transitione element from the ATTRIBUTES alist."
-  (let ((element (scxml-transition :target (alist-get 'target attrib-alist))))
+  (let ((element (scxml-drawable-transition :target (alist-get 'target attrib-alist))))
     (scxml---append-extra-properties element attrib-alist '(target))))
 
 (defclass scxml-onentry ()

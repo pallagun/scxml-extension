@@ -115,8 +115,9 @@ elements.")
 (defun scxml-do-new (name)
   "Make a brand new drawing of an empty <scxml> with NAME."
   (interactive "s<scxml> name: ")
-  (let* ((root-element (if name (scxml-scxml :name name)
-                         (scxml-scxml)))
+  ;; TODO - I don't think I need the IF on the line below.
+  (let* ((root-element (if name (scxml-drawable-scxml :name name)
+                         (scxml-drawable-scxml)))
          (canvas (scxml-canvas :x-min 0.0 :x-max 5.0
                                :y-min 0.0 :y-max 5.0));; (scxml-canvas--default));
          (viewport (scxml-build-viewport canvas))
@@ -137,7 +138,7 @@ elements.")
   (let ((buffer (or drawing-buffer
                     (scxml-draw--get-buffer (format "%s" (current-buffer)))))
         (root-element (scxml-read-buffer)))
-    (unless (scxml-scxml-p root-element)
+    (unless (object-of-class-p root-element 'scxml-scxml)
       (error "Unable to parse buffer as <scxml>"))
     (let* ((canvas (or canvas (scxml-canvas--default)))
            (viewport (scxml-build-viewport canvas)))
@@ -161,7 +162,7 @@ elements.")
   (let ((buffer (or drawing-buffer (scxml-draw--get-buffer (format "%s"
                                                                    xml-buffer))))
         (root-element (scxml-read-buffer)))
-    (unless (scxml-scxml-p root-element)
+    (unless (object-of-class-p root-element 'scxml-scxml)
       (error "Unable to parse buffer as <scxml>"))
     (split-window-right)
     (let* ((canvas (or canvas (scxml-canvas--default)))
@@ -671,7 +672,7 @@ the user is attempting to mark an edit idx."
   (interactive "sNew <state> id: ")
   (let ((parent (or scxml-diagram-mode--marked-element
                     (scxml-diagram-mode--display-element))))
-    (scxml-add-child parent (scxml-state :id id) t)
+    (scxml-add-child parent (scxml-drawable-state :id id) t)
     (scxml-visit parent
                  (lambda (child)
                    (scxml--set-hint child nil)
@@ -694,7 +695,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
   (let ((parent scxml-diagram-mode--marked-element))
     ;; TODO - this seems unsafe, validate that the target can be the
     ;; the target of a transition
-    (scxml-add-child parent (scxml-transition :target (scxml-element-id target)))
+    (scxml-add-child parent (scxml-drawable-transition :target (scxml-element-id target)))
     (scxml--set-drawing-invalid target 't)
     (scxml-visit parent
                  (lambda (child)

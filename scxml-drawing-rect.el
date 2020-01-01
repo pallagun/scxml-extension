@@ -111,7 +111,7 @@ canvas.  It can optionally have a name.")
         (edit-idx (scxml--edit-idx state))
         ;; if your parent is a <parallel> then this is a noshell rect.
         ;; and the parent <parallel> is responsible for drawing divisions.
-        (drawing-factory (if (scxml-parallel-p (scxml-parent state))
+        (drawing-factory (if (object-of-class-p (scxml-parent state) 'scxml-parallel)
                              'scxml-drawing-noshell-rect
                            'scxml-drawing-rect)))
     (if (null hint)

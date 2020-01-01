@@ -23,7 +23,7 @@ drawings.")
                         :x-max x-max
                         :y-max y-max
                         :drawing container)))
-(cl-defmethod scxml-build-drawing ((root scxml-scxml) (canvas scxml-canvas))
+(cl-defmethod scxml-build-drawing ((root scxml-drawable-scxml) (canvas scxml-canvas))
   "Return a drawing for ROOT within CANVAS.
 
 For an <scxml> element this simply return a null drawing that
