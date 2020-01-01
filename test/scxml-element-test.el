@@ -101,7 +101,7 @@
     (scxml-print transition)
     (scxml-print initial)))
 
-(ert-deftest scxml-element-xml-string ()
+(ert-deftest scxml-element-xml-string-test ()
   (let ((state (scxml-state :id "test-state")))
     (should (equal (scxml-xml-string state)
                    "<state id=\"test-state\" />"))
@@ -112,7 +112,24 @@
     (should (equal (scxml-xml-string state)
                    "<state id=\"test-state\" anything=\"really, anything\"><state id=\"child-id\" /></state>"))))
 
+(ert-deftest scxml-element-find-by-id-test ()
+  (let* ((parent (scxml-state :id "parent"))
+         (child-a (scxml-state :id "child-a"))
+         (child-b (scxml-state :id "child-b"))
+         (child-a-a (scxml-state :id "child-a-a")))
+    (scxml-add-child child-a child-a-a)
+    (scxml-add-child parent child-a)
+    (scxml-add-child parent child-b)
+    (scxml-add-child child-a (scxml-transition :target "child-b"))
 
+    (should (eq (scxml-element-find-by-id parent "parent")
+                parent))
+    (should (eq (scxml-element-find-by-id parent "child-a")
+                child-a))
+    (should (eq (scxml-element-find-by-id parent "child-b")
+                child-b))
+    (should (eq (scxml-element-find-by-id parent "child-a-a")
+                child-a-a))))
 
 
 (provide 'scxml-element-test)

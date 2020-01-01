@@ -103,7 +103,7 @@ Generally filters out symbols that start with 'scxml---'."
 
 When APPEND is non-nil NEW-CHILD will become the last child.  When APPEND is nil NEW-CHILD will become the first child.")
 (cl-defmethod scxml-add-child ((parent scxml-element) (new-child scxml-element) &optional append)
-  "Make NEW-CHILD a child element of PARENT, returning PARENT.
+  "Modify PARENT adding NEW-CHILD as a child returning PARENT.
 
 When APPEND is non-nil NEW-CHILD will become the last child.  When APPEND is nil NEW-CHILD will become the first child."
   (scxml-make-orphan new-child)   ;; make sure new-child isn't connected someplace else.
@@ -151,6 +151,16 @@ Return is unspecified."
       (setq last parent)
       (setq parent (scxml-parent last)))
     last))
+(cl-defgeneric scxml-visit ((element scxml-element) visitor &optional filter)
+  "Visit all children of ELEMENT with VISITOR and optionally FILTER first.
+
+Visitation starts at element and descends per child.  Other than
+visiting ELEMENT first the order of visitation is undefined.
+
+VISITOR must be of form (lambda (element) ...)
+FILTER must be of form (lambda (element) ...)
+
+Return value is undefined.")
 (cl-defmethod scxml-visit ((element scxml-element) visitor &optional filter)
   "Visit all children of ELEMENT with VISITOR and optionally FILTER first.
 
@@ -253,23 +263,20 @@ Push in the drawing hint attribute."
   (format "id:%s, %s"
           (scxml-element-id idable-element)
           (cl-call-next-method)))
-(cl-defmethod scxml-element-find-by-id ((search-root scxml-element) (id-to-find string))
+(cl-defgeneric scxml-element-find-by-id ((search-root scxml-element) (id-to-find string))
   "Find element with ID-TO-FIND starting at SEARCH-ROOT and going down.
 
 Function will not traverse the whole tree, only the portion at or
-below SEARCH-ROOT"
-  ;; TODO - this implementation might not be the best.
-  (if (and (object-of-class-p search-root 'scxml-element-with-id)
-           (string-equal (scxml-element-id search-root) id-to-find))
-      search-root
-    (let ((children (scxml-children search-root)))
-      (if children
-          (cl-reduce (lambda (accumulator child)
-                    (if accumulator accumulator
-                      (scxml-element-find-by-id child id-to-find)))
-                  children
-                  :initial-value 'nil)
-        'nil))))
+below SEARCH-ROOT")
+(cl-defmethod scxml-element-find-by-id ((search-root scxml-element) (id-to-find string))
+  "Find element with ID-TO-FIND at or below SEARCH-ROOT."
+  (block scxml-element-find-by-id-block
+    (scxml-visit search-root
+                 (lambda (element)
+                   (when (string-equal (scxml-element-id element) id-to-find)
+                     (return-from scxml-element-find-by-id-block element)))
+                 (lambda (element)
+                   (object-of-class-p element 'scxml-element-with-id)))))
 
 (defclass scxml-element-with-initial ()
   ((initial :initarg :initial
