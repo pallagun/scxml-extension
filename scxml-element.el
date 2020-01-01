@@ -464,5 +464,15 @@ Attributes recognized: id, type['shallow' or 'deep', default: 'shallow']
 Children: must contain exactly one unconditional <transition>
 indicating default history.")
 
+(defconst scxml--default-factories
+  '((scxml . scxml---scxml-factory)
+    (state . scxml---state-factory)
+    (transition . scxml---transition-factory)
+    (parallel . scxml---parallel-factory)
+    (final . scxml---final-factory)
+    (initial . scxml---initial-factory))
+  "Default methods to create concrete scxml document elements
+  based on their type (as a symbol).")
+
 (provide 'scxml-element)
 ;;; scxml-element.el ends here
