@@ -2,7 +2,7 @@
 
 (require 'eieio)
 (require 'scxml-geometry)
-(require 'scxml-element)
+(require 'scxml-elements)
 (require 'scxml-element-serialization)
 (require 'scxml-draw)
 (require 'scxml-diagram-mode)
