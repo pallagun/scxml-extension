@@ -8,11 +8,10 @@
 ;; The scxml-element is used as the base class for any <element
 ;; with="attributes">or child</element> in a valid <scxml> document.
 (defclass scxml-element ()
-  ((attributes :initarg :attributes
-               :accessor scxml-element-attributes
-               :initform nil
-               :type (or hash-table null))
-   ;; _children and _parent are both "private" slots.
+  ((_attributes :initarg :attributes
+                ;; :accessor scxml-element-attributes
+                :initform nil
+                :type (or hash-table null))
    (_children :initform nil
               :type (or list null))
    (_parent :initform nil
@@ -20,15 +19,16 @@
   :abstract 't)
 (cl-defgeneric scxml-print ((element scxml-element))
   "Return a string representing ELEMENT for human eyes"
-  (with-slots (_parent) element
+  (with-slots (_attributes _parent) element
     (format "parent:%s children:%s attributes:[%s]"
             (and _parent (scxml-xml-element-name _parent))
             (scxml-num-children element)
-            (let ((hash (scxml-element-attributes element)))
-              (when hash
-                (let ((parts 'nil))
-                  (maphash (lambda (k v) (push (format "%s=%.10s" k v) parts)) hash)
-                  (mapconcat 'identity parts ", ")))))))
+            ;; TODO - use scxml-map-attrib here.
+            (when _attributes
+              (let ((parts 'nil))
+                (maphash (lambda (k v) (push (format "%s=%.10s" k v) parts))
+                         _attributes)
+                (mapconcat 'identity parts ", "))))))
 (cl-defmethod cl-print-object ((object scxml-element) stream)
   "Pretty print the OBJECT to STREAM."
   (princ (scxml-print object) stream))
@@ -118,15 +118,16 @@ When APPEND is non-nil NEW-CHILD will become the last child.  When APPEND is nil
   parent)
 (defun scxml---ensure-attributes (element)
   "If ELEMENT doesn't have an attribute hash table, put on there."
-  (when (null (scxml-element-attributes element))
-    (setf (scxml-element-attributes element)
+  (when (null (oref element _attributes))
+    (oset element _attributes
           (make-hash-table :size 10 :test 'equal))))
 (cl-defmethod scxml-map-attrib ((element scxml-element) function)
   "Map over attributes in ELEMENT calling ('FUNCTION key value).
 
 Return is unspecified."
+  ;; TODO - if it's not there, just don't map, don't create it.
   (scxml---ensure-attributes element)
-  (maphash function (oref element attributes)))
+  (maphash function (oref element _attributes)))
 (cl-defgeneric scxml-put-attrib ((element scxml-element) key value)
   "Put VALUE into ELEMENT's attributes with a name of KEY.
 
@@ -136,11 +137,11 @@ Return is unspecified.")
 
 Return is unspecified."
   (scxml---ensure-attributes element)
-  (puthash key value (oref element attributes)))
+  (puthash key value (oref element _attributes)))
 (cl-defmethod scxml-get-attrib ((element scxml-element) key &optional default)
   "Return ELEMENT's attribute value for KEY, defaulting to DEFAULT"
-  (if (scxml-element-attributes element)
-      (gethash key (oref element attributes) default)
+  (if (oref element _attributes)
+      (gethash key (oref element _attributes) default)
     default))
 (cl-defmethod scxml-root-element ((element scxml-element))
   "Given any ELEMENT in an scxml-element tree, find the root of the tree."
