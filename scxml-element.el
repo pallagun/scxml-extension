@@ -125,9 +125,15 @@ When APPEND is non-nil NEW-CHILD will become the last child.  When APPEND is nil
   "Map over attributes in ELEMENT calling ('FUNCTION key value).
 
 Return is unspecified."
-  ;; TODO - if it's not there, just don't map, don't create it.
-  (scxml---ensure-attributes element)
-  (maphash function (oref element _attributes)))
+  (with-slots (_attributes) element
+    (when _attributes
+      (maphash function _attributes))))
+(cl-defmethod scxml-num-attrib ((element scxml-element))
+  "Return the number of attributes in ELEMENT's hashtable."
+  (with-slots (_attributes) element
+    (if _attributes
+        (hash-table-count _attributes)
+      0)))
 (cl-defgeneric scxml-put-attrib ((element scxml-element) key value)
   "Put VALUE into ELEMENT's attributes with a name of KEY.
 
@@ -138,11 +144,14 @@ Return is unspecified.")
 Return is unspecified."
   (scxml---ensure-attributes element)
   (puthash key value (oref element _attributes)))
+(cl-defgeneric scxml-get-attrib ((element scxml-element) key &optional default)
+  "Return ELEMENT's attribute value for KEY, defaulting to DEFAULT")
 (cl-defmethod scxml-get-attrib ((element scxml-element) key &optional default)
   "Return ELEMENT's attribute value for KEY, defaulting to DEFAULT"
-  (if (oref element _attributes)
-      (gethash key (oref element _attributes) default)
-    default))
+  (with-slots (_attributes) element
+    (if _attributes
+        (gethash key _attributes default)
+      default)))
 (cl-defmethod scxml-root-element ((element scxml-element))
   "Given any ELEMENT in an scxml-element tree, find the root of the tree."
   (let ((last element)

@@ -48,7 +48,6 @@ Push in the drawing hint attribute."
                  (scxml-get-attrib element scxml---hint-symbol nil)))
           (cl-call-next-method)))
 
-
 (defclass scxml-scxml (scxml-element scxml-element-with-initial)
   ((name :initarg :name
          :accessor scxml-element-name
@@ -65,16 +64,16 @@ Locked attributes: xmlns, version,")
   (format "scxml(name:%s, %s)"
           (scxml-element-name scxml)
           (cl-call-next-method)))
-(defun scxml---scxml-factory (attrib-alist)
-  "Build an scxml-scxml element from the ATTRIBUTES alist."
-  (let ((default-attribs (list (cons 'xmlns "http://www.w3.org/2005/07/scxml")
-                               (cons 'version "1.0")))
-        (element (scxml-drawable-scxml :initial (alist-get 'initial attrib-alist))))
-    (mapc (lambda (attrib)
-            (unless (assoc (car attrib) attrib-alist)
-              (push attrib attrib-alist)))
-          default-attribs)
-    (scxml---append-extra-properties element attrib-alist '(id initial))))
+;; (defun scxml---scxml-factory (attrib-alist)
+;;   "Build an scxml-scxml element from the ATTRIBUTES alist."
+;;   (let ((default-attribs (list (cons 'xmlns "http://www.w3.org/2005/07/scxml")
+;;                                (cons 'version "1.0")))
+;;         (element (scxml-drawable-scxml :initial (alist-get 'initial attrib-alist))))
+;;     (mapc (lambda (attrib)
+;;             (unless (assoc (car attrib) attrib-alist)
+;;               (push attrib attrib-alist)))
+;;           default-attribs)
+;;     (scxml---append-extra-properties element attrib-alist '(id initial))))
 (cl-defmethod scxml-xml-attributes ((element scxml-scxml))
   "attributes: initial, name, xmlns, version, datamodel, binding.
 
@@ -106,11 +105,11 @@ Recognized attributes: id, initial")
    (list (cons 'id (scxml-element-id element))
          (cons 'initial (scxml-element-initial element)))
    (cl-call-next-method)))
-(defun scxml---state-factory (attrib-alist)
-  "Build an scxml-state element from the ATTRIBUTES alist."
-  (let ((element (scxml-drawable-state :id (alist-get 'id attrib-alist)
-                              :initial (alist-get 'initial attrib-alist))))
-    (scxml---append-extra-properties element attrib-alist '(id initial))))
+;; (defun scxml---state-factory (attrib-alist)
+;;   "Build an scxml-state element from the ATTRIBUTES alist."
+;;   (let ((element (scxml-drawable-state :id (alist-get 'id attrib-alist)
+;;                               :initial (alist-get 'initial attrib-alist))))
+;;     (scxml---append-extra-properties element attrib-alist '(id initial))))
 
 (defclass scxml-final (scxml-state-type)
   ()
@@ -126,10 +125,10 @@ Children:
   (append
    (list (cons 'id (scxml-element-id element)))
    (cl-call-next-method)))
-(defun scxml---final-factory (attrib-alist)
-  "Build an scxml-final element from the ATTRIBUTES alist."
-  (let ((element (scxml-drawable-final :id (alist-get 'id attrib-alist))))
-    (scxml---append-extra-properties element attrib-alist '(id))))
+;; (defun scxml---final-factory (attrib-alist)
+;;   "Build an scxml-final element from the ATTRIBUTES alist."
+;;   (let ((element (scxml-drawable-final :id (alist-get 'id attrib-alist))))
+;;     (scxml---append-extra-properties element attrib-alist '(id))))
 
 (defclass scxml-initial (scxml-element)
   ()
@@ -143,10 +142,10 @@ Child <transition> element may not have 'cond' or 'event' attributes and must be
 (cl-defmethod scxml-print ((initial scxml-initial))
   "Spit out a string representing ELEMENT for human eyeballs"
   (format "initial(%s)" (cl-call-next-method)))
-(defun scxml---initial-factory (&optional attrib-alist)
-  "Build an scxml-initial element from the ATTRIBUTES alist."
-  (let ((element (scxml-drawable-initial)))
-    (scxml---append-extra-properties element attrib-alist)))
+;; (defun scxml---initial-factory (&optional attrib-alist)
+;;   "Build an scxml-initial element from the ATTRIBUTES alist."
+;;   (let ((element (scxml-drawable-initial)))
+;;     (scxml---append-extra-properties element attrib-alist)))
 
 (defclass scxml-parallel (scxml-element scxml-element-with-id)
   ()
@@ -166,10 +165,10 @@ Children:
   (append
    (list (cons 'id (scxml-element-id element)))
    (cl-call-next-method)))
-(defun scxml---parallel-factory (attrib-alist)
-  "Build an scxml-parallel element from the ATTRIBUTES alist."
-  (let ((element (scxml-drawable-parallel :id (alist-get 'id attrib-alist))))
-    (scxml---append-extra-properties element attrib-alist '(id initial))))
+;; (defun scxml---parallel-factory (attrib-alist)
+;;   "Build an scxml-parallel element from the ATTRIBUTES alist."
+;;   (let ((element (scxml-drawable-parallel :id (alist-get 'id attrib-alist))))
+;;     (scxml---append-extra-properties element attrib-alist '(id initial))))
 
 (defclass scxml-transition (scxml-element)
   ((target :initarg :target
@@ -208,10 +207,10 @@ Children must be executable content.")
 (cl-defmethod scxml-source ((transition scxml-transition))
   "Return the source element for TRANSITION."
   (scxml-parent transition))
-(defun scxml---transition-factory (attrib-alist)
-  "Build an scxml-transitione element from the ATTRIBUTES alist."
-  (let ((element (scxml-drawable-transition :target (alist-get 'target attrib-alist))))
-    (scxml---append-extra-properties element attrib-alist '(target))))
+;; (defun scxml---transition-factory (attrib-alist)
+;;   "Build an scxml-transitione element from the ATTRIBUTES alist."
+;;   (let ((element (scxml-drawable-transition :target (alist-get 'target attrib-alist))))
+;;     (scxml---append-extra-properties element attrib-alist '(target))))
 
 (defclass scxml-onentry ()
   ()
@@ -239,14 +238,72 @@ Attributes recognized: id, type['shallow' or 'deep', default: 'shallow']
 Children: must contain exactly one unconditional <transition>
 indicating default history.")
 
-(defconst scxml--default-factories
-  '((scxml . scxml---scxml-factory)
-    (state . scxml---state-factory)
-    (transition . scxml---transition-factory)
-    (parallel . scxml---parallel-factory)
-    (final . scxml---final-factory)
-    (initial . scxml---initial-factory))
-  "Default methods to create concrete scxml document elements
-  based on their type (as a symbol).")
+(defun scxml--element-factory (type attrib-alist &optional skip-slots)
+  "Build a childless element by TYPE and their ATTRIB-ALIST.
+
+Optionally, if the slot name is in skip-slots (as a symbol) then
+forcefully put it in t he element's attribute hash table, not in
+the slot (even if a proper slot is found.
+
+Does not build recursively."
+  (unless (symbolp type)
+    (error "Type must be a symbol"))
+  (let* ((class-name (format "scxml-%s" (symbol-name type)))
+         (class (intern-soft class-name))
+         (slots (eieio-class-slots class))
+         (slot-names (mapcar (lambda (slot)
+                               ;; TODO - probably shouldn't use a cl--* function.
+                               (let ((slot-symbol (cl--slot-descriptor-name slot)))
+                                 (symbol-name slot-symbol)))
+                             slots))
+         (attribute-slots (seq-filter
+                           (lambda (slot-name)
+                             (not (eq (aref slot-name 0) (aref "_" 0))))
+                           slot-names))
+         (attribute-slot-symbols (mapcar 'intern attribute-slots)))
+    ;; TODO - this will only work if the slot name and the eieio
+    ;; initarg are the same.
+    ;; split up everything in attrib-list
+    (let ((constructor-params nil)
+          (attribute-params nil))
+      (cl-loop for cell in attrib-alist
+               for attrib-name-symbol = (car cell)
+               when (and (memq attrib-name-symbol attribute-slot-symbols)
+                         (not (memq attrib-name-symbol skip-slots)))
+               do (let ((initarg-sym (intern
+                                      (format ":%s"
+                                              (symbol-name attrib-name-symbol)))))
+                    (setq constructor-params
+                          (plist-put constructor-params initarg-sym (cdr cell))))
+               else
+               when (scxml---visible-xml-attribute-name attrib-name-symbol)
+               do (push cell attribute-params))
+      (let ((element (apply class constructor-params)))
+        (mapc (lambda (cell)
+                (scxml-put-attrib element (car cell) (cdr cell)))
+              attribute-params)
+        ;; TODO - THIS PART IS A HACK!
+        (when (object-of-class-p element 'scxml-drawable-element)
+          (scxml--set-hint-from-attrib-list element attrib-alist))
+        element))))
+(defun scxml--drawable-element-factory (type attrib-alist)
+  (let* ((base-xml-element-name (symbol-name type))
+         (base-class (intern (format "scxml-%s" base-xml-element-name)))
+         (base-slots (eieio-class-slots base-class))
+         (base-slot-symbols (mapcar 'cl--slot-descriptor-name base-slots))
+         (drawable-class (intern (format "scxml-drawable-%s" base-xml-element-name)))
+         (drawable-slots (eieio-class-slots drawable-class))
+         (drawable-slot-symbols (mapcar 'cl--slot-descriptor-name drawable-slots))
+         (skip-slots))
+    ;; Build a list of all drawable-slots that aren't in teh base slots and
+    ;; use them as as a skip-slots list.
+    (mapc (lambda (slot-sym)
+            (when (not (memq slot-sym base-slot-symbols))
+              (push slot-sym skip-slots)))
+          drawable-slot-symbols)
+    (scxml--element-factory (intern (format "drawable-%s" base-xml-element-name))
+                            attrib-alist
+                            skip-slots)))
+
 
 (provide 'scxml-elements)

@@ -27,21 +27,17 @@
              do (unless (member prop-name exclude-list)
                   (scxml-put-attrib element prop-name (cdr prop-cell)))
              finally return element)))
-(defun scxml--factory (element &optional factory-methods)
+(defun scxml--factory (element)
   (let ((type (first element))
         (attributes (second element))
-        (children (cddr element))
-        (factory-methods (or factory-methods scxml--default-factories)))
-    (let ((factory-method (alist-get type factory-methods)))
-      (unless factory-method
-        (error "No factory to make element of type: %s" type))
-      (let ((element (funcall factory-method attributes)))
+        (children (cddr element)))
+      (let ((element (scxml--drawable-element-factory type attributes)))
         (mapc (lambda (child)
                 (scxml-add-child element
-                               (scxml--factory child factory-methods)))
+                                 (scxml--factory child)))
               ;; possibly I can do this without the reverse?
               (reverse (scxml--trim-xml children)))
-        element))))
+        element)))
 (defun scxml-read-buffer (&optional buffer-to-read)
   "Return the scxml-element tree of 'current-buffer' or BUFFER-TO-READ."
   (interactive)
