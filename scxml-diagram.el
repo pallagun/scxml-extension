@@ -90,7 +90,8 @@ nil."
                      (when (and drawing
                                 (scxml-has-intersection selection-rect drawing 'stacked))
                        (return-from scxml---find-selection element))))
-                 'scxml-transition-p)
+                 (lambda (element)
+                   (object-of-class-p element 'scxml-transition)))
     nil))
 (defun scxml---find-initial (selection-rect search-parent)
   "Get the first initial element in SELECTION-RECT.

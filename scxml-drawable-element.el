@@ -72,7 +72,8 @@ Note: there should only be one child and it should be a transition."
     (mapc (lambda (transition)
             (scxml--set-drawing-invalid transition 't))
           (append
-           (seq-filter 'scxml-transition-p (scxml-children state)) ;all from state.
+           (seq-filter (lambda (e) (object-of-class-p e 'scxml-transition))
+                       (scxml-children state)) ;all from state.
            (scxml-get-all-transitions-to state)))))
 (cl-defmethod scxml--set-drawing-invalid ((transition scxml-transition) is-invalid &optional dont-cascade)
   "Note that when a transition goes from hinted to unhinted it cause other transitions to become Invalid.

@@ -1,5 +1,9 @@
-;; The non-abstract scxml objects representing scxml elements in xml
+;;; scxml-elements --- scxml element objects -*- lexical-binding: t -*-
 
+;;; Commentary:
+;; Concrete and abstract scxml-element classes.  These classes represent elements that might be found in an scxml document
+
+;;; Code:
 (require 'scxml-element)
 
 (defclass scxml-scxml (scxml-element scxml-element-with-initial)
@@ -270,5 +274,5 @@ Push in the drawing hint attribute."
                             attrib-alist
                             skip-slots)))
 
-
 (provide 'scxml-elements)
+;;; scxml-element.el ends here
