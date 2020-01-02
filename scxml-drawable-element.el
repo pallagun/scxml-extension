@@ -1,13 +1,15 @@
 ;;; scxml-drawable-element.el --- scxml drawable element functions -*- lexical-binding: t -*-
 
 ;;; Commentary:
-;; Enhancements to scxml-drawable-elements
-;; note: scxml-drawable-element is actually defined in scxml-element
-;; TODO: it shouldn't be though.
+;; Represents a concrete csxml element which can be drawn.
 
 ;;; Code:
+(require 'eieio)
 (require 'scxml-element)
 (require 'scxml-drawing)
+
+(defconst scxml---hint-symbol 'scxml---drawing-hint
+  "The xml attribute name used to store drawing hints.")
 
 (defclass scxml-drawable-element (scxml-element)
   ((drawing :initarg :drawing
@@ -20,7 +22,7 @@
              ;; TODO - is this used?
              ))
   :abstract 't
-  :documentation "This is an element that can be drawn on a canvas")
+  :documentation "This is an element that can be drawn.")
 (cl-defmethod scxml-print ((element scxml-drawable-element))
   "Pretty print ELEMENT for human eyeballs."
   (format "hasDrawing:%s, %s"
@@ -34,68 +36,14 @@ Push in the drawing hint attribute."
            (cons scxml---hint-symbol
                  (scxml-get-attrib element scxml---hint-symbol nil)))
           (cl-call-next-method)))
+
 (cl-defgeneric scxml--drawing-invalid? ((element scxml-drawable-element))
   "Could the drawing for this ELEMENT be invalid? (i.e. needs to be replotted)"
   (scxml-get-attrib element 'scxml---drawing-invalid 't))
 (cl-defgeneric scxml--set-drawing-invalid ((element scxml-drawable-element) is-invalid)
   "Note that the drawing for this ELEMENT might not be valid."
   (scxml-put-attrib element 'scxml---drawing-invalid is-invalid))
-;; TODO - these should probably be in another file.
-(cl-defmethod scxml--set-drawing-invalid ((initial scxml-initial) is-invalid)
-  "Mark INITIAL's drawing as invalid as well as all children.
 
-Note: there should only be one child and it should be a transition."
-  (cl-call-next-method initial is-invalid)
-  (when is-invalid
-    (mapc (lambda (child) (scxml--set-drawing-invalid child 't))
-          (scxml-children initial))))
-(cl-defmethod scxml--set-drawing-invalid ((final scxml-final) is-invalid)
-  "Mark this FINAL's drawing as IS-INVALID.  Will also invalidate any transitions in."
-  (cl-call-next-method final is-invalid)
-  (when is-invalid
-    ;; mark all transitions to or from this state as possibly invalid as well.
-    (mapc (lambda (element)
-            (scxml--set-drawing-invalid element 't))
-          (append
-           (seq-filter (lambda (child)
-                         (object-of-class-p child 'scxml-drawable-element))
-                       (scxml-children final)) ;all from state.
-           (scxml-get-all-transitions-to final)))))
-(cl-defmethod scxml--set-drawing-invalid ((state scxml-state) is-invalid)
-  "Note that the drawing for this STATE might not be valid and also any transition to or from it."
-  ;; TODO: maybe the marking of all transitions to and from this state as invalid
-  ;; should be handled by a keyword argument of some sort?
-  ;; TODO: figure out how to work with keyword arguments.
-  (cl-call-next-method state is-invalid)
-  (when is-invalid
-    ;; mark all transitions to or from this state as possibly invalid as well.
-    (mapc (lambda (transition)
-            (scxml--set-drawing-invalid transition 't))
-          (append
-           (seq-filter (lambda (e) (object-of-class-p e 'scxml-transition))
-                       (scxml-children state)) ;all from state.
-           (scxml-get-all-transitions-to state)))))
-(cl-defmethod scxml--set-drawing-invalid ((transition scxml-transition) is-invalid &optional dont-cascade)
-  "Note that when a transition goes from hinted to unhinted it cause other transitions to become Invalid.
-
-If there are two transitions touching a single state and one of
-them goes from automatic to hinted, it could cause the other
-transition to shuffle connector points."
-  (cl-call-next-method transition is-invalid)
-  (when (and is-invalid (not dont-cascade))
-    (let ((touched-states (list (scxml-source transition)
-                                (scxml-target transition))))
-      (scxml-visit-all transition
-                       (lambda (other-transition)
-                         (scxml--set-drawing-invalid other-transition 't 't))
-                       (lambda (element)
-                         (and (object-of-class-p element 'scxml-transition)
-                              (or (member (scxml-source element)
-                                          touched-states)
-                                  (member (scxml-target element)
-                                          touched-states))))))))
-
-(defconst scxml---hint-symbol 'scxml---drawing-hint)
 (cl-defmethod scxml--hint ((element scxml-drawable-element))
   "Get the hint for this drawable ELEMENT"
   (scxml-get-attrib element scxml---hint-symbol))
