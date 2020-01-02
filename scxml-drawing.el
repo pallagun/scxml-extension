@@ -13,6 +13,23 @@
 (require 'scxml-viewport)
 (require 'scxml-geometry-rect)
 
+(defclass scxml-drawing ()
+  ((highlight :initarg :highlight
+              :accessor scxml-drawing-highlight)
+   (edit-idx :initarg :edit-idx
+             :accessor scxml-drawing-edit-idx
+             :type (or null integer)
+             :documentation "If edit mode is on this will be non-nil and hold the index of the current edit point")
+   (locked :initarg :locked
+           :accessor scxml-drawing-locked
+           :initform nil
+           :documentation "Is this drawing locked in place by a user hint or not")
+   (parent :initarg :parent
+           :accessor scxml-parent
+           :type scxml-drawable-element))
+  :abstract t
+  :documentation "This is a thing which can be rendered on a canvas.  A rectangle, an arrow, etc.")
+
 (defvar scxml---debug-drawing nil)
 (defun scxml-toggle-debug-drawing-mode ()
   (interactive)

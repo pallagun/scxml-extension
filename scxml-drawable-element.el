@@ -9,6 +9,32 @@
 (require 'scxml-element)
 (require 'scxml-drawing)
 
+(defclass scxml-drawable-element (scxml-element)
+  ((drawing :initarg :drawing
+            :accessor scxml-element-drawing
+            :type (or scxml-drawing null)
+            :initform nil)
+   (xml-link :initarg :xml-link
+             :accessor scxml-xml-link
+             :initform nil
+             ;; TODO - is this used?
+             ))
+  :abstract 't
+  :documentation "This is an element that can be drawn on a canvas")
+(cl-defmethod scxml-print ((element scxml-drawable-element))
+  "Pretty print ELEMENT for human eyeballs."
+  (format "hasDrawing:%s, %s"
+          (and (scxml-element-drawing element) t)
+          (cl-call-next-method)))
+(cl-defmethod scxml-xml-attributes ((element scxml-drawable-element))
+  "Return an xml attribute alist for ELEMENT.
+
+Push in the drawing hint attribute."
+  (append (list
+           (cons scxml---hint-symbol
+                 (scxml-get-attrib element scxml---hint-symbol nil)))
+          (cl-call-next-method)))
+
 (cl-defgeneric scxml--drawing-invalid? ((element scxml-drawable-element))
   "Could the drawing for this ELEMENT be invalid? (i.e. needs to be replotted)"
   (scxml-get-attrib element 'scxml---drawing-invalid 't))
