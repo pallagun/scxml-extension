@@ -1,12 +1,14 @@
 ;;; scxml-element --- scxml element level functions -*- lexical-binding: t -*-
 
 ;;; Commentary:
-;; scxml-element abstract base class.
-
-;;; Code:
-
 ;; The scxml-element is used as the base class for any <element
 ;; with="attributes">or child</element> in a valid <scxml> document.
+
+;;; Code:
+(require 'eieio)
+(require 'seq)
+(require 'cl)
+
 (defclass scxml-element ()
   ((_attributes :initarg :attributes
                 ;; :accessor scxml-element-attributes
@@ -23,12 +25,10 @@
     (format "parent:%s children:%s attributes:[%s]"
             (and _parent (scxml-xml-element-name _parent))
             (scxml-num-children element)
-            ;; TODO - use scxml-map-attrib here.
-            (when _attributes
-              (let ((parts 'nil))
-                (maphash (lambda (k v) (push (format "%s=%.10s" k v) parts))
-                         _attributes)
-                (mapconcat 'identity parts ", "))))))
+            (let ((parts))
+              (scxml-map-attrib element (lambda (k v)
+                                          (push (format "%s=%.10s" k v) parts)))
+              (mapconcat 'identity parts ", ")))))
 (cl-defmethod cl-print-object ((object scxml-element) stream)
   "Pretty print the OBJECT to STREAM."
   (princ (scxml-print object) stream))
@@ -121,6 +121,10 @@ When APPEND is non-nil NEW-CHILD will become the last child.  When APPEND is nil
   (when (null (oref element _attributes))
     (oset element _attributes
           (make-hash-table :size 10 :test 'equal))))
+(cl-defgeneric scxml-map-attrib ((element scxml-element) function)
+  "Map over attributes in ELEMENT calling ('FUNCTION key value).
+
+Return is unspecified.")
 (cl-defmethod scxml-map-attrib ((element scxml-element) function)
   "Map over attributes in ELEMENT calling ('FUNCTION key value).
 
