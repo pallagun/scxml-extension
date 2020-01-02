@@ -1,7 +1,6 @@
 ;; Drawable versions of what can be found in scxml-elements.el
 
 ;;; Code:
-
 (require 'scxml-drawable-element)
 
 (defclass scxml-drawable-scxml (scxml-scxml scxml-drawable-element)
@@ -34,6 +33,5 @@
     (scxml--element-factory (intern (format "drawable-%s" base-xml-element-name))
                             attrib-alist
                             skip-slots)))
-
 
 (provide 'scxml-drawable-elements)

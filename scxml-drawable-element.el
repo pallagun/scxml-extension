@@ -34,7 +34,6 @@ Push in the drawing hint attribute."
            (cons scxml---hint-symbol
                  (scxml-get-attrib element scxml---hint-symbol nil)))
           (cl-call-next-method)))
-
 (cl-defgeneric scxml--drawing-invalid? ((element scxml-drawable-element))
   "Could the drawing for this ELEMENT be invalid? (i.e. needs to be replotted)"
   (scxml-get-attrib element 'scxml---drawing-invalid 't))

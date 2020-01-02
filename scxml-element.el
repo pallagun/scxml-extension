@@ -250,6 +250,5 @@ below SEARCH-ROOT")
   :documentation "Apply to an scxml element if it has an
   'initial' attribute that's significant.")
 
-
 (provide 'scxml-element)
 ;;; scxml-element.el ends here
