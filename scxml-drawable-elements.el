@@ -16,6 +16,7 @@
 (defclass scxml-drawable-transition (scxml-transition scxml-drawable-element)
   ())
 (defun scxml--drawable-element-factory (type attrib-alist)
+  "Build a drawable element of TYPE and having ATTRIB-ALIST properties."
   (let* ((base-xml-element-name (symbol-name type))
          (base-class (intern (format "scxml-%s" base-xml-element-name)))
          (base-slots (eieio-class-slots base-class))
