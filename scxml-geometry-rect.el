@@ -5,7 +5,7 @@
 ;; constrained to be axis aligned
 
 ;;; Code:
-(require 'ert)
+(require 'eieio)
 (require 'scxml-geometry-point)
 (require 'scxml-geometry-span)
 (require 'scxml-geometry-segment)
@@ -221,7 +221,7 @@ if any bounding segment of A intersects B."
                       when (scxml-has-intersection rect-segment B)
                       return t)))))
 (cl-defmethod scxml-has-intersection ((A scxml-rect) (B scxml-rect) &optional evaluation-mode)
-  "Return non-nil if A and B intersect"
+  "Return non-nil if A and B intersect."
   (and (scxml-has-intersection (scxml-x A) (scxml-x B) evaluation-mode)
        (scxml-has-intersection (scxml-y A) (scxml-y B) evaluation-mode)))
 (cl-defmethod scxml-bounding-pts ((A scxml-rect))

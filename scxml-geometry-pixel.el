@@ -6,6 +6,8 @@
 ;; X goes to the right, Y goes down and origin is "top left".
 
 ;;; Code:
+(require 'eieio)
+
 (defclass scxml-pixel ()
   ((x :initarg :x
       :accessor scxml-x
@@ -15,7 +17,7 @@
       :type integer))
   :documentation "A 2d pixel using standard 'image' coordinate system")
 (cl-defmethod scxml-print ((px scxml-pixel))
-  "Return a stringified version of POINT for human eyes."
+  "Return a stringified version of PX for human eyes."
   (with-slots (x y) px
     (format "px(%d,%d)" x y)))
 (cl-defmethod cl-print-object ((object scxml-pixel) stream)

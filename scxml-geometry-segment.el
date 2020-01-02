@@ -5,6 +5,7 @@
 ;; It is directional, starting at START and ending at END.
 
 ;;; Code:
+(require 'eieio)
 (require 'scxml-geometry-point)
 (require 'scxml-geometry-span)
 
@@ -352,7 +353,7 @@ That should be sorted out before calling this."
 (cl-defmethod scxml-coarse-direction ((segment scxml-segment))
   (scxml-coarse-direction (scxml-characteristic-vector segment)))
 (cl-defmethod scxml-get-parametric ((segment scxml-segment) (pt scxml-point) &optional distance-tolerance)
-  "Get the parametric coordinate of this point along the segment.
+  "Get the parametric coordinate of PT along SEGMENT.
 
 Note: this is similar to scxml-relative-coordinate but as it
 could return a nil value it's differentiated with the

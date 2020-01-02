@@ -4,6 +4,8 @@
 ;; Concrete and abstract scxml-element classes.  These classes represent elements that might be found in an scxml document
 
 ;;; Code:
+(require 'eieio)
+(require 'seq)
 (require 'scxml-element)
 
 (defclass scxml-scxml (scxml-element scxml-element-with-initial)
@@ -42,7 +44,7 @@ Only doing xmlnns and version here."
 Recognized attributes: id, initial")
 (cl-defmethod scxml-print ((state scxml-state))
   "Spit out a string representing ELEMENT for human eyeballs"
-  (format "state(%s)" (cl-call-next-method)))
+  (format "state(%s)" (cl-call-next-method state)))
 (cl-defmethod scxml-xml-attributes ((element scxml-state))
   "attributes: id, initial"
   (append
@@ -72,7 +74,7 @@ Must contain a single child <transition> element indicating initial state.
 Child <transition> element may not have 'cond' or 'event' attributes and must be a valid state.")
 (cl-defmethod scxml-print ((initial scxml-initial))
   "Spit out a string representing ELEMENT for human eyeballs"
-  (format "initial(%s)" (cl-call-next-method)))
+  (format "initial(%s)" (cl-call-next-method initial)))
 
 (defclass scxml-parallel (scxml-element scxml-element-with-id)
   ()
@@ -84,7 +86,7 @@ Children:
   <onentry>, <onexit>, <transition>, <start>, <parallel>, <history>, <datamodel>, <invoke>")
 (cl-defmethod scxml-print ((parallel scxml-parallel))
   "Spit out a string representing ELEMENT for human eyeballs"
-  (format "parallel(%s)" (cl-call-next-method)))
+  (format "parallel(%s)" (cl-call-next-method parallel)))
 (cl-defmethod scxml-xml-attributes ((element scxml-parallel))
   "attributes: id, initial"
   (append

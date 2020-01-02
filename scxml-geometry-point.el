@@ -4,6 +4,7 @@
 ;; An scxml-point  represents a coordinate/point in 2d space.
 
 ;;; Code:
+(require 'eieio)
 (require 'scxml-geometry-core)
 
 (defclass scxml-point ()
@@ -17,8 +18,8 @@
 (defun scxml-point- (x y)
   "Build an scxml-point at X Y.
 
-Equivalent of (scxml-point :x X :y Y). This function is mostly to
-spare a bit of typing."
+Equivalent of (scxml-point :x X :y Y).  This function is mostly
+to spare a bit of typing."
   (scxml-point :x (float x) :y (float y)))
 (cl-defmethod scxml-print ((point scxml-point))
   "Return a stringified version of POINT for human eyes."

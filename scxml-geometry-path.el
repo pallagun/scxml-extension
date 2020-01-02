@@ -11,6 +11,7 @@
 ;; a cardinal direction).
 
 ;;; Code:
+(require 'eieio)
 (require 'scxml-geometry-point)
 (require 'scxml-geometry-segment)
 

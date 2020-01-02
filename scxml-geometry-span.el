@@ -6,6 +6,7 @@
 ;; significant there is no requirement that start <= end.
 
 ;;; Code:
+(require 'eieio)
 
 (defclass scxml-span ()
   ((start :initarg :start
