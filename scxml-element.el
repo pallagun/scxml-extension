@@ -7,7 +7,7 @@
 ;;; Code:
 (require 'eieio)
 (require 'seq)
-(require 'cl)
+(require 'cl-macs)
 
 (defclass scxml-element ()
   ((_attributes :initarg :attributes
@@ -212,10 +212,10 @@ FILTER."
                  'nil)))
     (let ((A-parents (build-parent-list A))
           (B-parents (build-parent-list B)))
-      (block scxml-find-parent
+      (cl-block scxml-find-parent
         (mapc (lambda (A-element)
                 (when (cl-member A-element B-parents :test 'eq)
-                  (return-from scxml-find-parent A-element)))
+                  (cl-return-from scxml-find-parent A-element)))
               A-parents)))))
 
 (defclass scxml-element-with-id ()
@@ -237,11 +237,11 @@ Function will not traverse the whole tree, only the portion at or
 below SEARCH-ROOT")
 (cl-defmethod scxml-element-find-by-id ((search-root scxml-element) (id-to-find string))
   "Find element with ID-TO-FIND at or below SEARCH-ROOT."
-  (block scxml-element-find-by-id-block
+  (cl-block scxml-element-find-by-id-block
     (scxml-visit search-root
                  (lambda (element)
                    (when (string-equal (scxml-element-id element) id-to-find)
-                     (return-from scxml-element-find-by-id-block element)))
+                     (cl-return-from scxml-element-find-by-id-block element)))
                  (lambda (element)
                    (object-of-class-p element 'scxml-element-with-id)))))
 
