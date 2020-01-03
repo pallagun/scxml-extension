@@ -1,21 +1,32 @@
-;;; scxml-drawing.el --- scxml drawing functions -*- lexical-binding: t -*-
+;;; scxml-drawing.el --- scxml drawing object -*- lexical-binding: t -*-
 
 ;;; Commentary:
-;; scxml-drawing is defined in scxml-elements for now.
-;; TODO - fix the above.
-
 ;; An scxml-drawing is an object that can be drawn on a canvas.  It is
-;; usually tied (as a child) to an scxml-drawable-element.
+;; usually (always?) belongs to an scxml-drawable-element.
 
 ;;; Code:
+(require 'eieio)
 (require 'scxml-element)
 (require 'scxml-canvas)
 (require 'scxml-viewport)
-(require 'scxml-geometry-rect)
+
+;; Logging facilites specific to drawings.
+(defvar scxml--debug-drawing nil)
+(defun scxml-toggle-debug-drawing-mode ()
+  (interactive)
+  (setq scxml--debug-drawing (not scxml--debug-drawing))
+  (message "Setting scxml--debug-drawing to %s" scxml--debug-drawing))
+(defun scxml---drawing-logger (format-string &rest message-args)
+  "When scxml--debug-drawing is true, pass FORMAT-STRING and MESSAGE-ARGS to printer."
+  (when scxml--debug-drawing
+    (apply 'message (cons format-string message-args))))
+
 
 (defclass scxml-drawing ()
   ((highlight :initarg :highlight
-              :accessor scxml-drawing-highlight)
+              :accessor scxml-drawing-highlight
+              ; TODO - type should be boolean.
+              )
    (edit-idx :initarg :edit-idx
              :accessor scxml-drawing-edit-idx
              :type (or null integer)
@@ -23,51 +34,23 @@
    (locked :initarg :locked
            :accessor scxml-drawing-locked
            :initform nil
+           ;; TODO - I don't think I use this?
            :documentation "Is this drawing locked in place by a user hint or not")
    (parent :initarg :parent
            :accessor scxml-parent
            :type scxml-drawable-element))
   :abstract t
-  :documentation "This is a thing which can be rendered on a canvas.  A rectangle, an arrow, etc.")
-
-(defvar scxml---debug-drawing nil)
-(defun scxml-toggle-debug-drawing-mode ()
-  (interactive)
-  (setq scxml---debug-drawing (not scxml---debug-drawing))
-  (message "setting scxml---debug-drawing to %s" scxml---debug-drawing))
-(defun scxml---drawing-logger (format-string &rest message-args)
-  "When scxml---debug-drawing is true, pass FORMAT-STRING and MESSAGE-ARGS to printer"
-  (when scxml---debug-drawing
-    (apply 'message (cons format-string message-args))))
+  :documentation "This is a thing which can be drawn.  A rectangle, an arrow, a label, etc.")
 
 (cl-defgeneric scxml-num-edit-idxs ((drawing scxml-drawing))
   "How many edit idx points are there for this DRAWING.
 
-By default, assume Zero."
+By default, assume zero."
   0)
 (cl-defgeneric scxml-edit-idx-point ((drawing scxml-drawing) (idx integer))
   "Get the scxml-point location of the given edit IDX in DRAWING")
 (cl-defgeneric scxml-edit-idx-points ((drawing scxml-drawing))
   "Get a list of all the edit-idx points for this DRAWING in order")
-(cl-defgeneric scxml-edit-idx-pixel ((viewport scxml-viewport) (drawing scxml-drawing) (idx number))
-  ;; TODO - This may no longer be used.
-  "Get the pixel location of the DRAWING's edit-idx IDX on the VIEWPORT.")
-(cl-defgeneric scxml-edit-idx-pixel ((viewport scxml-viewport) (drawing scxml-drawing) (idx number))
-  "Get the pixel location of the DRAWING's edit-idx IDX on the VIEWPORT."
-  ;; TODO - this may no longer be used.
-  ;; todo - switch the order of these arguments?
-  (scxml-get-pixel viewport
-                   (scxml-edit-idx-point drawing idx)))
-(cl-defgeneric scxml-edit-idxs-pixels ((viewport scxml-viewport) (drawing scxml-drawing))
-  ;; TODO - This may no longer be used.
-  "Given a DRAWING return an ordered list of all edit idxs as scxml-pixels on VIEWPORT.")
-(cl-defmethod scxml-edit-idxs-pixels ((viewport scxml-viewport) (drawing scxml-drawing))
-  "Given a DRAWING return an ordered list of all edit idxs as scxml-pixels on VIEWPORT."
-  ;; TODO - this may no longer be used.
-  ;; todo - switch the order of these arguments?
-  (mapcar (lambda (idx)
-            (scxml-edit-idx-pixel viewport drawing idx))
-          (number-sequence 0 (1- (scxml-num-edit-idxs drawing)))))
 
 (cl-defgeneric scxml-build-edited-drawing ((drawing scxml-drawing) edit-idx (move-vector scxml-point))
   "Derive an edited drawing from DRAWING and the EDIT-IDX (nillable) and MOVE-VECTOR

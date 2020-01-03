@@ -100,6 +100,8 @@ Uses drawing coordinate system."
 ;; - scratch coordinates - What is rendered out in the scratch buffer renderer
 ;; - pixel coordinates - image style coordinates for mouse clicks and what not.
 
+(cl-defgeneric scxml-get-pixel ((viewport scxml-viewport) (drawing-point scxml-point))
+  "Given a drawing coordinate DRAWING-POINT in a VIEWPORT, get the pixel for it")
 (cl-defmethod scxml-get-pixel ((viewport scxml-viewport) (drawing-point scxml-point))
   "Given a drawing coordinate DRAWING-POINT in a VIEWPORT, get the pixel for it"
   (let ((scratch-coord (scxml-get-scratch-coord viewport drawing-point)))

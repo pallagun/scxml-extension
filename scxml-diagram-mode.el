@@ -612,9 +612,9 @@ the user is attempting to mark an edit idx."
 (defun scxml-diagram-mode--move-to-edit-idx (drawing)
   "Move to the currently selected edit-idx of the DRAWING if it is set."
   (when (and drawing (scxml-drawing-edit-idx drawing))
-    (let ((pixel (scxml-edit-idx-pixel (scxml-diagram-mode--canvas)
-                                       (scxml-diagram-mode--marked-drawing)
-                                       (scxml-diagram-mode--edit-idx))))
+    (let* ((point (scxml-edit-idx-point (scxml-diagram-mode--marked-drawing)
+                                        (scxml-diagram-mode--edit-idx)))
+           (pixel (scxml-get-pixel (scxml-diagram-mode--viewport) point)))
       (scxml-draw--goto-pixel pixel))))
 
 (defun scxml-diagram-mode--disable-edit-mode ()
