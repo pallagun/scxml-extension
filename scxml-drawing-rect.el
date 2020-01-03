@@ -98,57 +98,6 @@ canvas.  It can optionally have a name.")
                         :x-max (scxml-x (second pts))
                         :parent (scxml-parent rect))))
 
-(cl-defmethod scxml-build-drawing ((state scxml-state-type) (canvas scxml-canvas))
-  "Build drawing helper"
-  (scxml---drawing-logger "scxml--build-drawing: %s" (scxml-print state))
-  (scxml---drawing-logger "scxml--build-drawing: canvas: %s" (scxml-print canvas))
-  (scxml---drawing-logger "scxml--build-draiwng:- drawingInvalid?: %s, drawingExists %s"
-                          (scxml--drawing-invalid? state)
-                          (if (scxml-element-drawing state) 't 'nil))
-  (let ((hint (scxml--hint state))
-        (state-name (scxml-element-id state))
-        (highlight (scxml--highlight state))
-        (edit-idx (scxml--edit-idx state))
-        ;; if your parent is a <parallel> then this is a noshell rect.
-        ;; and the parent <parallel> is responsible for drawing divisions.
-        (drawing-factory (if (object-of-class-p (scxml-parent state) 'scxml-parallel)
-                             'scxml-drawing-noshell-rect
-                           'scxml-drawing-rect)))
-    (if (null hint)
-        ;; Generate the drawing (not based on a hint)
-        (funcall drawing-factory
-                 :x-min (scxml-x-min canvas)
-                 :y-min (scxml-y-min canvas)
-                 :x-max (scxml-x-max canvas)
-                 :y-max (scxml-y-max canvas)
-                 :name state-name
-                 :highlight highlight
-                 :edit-idx edit-idx
-                 :parent state)
-
-      ;; build drawing off of the hint and parent drawing canvas
-      ;; Todo - this is copypast from scxml-initialze-hint :(
-      (let* ((parent (scxml-parent state))
-             (parent-drawing (when (object-of-class-p parent 'scxml-drawable-element)
-                               (scxml-element-drawing parent)))
-             (parent-drawing-canvas (if parent-drawing
-                                        (scxml-get-inner-canvas parent-drawing)
-                                      canvas)))
-        (when (not (scxml-inner-canvas-p parent-drawing-canvas))
-          (error "Not sure how to continue here :("))
-        (let ((absolute-rect (scxml-absolute-coordinates parent-drawing-canvas
-                                                          hint)))
-          (with-slots (x-min x-max y-min y-max) absolute-rect
-            (funcall drawing-factory
-                     :x-min x-min
-                     :y-min y-min
-                     :x-max x-max
-                     :y-max y-max
-                     :locked 't
-                     :name state-name
-                     :highlight highlight
-                     :edit-idx edit-idx
-                     :parent parent)))))))
 (cl-defmethod scxml-build-hint ((rect scxml-rect) (parent-canvas scxml-inner-canvas))
   "Build a hint for RECT inside of PARENT-CANVAS."
   (scxml-relative-coordinates parent-canvas rect))

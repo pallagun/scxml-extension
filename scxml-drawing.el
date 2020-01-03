@@ -16,7 +16,7 @@
   (interactive)
   (setq scxml--debug-drawing (not scxml--debug-drawing))
   (message "Setting scxml--debug-drawing to %s" scxml--debug-drawing))
-(defun scxml---drawing-logger (format-string &rest message-args)
+(defun scxml--drawing-logger (format-string &rest message-args)
   "When scxml--debug-drawing is true, pass FORMAT-STRING and MESSAGE-ARGS to printer."
   (when scxml--debug-drawing
     (apply 'message (cons format-string message-args))))
@@ -53,7 +53,7 @@ By default, assume zero."
   "Get a list of all the edit-idx points for this DRAWING in order")
 
 (cl-defgeneric scxml-build-edited-drawing ((drawing scxml-drawing) edit-idx (move-vector scxml-point))
-  "Derive an edited drawing from DRAWING and the EDIT-IDX (nillable) and MOVE-VECTOR
+  "Derive an edited drawing from DRAWING, EDIT-IDX (nillable) and MOVE-VECTOR.
 
 This should only build a new drawing and return it (if possible)
 and should not mutate anything.  Note: EDIT-IDX can be nil
@@ -72,10 +72,8 @@ and should not mutate anything.")
 
 This should only build a new drawing and return it (if possible)
 and should not mutate anything.")
-;; todo - should there be a 'build-from-hint' ?
-;; nope - because arrows don't apply hints, it's incremental and groupwise.
 (cl-defgeneric scxml-build-hint ((drawing scxml-drawing) (parent-canvas scxml-inner-canvas))
-  "Given a DRAWING and PARENT-CANVAS generate a drawing 'hint'
+  "Given a DRAWING and PARENT-CANVAS generate a drawing 'hint'.
 
 A drawing 'hint' is something that captures the intent of the
 drawing but not the exact pixels.  Something like box-on-the-left
@@ -83,9 +81,9 @@ instead of an exact set of pixels/segments.  It may or may not be
 relative to the parent-canvas.")
 
 (cl-defgeneric scxml-get-inner-canvas ((drawing scxml-drawing))
-  "Return the inner canvas of DRAWING.
-
-Drawings which have no inner space will return nil here."
+  "Return the inner canvas of DRAWING which may be nil.")
+(cl-defmethod scxml-get-inner-canvas ((drawing scxml-drawing))
+  "By default, drawings will have no inner canvas."
   nil)
 
 (provide 'scxml-drawing)

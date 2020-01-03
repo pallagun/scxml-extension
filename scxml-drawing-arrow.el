@@ -175,11 +175,6 @@ path (target-point))."))
   "?"
   ;; TODO - I'm not sure how this works, but this needs to be looked at.
   (error "TODO: Implementation"))
-(cl-defmethod scxml-build-drawing ((transition scxml-transition) (canvas scxml-canvas) &optional source-connector target-connector)
-  "?"
-  ;; TODO - I'm not sure how this works, but this needs to be looked at.
-  (error "TODO: Implementation"))
-
 (defun scxml---build-path-if-valid (arrow new-pts)
   "If ARROW is valid to represend by new-pts, return a new scxml-arrow with those points"
   ;; TODO - examine why this is needed.
@@ -308,7 +303,7 @@ points."
                             (cdr (nbutlast (scxml-points full-path)))
                           'nil)))
       (oset arrow path (scxml-cardinal-path :points middle-path)))
-    (scxml---drawing-logger "scxml--arrow-set-default-path: %s s"
+    (scxml--drawing-logger "scxml--arrow-set-default-path: %s s"
                             (- (float-time) start-time ))))
 (cl-defgeneric scxml--set-path-from-hint ((arrow scxml-arrow) (hint scxml-arrow-hint))
   "Modify ARROW by setting the path from HINT.

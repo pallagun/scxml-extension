@@ -7,6 +7,7 @@
 (require 'eieio)
 (require 'scxml-element)
 (require 'scxml-drawing)
+(require 'scxml-canvas)
 
 (defconst scxml---hint-symbol 'scxml---drawing-hint
   "The xml attribute name used to store drawing hints.")
@@ -115,6 +116,9 @@ Returns the current ELEMENT drawing."
         (scxml--set-drawing-invalid element 'nil)
         drawing)))
   (scxml-element-drawing element))
+
+(cl-defgeneric scxml-build-drawing ((element scxml-drawable-element) (canvas scxml-canvas))
+  "Return a drawing for ELEMENT within CANVAS.")
 
 (provide 'scxml-drawable-element)
 ;;; scxml-drawable-element.el ends here

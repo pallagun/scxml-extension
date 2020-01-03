@@ -216,7 +216,7 @@
           divider-list)))
 (defun scxml--scratch-rect (scratch viewport rect &optional exclude-lines)
   "Place RECT (an scxml-drawing-rect) on to SCRATCH for VIEWPORT, optionally EXCLUDE-LINES."
-  (scxml---drawing-logger "scratch rendering id: %s" (scxml-name rect))
+  (scxml--drawing-logger "scratch rendering id: %s" (scxml-name rect))
   (let* ((transformers (scxml-get-scratch-int-transformers viewport))
          (x-transformer (car transformers))
          (y-transformer (cdr transformers)))
@@ -254,8 +254,8 @@
   "Place PT-LABEL (an scxml-drawing-point) on to SCRATCH for VIEWPORT.
 
 Right now this only properly works with single character labels."
-  (scxml---drawing-logger "scratch rendering id: %s" (scxml-print pt-label))
-  (scxml---drawing-logger "\tLabel (should not length === 1): %s" (scxml-label pt-label))
+  (scxml--drawing-logger "scratch rendering id: %s" (scxml-print pt-label))
+  (scxml--drawing-logger "\tLabel (should not length === 1): %s" (scxml-label pt-label))
   (let ((style (if (scxml-drawing-highlight pt-label)
                    'scxml-highlight
                  nil))

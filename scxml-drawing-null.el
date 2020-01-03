@@ -3,7 +3,7 @@
 ;;; Commentary:
 ;; scxml-drawing-null is a drawing that is invisible.  It exists to
 ;; provide other drowings with a reference point or an inner-canvas.
-;; Posibly a better name would be scxml-drawing-invisible.
+;; Posibly a better name would be scxml-drawing-rect-invisible.
 
 ;;; Code:
 (require 'scxml-drawing)
@@ -23,17 +23,6 @@ drawings.")
                         :x-max x-max
                         :y-max y-max
                         :drawing container)))
-(cl-defmethod scxml-build-drawing ((root scxml-drawable-scxml) (canvas scxml-canvas))
-  "Return a drawing for ROOT within CANVAS.
-
-For an <scxml> element this simply return a null drawing that
-consumes the entire canvas."
-  (with-slots (x-min y-min x-max y-max) canvas
-    (scxml-drawing-null :x-min x-min
-                        :y-min y-min
-                        :x-max x-max
-                        :y-max y-max
-                        :parent root)))
 
 (provide 'scxml-drawing-null)
 ;;; scxml-drawing-null.el ends here

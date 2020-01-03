@@ -322,62 +322,6 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
     (let ((y-max (- real-y-max scxml---divided-rect-header-height)))
       (list (scxml-segment :start (scxml-point :x x-min :y y-max)
                            :end (scxml-point :x x-max :y y-max))))))
-(cl-defmethod scxml-build-drawing ((parallel scxml-parallel) (canvas scxml-canvas))
-  ;; TODO : this 'canvas' argument should be an interior canvas??
-  "Build drawing helper"
-  (scxml---drawing-logger "scxml--build-drawing: %s" (scxml-print parallel))
-  (scxml---drawing-logger "scxml--build-draiwng:- drawingInvalid?: %s, drawingExists %s"
-                          (scxml--drawing-invalid? parallel)
-                          (if (scxml-element-drawing parallel) 't 'nil))
-  (let ((hint (scxml--hint parallel))
-        (name (scxml-element-id parallel))
-        (highlight (scxml--highlight parallel))
-        (edit-idx (scxml--edit-idx parallel)))
-    (let* ((num-children (length (scxml-children parallel)))
-           (num-rows (floor (sqrt num-children)))
-           (num-columns (ceiling (/ num-children num-rows))))
-      (if (null hint)
-          ;; Generate the drawing (not based on a hint)
-          (scxml---set-dividers
-           (scxml--set-layout
-            (scxml-drawing-nest-rect :x-min (scxml-x-min canvas)
-                                     :y-min (scxml-y-min canvas)
-                                     :x-max (scxml-x-max canvas)
-                                     :y-max (scxml-y-max canvas)
-                                     :name name
-                                     :highlight highlight
-                                     :edit-idx edit-idx
-                                     :parent parallel)
-            num-rows
-            num-columns))
-
-        ;; Generate the drawing based on the hint.
-        ;; TODO - a lot of this is shared with the scmxl-state routine - share the code??
-        (let* ((parent (scxml-parent parallel))
-               (parent-drawing (when (object-of-class-p parent 'scxml-drawable-element)
-                                 (scxml-element-drawing parent)))
-               (parent-drawing-canvas (if parent-drawing
-                                          (scxml-get-inner-canvas parent-drawing)
-                                        canvas)))
-          (when (not (scxml-inner-canvas-p parent-drawing-canvas))
-            ;; welp, I'm really hoping you're _in_ a rectangle
-            (error "Not sure how to continue here :("))
-          (let ((absolute-rect (scxml-absolute-coordinates parent-drawing-canvas
-                                                           (scxml-relative-rect hint)))
-                (guide-stripe (scxml-stripe hint)))
-            (with-slots (x-min x-max y-min y-max) absolute-rect
-              (scxml---set-dividers
-               (scxml-drawing-nest-rect :x-min x-min
-                                        :y-min y-min
-                                        :x-max x-max
-                                        :y-max y-max
-                                        :name name
-                                        :highlight highlight
-                                        :edit-idx edit-idx
-                                        :parent parallel
-                                        :axis (scxml-axis guide-stripe)
-                                        :cells (scxml-cells guide-stripe)
-                                        :divisions (scxml-divisions guide-stripe))))))))))
 
 (provide 'scxml-drawing-divided-rect)
 ;;; scxml-drawing-divided-rect.el ends here

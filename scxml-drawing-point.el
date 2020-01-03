@@ -33,41 +33,7 @@
 (cl-defmethod scxml-build-idx-edited ((pt-drawing scxml-drawing-point) (edit-idx integer) (move-vector scxml-point))
   "A point drawing has no edit idxs, this will always error."
   (error "Unable to build an idx-edited scxml-drawing-point object."))
-(cl-defmethod scxml-build-drawing ((initial scxml-initial) (canvas scxml-canvas))
-  "Build drawing helper"
-  (scxml---drawing-logger "scxml--build-drawing: %s" (scxml-print initial))
-  (scxml---drawing-logger "scxml--build-drawing: canvas: %s" (scxml-print canvas))
-  (scxml---drawing-logger "scxml--build-draiwng:- drawingInvalid?: %s, drawingExists %s"
-                          (scxml--drawing-invalid? initial)
-                          (if (scxml-element-drawing initial) 't 'nil))
-  (let ((hint (scxml--hint initial))
-        (highlight (scxml--highlight initial))
-        (centroid (scxml-centroid canvas)))
-    (if (null hint)
-        ;; Generate the drawing (not based on a hint)
-        (scxml-drawing-point :x (scxml-x centroid)
-                             :y (scxml-y centroid)
-                             :label "I" ;label for 'Initial'
-                             :highlight highlight
-                             :edit-idx nil
-                             :parent initial)
-      ;; todo - clean up this implementation, it's duplicative :(
-      (let* ((parent (scxml-parent initial))
-             (parent-drawing (when (object-of-class-p parent 'scxml-drawable-element)
-                               (scxml-element-drawing parent)))
-             (parent-drawing-canvas (if parent-drawing
-                                        (scxml-get-inner-canvas parent-drawing)
-                                      canvas)))
-        (when (not (scxml-inner-canvas-p parent-drawing-canvas))
-          (error "Not sure how to continue here :("))
 
-        (let ((placement (scxml-absolute-coordinates parent-drawing-canvas hint)))
-          (scxml-drawing-point :x (scxml-x placement)
-                               :y (scxml-y placement)
-                               :label "I" ;label for 'Initial'
-                               :highlight highlight
-                               :edit-idx nil
-                               :parent initial))))))
 (cl-defmethod scxml-build-hint ((pt scxml-point) (parent-canvas scxml-inner-canvas))
   "Build a hint for PT inside of PARENT-CANVAS."
   (scxml-relative-coordinates parent-canvas pt))

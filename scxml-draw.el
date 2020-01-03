@@ -146,7 +146,7 @@ Will throw if it can't move it. will not render!!"
                                (scxml-build-hint arrow parent-drawing-canvas))
               (scxml--set-drawing-invalid transition 't))
             't)))
-    (scxml---drawing-logger "Not simplified, no hint exists")
+    (scxml--drawing-logger "Not simplified, no hint exists")
     'nil))
 
 ;; primitive functions for pixel related movement/info
@@ -201,13 +201,13 @@ Will throw if it can't move it. will not render!!"
   (when (not (or (scxml---is-renderable-as-node element)
                  (object-of-class-p element 'scxml-scxml)))
     (error "Wat?  shouldn't be calling this with thtat")) ;TODO - remove this check at some point?
-  (scxml---drawing-logger "scxml--plot-node: type:%s"
+  (scxml--drawing-logger "scxml--plot-node: type:%s"
                           (scxml-xml-element-name element))
-  (scxml---drawing-logger "scxml--plot-node: canvas: %s" (scxml-print canvas))
+  (scxml--drawing-logger "scxml--plot-node: canvas: %s" (scxml-print canvas))
   (let ((child-nodes (seq-filter 'scxml---is-renderable-as-node (scxml-children element)))
         (node (scxml--update-drawing element canvas)))
-    (scxml---drawing-logger "scxml--plot-node: has-hint: %s" (when (scxml--hint element) t))
-    (scxml---drawing-logger "\tDrawing: %s" (scxml-print node))
+    (scxml--drawing-logger "scxml--plot-node: has-hint: %s" (when (scxml--hint element) t))
+    (scxml--drawing-logger "\tDrawing: %s" (scxml-print node))
     (when child-nodes
       (let ((divided-canvases (scxml---get-canvas-divisions node
                                                             (length child-nodes))))
@@ -384,7 +384,7 @@ Will throw if it can't move it. will not render!!"
       (setq end-time (float-time))
       (let ((node-time (- start-link start-node))
             (link-time (- end-time start-link)))
-        (scxml---drawing-logger "scxml-plot (node: %.5f s, link: %.5f s, total: %.5f)"
+        (scxml--drawing-logger "scxml-plot (node: %.5f s, link: %.5f s, total: %.5f)"
                                 node-time
                                 link-time
                                 (+ node-time link-time)))))
@@ -407,7 +407,7 @@ Will throw if it can't move it. will not render!!"
         (scxml-visit root
                      (lambda (e)
                        (let ((drawing (scxml-element-drawing e)))
-                         (scxml---drawing-logger "scxml-draw element:%s\n\tdrawing: %s\n"
+                         (scxml--drawing-logger "scxml-draw element:%s\n\tdrawing: %s\n"
                                                  (when e (scxml-print e))
                                                  (when drawing (scxml-print drawing)))
                          (progn
@@ -447,7 +447,7 @@ Will throw if it can't move it. will not render!!"
 
         (scxml--scratch-write scratch))
 
-      (scxml---drawing-logger "scxml-draw %.5f ms" (- (float-time) start-time))
+      (scxml--drawing-logger "scxml-draw %.5f ms" (- (float-time) start-time))
       diagram)))
 
 (provide 'scxml-draw)
