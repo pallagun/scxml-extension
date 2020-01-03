@@ -15,12 +15,7 @@
   ((drawing :initarg :drawing
             :accessor scxml-element-drawing
             :type (or scxml-drawing null)
-            :initform nil)
-   (xml-link :initarg :xml-link
-             :accessor scxml-xml-link
-             :initform nil
-             ;; TODO - is this used?
-             ))
+            :initform nil))
   :abstract 't
   :documentation "This is an element that can be drawn.")
 (cl-defmethod scxml-print ((element scxml-drawable-element))
