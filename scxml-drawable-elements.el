@@ -10,6 +10,7 @@
 
 For an <scxml> element this simply return a null drawing that
 consumes the entire canvas."
+  ;; TODO - might need to build from a hint someday?
   (with-slots (x-min y-min x-max y-max) canvas
     (scxml-drawing-null :x-min x-min
                         :y-min y-min

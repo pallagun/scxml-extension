@@ -53,13 +53,8 @@ canvas.  It can optionally have a name.")
 
 (cl-defmethod scxml-build-move-edited ((rect scxml-drawing-rect) (move-vector scxml-point))
   "Given a RECT, and a MOVE-DIRECTION, move in one pixel in that direction."
-  ;; TODO - This may not be correct, may need an object clone.
-  (scxml-add rect move-vector))
+  (scxml-incf (clone rect) move-vector))
 (cl-defmethod scxml-build-idx-edited ((rect scxml-drawing-rect) (edit-idx integer) (move-vector scxml-point))
-  ;; try breaking it out into points that can move vertically given edit-idx
-  ;; and points that can move horizontally given edit idx.
-  ;; then just fucking move them.
-  ;; then reassemble.
   (let ((pts (scxml-bounding-pts rect))
         (horizontal-pts 'nil)
         (vertical-pts 'nil))
@@ -96,7 +91,10 @@ canvas.  It can optionally have a name.")
                         :y-max (scxml-y (third pts))
                         :x-min (scxml-x (first pts))
                         :x-max (scxml-x (second pts))
-                        :parent (scxml-parent rect))))
+                        :parent (scxml-parent rect)
+                        :highlight (scxml-drawing-highlight rect)
+                        :edit-idx (scxml-drawing-edit-idx rect)
+                        :name (scxml-name rect))))
 
 (cl-defmethod scxml-build-hint ((rect scxml-rect) (parent-canvas scxml-inner-canvas))
   "Build a hint for RECT inside of PARENT-CANVAS."

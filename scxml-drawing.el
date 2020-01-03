@@ -24,10 +24,12 @@
 
 (defclass scxml-drawing ()
   ((highlight :initarg :highlight
+              ;; TODO - rename to just 'scxml-highlightp'?
               :accessor scxml-drawing-highlight
               ; TODO - type should be boolean.
               )
    (edit-idx :initarg :edit-idx
+             ;; TODO - should this just be scxml-edit-idx?
              :accessor scxml-drawing-edit-idx
              :type (or null integer)
              :documentation "If edit mode is on this will be non-nil and hold the index of the current edit point")
