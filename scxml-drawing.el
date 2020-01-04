@@ -21,7 +21,6 @@
   (when scxml--debug-drawing
     (apply 'message (cons format-string message-args))))
 
-
 (defclass scxml-drawing ()
   ((highlight :initarg :highlight
               ;; TODO - rename to just 'scxml-highlightp'?

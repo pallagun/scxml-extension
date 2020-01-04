@@ -15,6 +15,17 @@
 stable inner canvas.  Should serve as reference for other
 drawings.")
 
+(cl-defgeneric scxml-build-drawing-null ((parent scxml-drawable-element) (canvas scxml-canvas))
+  "Build a null drawing for PARENT in CANVAS.")
+(cl-defmethod  scxml-build-drawing-null ((parent scxml-drawable-element) (canvas scxml-canvas))
+  "Build a null drawing for PARENT in CANVAS."
+    (with-slots (x-min y-min x-max y-max) canvas
+      (scxml-drawing-null :x-min x-min
+                          :y-min y-min
+                          :x-max x-max
+                          :y-max y-max
+                          :parent parent)))
+
 (cl-defmethod scxml-get-inner-canvas ((container scxml-drawing-null))
   "Return an inner-canvas of CONTAINER."
   (with-slots (x-min y-min x-max y-max) container

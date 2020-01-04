@@ -120,5 +120,22 @@ Returns the current ELEMENT drawing."
 (cl-defgeneric scxml-build-drawing ((element scxml-drawable-element) (canvas scxml-canvas))
   "Return a drawing for ELEMENT within CANVAS.")
 
+(cl-defgeneric scxml-parent-drawing ((element scxml-drawable-element))
+  "Return the drawing of ELEMENT's parent scxml-element.")
+(cl-defmethod scxml-parent-drawing ((element scxml-drawable-element))
+  "Return the drawing of ELEMENT's parent scxml-element."
+  (let ((parent (scxml-parent element)))
+    (and parent (scxml-element-drawing parent))))
+(cl-defgeneric scxml-get-parent-drawing-inner-canvas ((element scxml-drawable-element))
+  "Return the ELEMENT's parent's inner canvas.")
+(cl-defmethod scxml-get-parent-drawing-inner-canvas ((element scxml-drawable-element))
+  "Return the ELEMENT's parent's inner canvas.
+
+Equivalent to (scxml-inner-canvas (scxml-parent-drawing ELEMENT))
+but with some checks."
+  (let* ((parent (scxml-parent element))
+         (parent-drawing (and parent (scxml-element-drawing parent))))
+    (and parent-drawing (scxml-get-inner-canvas parent-drawing))))
+
 (provide 'scxml-drawable-element)
 ;;; scxml-drawable-element.el ends here

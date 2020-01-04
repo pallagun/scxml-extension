@@ -3,6 +3,7 @@
 ;;; Code:
 (require 'scxml-drawable-element)
 
+(require 'scxml-drawing-null)           ;for scxml
 (defclass scxml-drawable-scxml (scxml-scxml scxml-drawable-element)
   ())
 (cl-defmethod scxml-build-drawing ((root scxml-drawable-scxml) (canvas scxml-canvas))
@@ -11,68 +12,15 @@
 For an <scxml> element this simply return a null drawing that
 consumes the entire canvas."
   ;; TODO - might need to build from a hint someday?
-  (with-slots (x-min y-min x-max y-max) canvas
-    (scxml-drawing-null :x-min x-min
-                        :y-min y-min
-                        :x-max x-max
-                        :y-max y-max
-                        :parent root)))
+  (scxml-build-drawing-null root canvas))
 
-;; TODO - scxml-state-type is for element, it needs to brought
-;; into the drawable elements space.
-(cl-defmethod scxml-build-drawing ((state scxml-state-type) (canvas scxml-canvas))
-  "Build drawing helper"
-  (scxml--drawing-logger "scxml--build-drawing: %s" (scxml-print state))
-  (scxml--drawing-logger "scxml--build-drawing: canvas: %s" (scxml-print canvas))
-  (scxml--drawing-logger "scxml--build-draiwng:- drawingInvalid?: %s, drawingExists %s"
-                          (scxml--drawing-invalid? state)
-                          (if (scxml-element-drawing state) 't 'nil))
-  (let ((hint (scxml--hint state))
-        (state-name (scxml-element-id state))
-        (highlight (scxml--highlight state))
-        (edit-idx (scxml--edit-idx state))
-        ;; if your parent is a <parallel> then this is a noshell rect.
-        ;; and the parent <parallel> is responsible for drawing divisions.
-        (drawing-factory (if (object-of-class-p (scxml-parent state) 'scxml-parallel)
-                             'scxml-drawing-noshell-rect
-                           'scxml-drawing-rect)))
-    (if (null hint)
-        ;; Generate the drawing (not based on a hint)
-        (funcall drawing-factory
-                 :x-min (scxml-x-min canvas)
-                 :y-min (scxml-y-min canvas)
-                 :x-max (scxml-x-max canvas)
-                 :y-max (scxml-y-max canvas)
-                 :name state-name
-                 :highlight highlight
-                 :edit-idx edit-idx
-                 :parent state)
-
-      ;; build drawing off of the hint and parent drawing canvas
-      ;; Todo - this is copypast from scxml-initialze-hint :(
-      (let* ((parent (scxml-parent state))
-             (parent-drawing (when (object-of-class-p parent 'scxml-drawable-element)
-                               (scxml-element-drawing parent)))
-             (parent-drawing-canvas (if parent-drawing
-                                        (scxml-get-inner-canvas parent-drawing)
-                                      canvas)))
-        (when (not (scxml-inner-canvas-p parent-drawing-canvas))
-          (error "Not sure how to continue here :("))
-        (let ((absolute-rect (scxml-absolute-coordinates parent-drawing-canvas
-                                                          hint)))
-          (with-slots (x-min x-max y-min y-max) absolute-rect
-            (funcall drawing-factory
-                     :x-min x-min
-                     :y-min y-min
-                     :x-max x-max
-                     :y-max y-max
-                     :locked 't
-                     :name state-name
-                     :highlight highlight
-                     :edit-idx edit-idx
-                     :parent parent)))))))
-
-(defclass scxml-drawable-state (scxml-state scxml-drawable-element)
+(require 'scxml-drawing-rect)           ;for state/final
+(require 'scxml-drawing-noshell-rect)   ;for state/final in parallels
+(defclass scxml-drawable-state-type (scxml-drawable-element)
+  ()
+  :documentation "A drawable layer equivalent to scxml-state-type."
+  :abstract t)
+(defclass scxml-drawable-state (scxml-state scxml-drawable-state-type)
   ())
 (cl-defmethod scxml--set-drawing-invalid ((state scxml-drawable-state) is-invalid)
   "Note that the drawing for this STATE might not be valid and also any transition to or from it."
@@ -89,7 +37,7 @@ consumes the entire canvas."
                        (scxml-children state)) ;all from state.
            (scxml-get-all-transitions-to state)))))
 
-(defclass scxml-drawable-final (scxml-final scxml-drawable-element)
+(defclass scxml-drawable-final (scxml-final scxml-drawable-state-type)
   ())
 (cl-defmethod scxml--set-drawing-invalid ((final scxml-drawable-final) is-invalid)
   "Mark this FINAL's drawing as IS-INVALID.  Will also invalidate any transitions in."
@@ -98,12 +46,55 @@ consumes the entire canvas."
     ;; mark all transitions to or from this state as possibly invalid as well.
     (mapc (lambda (element)
             (scxml--set-drawing-invalid element 't))
-          (append
+          (append                       ;TODO - I think I can unse nconc here
            (seq-filter (lambda (child)
                          (object-of-class-p child 'scxml-drawable-element))
                        (scxml-children final)) ;all from state.
            (scxml-get-all-transitions-to final)))))
+(cl-defmethod scxml-build-drawing ((state scxml-drawable-state-type) (canvas scxml-canvas))
+  "Build drawing helper"
+  (scxml--drawing-logger "scxml--build-drawing: %s" (scxml-print state))
+  (scxml--drawing-logger "scxml--build-drawing: canvas: %s" (scxml-print canvas))
+  (scxml--drawing-logger "scxml--build-draiwng:- drawingInvalid?: %s, drawingExists %s"
+                          (scxml--drawing-invalid? state)
+                          (if (scxml-element-drawing state) 't 'nil))
+  (let ((hint (scxml--hint state))
+        (label (scxml-element-id state))
+        (highlight (scxml--highlight state))
+        (edit-idx (scxml--edit-idx state))
+        ;; if your parent is a <parallel> then this is a noshell rect.
+        ;; and the parent <parallel> is responsible for drawing divisions.
+        (drawing-factory (if (object-of-class-p (scxml-parent state) 'scxml-parallel)
+                             'scxml-drawing-noshell-rect
+                           'scxml-drawing-rect)))
+    (if (null hint)
+        (funcall drawing-factory
+                 :x-min (scxml-x-min canvas)
+                 :y-min (scxml-y-min canvas)
+                 :x-max (scxml-x-max canvas)
+                 :y-max (scxml-y-max canvas)
+                 :name label
+                 :highlight highlight
+                 :edit-idx edit-idx
+                 :parent state)
 
+      (let ((parent-drawing-canvas (scxml-get-parent-drawing-inner-canvas state)))
+        (unless parent-drawing-canvas
+          (error "Unable to build drawing without an already drawn parent.")
+        (let ((absolute-rect (scxml-absolute-coordinates parent-drawing-canvas hint)))
+          (with-slots (x-min x-max y-min y-max) absolute-rect
+            (funcall drawing-factory
+                     :x-min x-min
+                     :y-min y-min
+                     :x-max x-max
+                     :y-max y-max
+                     :locked 't
+                     :name label
+                     :highlight highlight
+                     :edit-idx edit-idx
+                     :parent state))))))))
+
+(require 'scxml-drawing-point)          ;for initials.
 (defclass scxml-drawable-initial (scxml-initial scxml-drawable-element)
   ())
 (cl-defmethod scxml--set-drawing-invalid ((initial scxml-drawable-initial) is-invalid)
@@ -150,6 +141,7 @@ Note: there should only be one child and it should be a transition."
                                :edit-idx nil
                                :parent initial))))))
 
+(require 'scxml-drawing-divided-rect)      ;for parallels
 (defclass scxml-drawable-parallel (scxml-parallel scxml-drawable-element)
   ())
 (cl-defmethod scxml-build-drawing ((parallel scxml-drawable-parallel) (canvas scxml-canvas))
@@ -209,6 +201,7 @@ Note: there should only be one child and it should be a transition."
                                         :cells (scxml-cells guide-stripe)
                                         :divisions (scxml-divisions guide-stripe))))))))))
 
+(require 'scxml-drawing-arrow)          ;for transitions.
 (defclass scxml-drawable-transition (scxml-transition scxml-drawable-element)
   ())
 (cl-defmethod scxml--set-drawing-invalid ((transition scxml-drawable-transition) is-invalid &optional dont-cascade)
