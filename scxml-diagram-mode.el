@@ -91,9 +91,11 @@ elements.")
     (define-key map (kbd "+") 'scxml-diagram-mode--modify-larger)
     (define-key map (kbd "-") 'scxml-diagram-mode--modify-smaller)
 
-
     ;; document modification
     (define-key map (kbd "C-d") 'scxml-diagram-mode--delete-marked)
+    (define-key map (kbd "S") 'scxml-diagram-mode--add-child-state)
+    (define-key map (kbd "T") 'scxml-diagram-mode--add-child-transition)
+    (define-key map (kbd "I") 'scxml-diagram-mode--add-child-initial)
 
     map)
   "Keymap for scxml-diagram major mode")
@@ -123,8 +125,8 @@ elements.")
   ;; TODO - I don't think I need the IF on the line below.
   (let* ((root-element (if name (scxml-drawable-scxml :name name)
                          (scxml-drawable-scxml)))
-         (canvas (scxml-canvas :x-min 0.0 :x-max 5.0
-                               :y-min 0.0 :y-max 5.0));; (scxml-canvas--default));
+         (canvas (scxml-canvas :x-min 0.0 :x-max 100.0
+                               :y-min 0.0 :y-max 40.0));; (scxml-canvas--default));
          (viewport (scxml-build-viewport canvas))
          (buffer (scxml-draw--get-buffer name)))
     (scxml--init-buffer buffer)
@@ -727,9 +729,34 @@ the user is attempting to mark an edit idx."
                    (object-of-class-p child 'scxml-drawable-element)))
     (scxml-diagram-mode--apply-edit parent t)
     (scxml-diagram-mode--redraw)))
-(defun scxml-diagram-mode--add-child-transition ()
+(defun scxml-diagram-mode--add-child-initial ()
+  "Begin an <initial> adding mouse saga where the initial parent is the currently marked element."
   (interactive)
-  (message "Mark the element to be the transition target")
+  (message "Mark the element to be the initial target.")
+  (setq scxml-diagram-mode--mark-element-catch
+        'scxml-diagram-mode--add-initial-with-transition-to))
+(defun scxml-diagram-mode--add-initial-with-transition-to (target)
+  "Add an <initial> child in currently marked element to TARGET.
+
+If you're a human you probably want to call the interactive scxml-diagram-mode--add-child-initial."
+  (when (not (object-of-class-p target 'scxml-state-type))
+    (error "Invalid target for initial transition."))
+  (let* ((parent scxml-diagram-mode--marked-element)
+         (new-transition (scxml-drawable-transition :target (scxml-element-id target)))
+         (new-initial (scxml-drawable-initial)))
+    (scxml-add-child new-initial new-transition)
+    (scxml-add-child parent new-initial)
+    (scxml-visit parent
+                 (lambda (child)
+                   (scxml--set-drawing-invalid child 't))
+                 (lambda (child)
+                   (object-of-class-p child 'scxml-drawable-element)))
+    (scxml-diagram-mode--redraw)
+    (scxml-diagram-mode--apply-edit parent t)))
+(defun scxml-diagram-mode--add-child-transition ()
+  "Begin a <transition> adding mouse saga where the transition parent is the currently marked element."
+  (interactive)
+  (message "Mark the element to be the transition target.")
   (setq scxml-diagram-mode--mark-element-catch
         'scxml-diagram-mode--add-child-transition-to))
 (defun scxml-diagram-mode--add-child-transition-to (target)

@@ -19,28 +19,9 @@ consumes the entire canvas."
   ()
   :documentation "A drawable layer equivalent to scxml-state-type."
   :abstract t)
-(defclass scxml-drawable-state (scxml-state scxml-drawable-state-type)
-  ())
-(cl-defmethod scxml--set-drawing-invalid ((state scxml-drawable-state) is-invalid)
-  "Note that the drawing for this STATE might not be valid and also any transition to or from it."
-  ;; TODO: maybe the marking of all transitions to and from this state as invalid
-  ;; should be handled by a keyword argument of some sort?
-  ;; TODO: figure out how to work with keyword arguments.
-  (cl-call-next-method state is-invalid)
-  (when is-invalid
-    ;; mark all transitions to or from this state as possibly invalid as well.
-    (mapc (lambda (transition)
-            (scxml--set-drawing-invalid transition 't))
-          (append
-           (seq-filter (lambda (e) (object-of-class-p e 'scxml-transition))
-                       (scxml-children state)) ;all from state.
-           (scxml-get-all-transitions-to state)))))
-
-(defclass scxml-drawable-final (scxml-final scxml-drawable-state-type)
-  ())
-(cl-defmethod scxml--set-drawing-invalid ((final scxml-drawable-final) is-invalid)
-  "Mark this FINAL's drawing as IS-INVALID.  Will also invalidate any transitions in."
-  (cl-call-next-method final is-invalid)
+(cl-defmethod scxml--set-drawing-invalid ((element scxml-drawable-state-type) is-invalid)
+  "Mark this ELEMENT's drawing as IS-INVALID.  Will also invalidate any transitions in."
+  (cl-call-next-method element is-invalid)
   (when is-invalid
     ;; mark all transitions to or from this state as possibly invalid as well.
     (mapc (lambda (element)
@@ -48,8 +29,13 @@ consumes the entire canvas."
           (append                       ;TODO - I think I can unse nconc here
            (seq-filter (lambda (child)
                          (object-of-class-p child 'scxml-drawable-element))
-                       (scxml-children final)) ;all from state.
-           (scxml-get-all-transitions-to final)))))
+                       (scxml-children element)) ;all from state.
+           (scxml-get-all-transitions-to element)))))
+(defclass scxml-drawable-state (scxml-state scxml-drawable-state-type)
+  ())
+(defclass scxml-drawable-final (scxml-final scxml-drawable-state-type)
+  ())
+
 (cl-defmethod scxml-build-drawing ((state scxml-drawable-state-type) (canvas scxml-canvas))
   "Build a drawing for STATE within CANVAS."
   (scxml--drawing-logger "scxml--build-drawing: %s" (scxml-print state))

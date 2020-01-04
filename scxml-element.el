@@ -167,7 +167,7 @@ Return is unspecified."
 (cl-defgeneric scxml-visit ((element scxml-element) visitor &optional filter)
   "Visit all children of ELEMENT with VISITOR and optionally FILTER first.
 
-Visitation starts at element and descends per child.  Other than
+Visitation starts at ELEMENT and descends per child.  Other than
 visiting ELEMENT first the order of visitation is undefined.
 
 VISITOR must be of form (lambda (element) ...)
@@ -177,7 +177,7 @@ Return value is undefined.")
 (cl-defmethod scxml-visit ((element scxml-element) visitor &optional filter)
   "Visit all children of ELEMENT with VISITOR and optionally FILTER first.
 
-Visitation starts at element and descends per child.  Other than
+Visitation starts at ELEMENT and descends per child.  Other than
 visiting ELEMENT first the order of visitation is undefined.
 
 VISITOR must be of form (lambda (element) ...)
