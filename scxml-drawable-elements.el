@@ -212,6 +212,9 @@ transition to shuffle connector points."
                                           touched-states)
                                   (member (scxml-target element)
                                           touched-states))))))))
+(cl-defmethod scxml-build-drawing ((transition scxml-drawable-transition) (canvas scxml-canvas))
+  "Warning method: transitions/arrows are not build individually, they're built as a group."
+  (error "Invalid operation for an scxml-transition type element"))
 
 (defun scxml--drawable-element-factory (type attrib-alist)
   "Build a drawable element of TYPE and having ATTRIB-ALIST properties."
