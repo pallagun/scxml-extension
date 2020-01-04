@@ -11,7 +11,6 @@
 
 For an <scxml> element this simply return a null drawing that
 consumes the entire canvas."
-  ;; TODO - might need to build from a hint someday?
   (scxml-build-drawing-null root canvas))
 
 (require 'scxml-drawing-rect)           ;for state/final
@@ -52,7 +51,7 @@ consumes the entire canvas."
                        (scxml-children final)) ;all from state.
            (scxml-get-all-transitions-to final)))))
 (cl-defmethod scxml-build-drawing ((state scxml-drawable-state-type) (canvas scxml-canvas))
-  "Build drawing helper"
+  "Build a drawing for STATE within CANVAS."
   (scxml--drawing-logger "scxml--build-drawing: %s" (scxml-print state))
   (scxml--drawing-logger "scxml--build-drawing: canvas: %s" (scxml-print canvas))
   (scxml--drawing-logger "scxml--build-draiwng:- drawingInvalid?: %s, drawingExists %s"
@@ -95,6 +94,8 @@ consumes the entire canvas."
                      :parent state))))))))
 
 (require 'scxml-drawing-point)          ;for initials.
+(defconst scxml--drawable-initial-label "I"
+  "What text label to use for rendering <initial> elements, should be a single character.")
 (defclass scxml-drawable-initial (scxml-initial scxml-drawable-element)
   ())
 (cl-defmethod scxml--set-drawing-invalid ((initial scxml-drawable-initial) is-invalid)
@@ -106,7 +107,7 @@ Note: there should only be one child and it should be a transition."
     (mapc (lambda (child) (scxml--set-drawing-invalid child 't))
           (scxml-children initial))))
 (cl-defmethod scxml-build-drawing ((initial scxml-drawable-initial) (canvas scxml-canvas))
-  "Build drawing helper"
+  "Build a drawing for INITIAL within CANVAS."
   (scxml--drawing-logger "scxml--build-drawing: %s" (scxml-print initial))
   (scxml--drawing-logger "scxml--build-drawing: canvas: %s" (scxml-print canvas))
   (scxml--drawing-logger "scxml--build-draiwng:- drawingInvalid?: %s, drawingExists %s"
@@ -119,24 +120,17 @@ Note: there should only be one child and it should be a transition."
         ;; Generate the drawing (not based on a hint)
         (scxml-drawing-point :x (scxml-x centroid)
                              :y (scxml-y centroid)
-                             :label "I" ;label for 'Initial'
+                             :label scxml--drawable-initial-label
                              :highlight highlight
                              :edit-idx nil
                              :parent initial)
-      ;; todo - clean up this implementation, it's duplicative :(
-      (let* ((parent (scxml-parent initial))
-             (parent-drawing (when (object-of-class-p parent 'scxml-drawable-element)
-                               (scxml-element-drawing parent)))
-             (parent-drawing-canvas (if parent-drawing
-                                        (scxml-get-inner-canvas parent-drawing)
-                                      canvas)))
-        (when (not (scxml-inner-canvas-p parent-drawing-canvas))
-          (error "Not sure how to continue here :("))
-
+      (let ((parent-drawing-canvas (scxml-get-parent-drawing-inner-canvas initial)))
+        (unless parent-drawing-canvas
+          (error "Unable to build drawing without an already drawn parent."))
         (let ((placement (scxml-absolute-coordinates parent-drawing-canvas hint)))
           (scxml-drawing-point :x (scxml-x placement)
                                :y (scxml-y placement)
-                               :label "I" ;label for 'Initial'
+                               :label scxml--drawable-initial-label
                                :highlight highlight
                                :edit-idx nil
                                :parent initial))))))
@@ -145,8 +139,8 @@ Note: there should only be one child and it should be a transition."
 (defclass scxml-drawable-parallel (scxml-parallel scxml-drawable-element)
   ())
 (cl-defmethod scxml-build-drawing ((parallel scxml-drawable-parallel) (canvas scxml-canvas))
-  ;; TODO : this 'canvas' argument should be an interior canvas??
   "Build drawing helper"
+  ;; TODO - this needs clean up.
   (scxml--drawing-logger "scxml--build-drawing: %s" (scxml-print parallel))
   (scxml--drawing-logger "scxml--build-draiwng:- drawingInvalid?: %s, drawingExists %s"
                           (scxml--drawing-invalid? parallel)
@@ -173,17 +167,9 @@ Note: there should only be one child and it should be a transition."
             num-rows
             num-columns))
 
-        ;; Generate the drawing based on the hint.
-        ;; TODO - a lot of this is shared with the scmxl-state routine - share the code??
-        (let* ((parent (scxml-parent parallel))
-               (parent-drawing (when (object-of-class-p parent 'scxml-drawable-element)
-                                 (scxml-element-drawing parent)))
-               (parent-drawing-canvas (if parent-drawing
-                                          (scxml-get-inner-canvas parent-drawing)
-                                        canvas)))
-          (when (not (scxml-inner-canvas-p parent-drawing-canvas))
-            ;; welp, I'm really hoping you're _in_ a rectangle
-            (error "Not sure how to continue here :("))
+        (let ((parent-drawing-canvas (scxml-get-parent-drawing-inner-canvas parallel)))
+          (unless parent-drawing-canvas
+            (error "Unable to build drawing without an already drawn parent."))
           (let ((absolute-rect (scxml-absolute-coordinates parent-drawing-canvas
                                                            (scxml-relative-rect hint)))
                 (guide-stripe (scxml-stripe hint)))
