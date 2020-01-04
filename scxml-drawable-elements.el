@@ -79,7 +79,7 @@ consumes the entire canvas."
 
       (let ((parent-drawing-canvas (scxml-get-parent-drawing-inner-canvas state)))
         (unless parent-drawing-canvas
-          (error "Unable to build drawing without an already drawn parent.")
+          (error "Unable to build drawing without an already drawn parent."))
         (let ((absolute-rect (scxml-absolute-coordinates parent-drawing-canvas hint)))
           (with-slots (x-min x-max y-min y-max) absolute-rect
             (funcall drawing-factory
@@ -91,7 +91,7 @@ consumes the entire canvas."
                      :name label
                      :highlight highlight
                      :edit-idx edit-idx
-                     :parent state))))))))
+                     :parent state)))))))
 
 (require 'scxml-drawing-point)          ;for initials.
 (defconst scxml--drawable-initial-label "I"

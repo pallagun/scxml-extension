@@ -7,11 +7,13 @@
 
 (ert-deftest scxml-replay-0001-many-basic-moves ()
   (scxml-replay-test
-   (scxml---resolve-recording "0001-many-basic-moves.scxml-recording")))
+   (scxml---resolve-recording "0001-many-basic-moves.scxml-recording")
+   t))
 
 (ert-deftest scxml-replay-0002-zooming-and-panning ()
   (scxml-replay-test
-   (scxml---resolve-recording "0002-zooming-and-panning.scxml-recording")))
+   (scxml---resolve-recording "0002-zooming-and-panning.scxml-recording")
+   t))
 
 
 (provide 'scxml-run-test-recordings)

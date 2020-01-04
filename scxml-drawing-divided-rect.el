@@ -1,6 +1,7 @@
 ;;; scxml-drawing-divided-rect.el --- scxml drawing divided rectangle functions -*- lexical-binding: t -*-
 
 ;;; Commentary:
+;; This needs some attention
 
 ;;; Code:
 (require 'scxml-drawing)

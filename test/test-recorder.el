@@ -97,9 +97,12 @@ should macro to enforce recorded screen asserts."
   ;; disable global recording, no need to record if you're replaying.
   (setq scxml-recording nil)
   (let ((test-data (buffer-string))
+        (human-mode (called-interactively-p))
         (current-point 0)
-        (diagram))
-    (cl-loop for line-data = (condition-case nil
+        (diagram)
+        (step-count 0))
+    (cl-loop with last-instruction = nil
+             for line-data = (condition-case nil
                                  (read-from-string test-data current-point)
                                (error nil))
              when (null line-data)      ;If this is true there are no more instructions
@@ -107,6 +110,7 @@ should macro to enforce recorded screen asserts."
 
              ;; Pull the instruction out and prepare for the next instruction read.
              for instruction = (car line-data)
+             do (incf step-count)
              do (setq current-point (cdr line-data))
              ;; Execute the instruction
              do (let ((function-name (first instruction)))
@@ -116,11 +120,19 @@ should macro to enforce recorded screen asserts."
                          (setq diagram
                                (apply #'scxml-begin-replay-session (cdr instruction))))
                         ((eq function-name 'assert-screen)
-                         (when perform-asserts
-                           (should (equal (cadr instruction)
-                                          (scxml-capture-screen (scxml-diagram-viewport diagram))))))
+                         (if perform-asserts
+                             (should (equal (cadr instruction)
+                                            (scxml-capture-screen (scxml-diagram-viewport diagram))))
+                           ;; otherwise, if you're in human-mode, yell about it.
+                           (when (and human-mode
+                                      (not (equal (cadr instruction)
+                                                  (scxml-capture-screen (scxml-diagram-viewport diagram)))))
+                             (read-string (format "Failed assert, last instruction: %s" last-instruction)))))
                         (t
                          ;; normal instruction router.
-                         (eval instruction)))))))
+                         (eval instruction)
+                         (when human-mode
+                           (read-string (format "Command %d complete: %s" step-count instruction))))))
+             do (setq last-instruction instruction))))
 
 (provide 'test-recorder)

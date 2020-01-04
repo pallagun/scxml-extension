@@ -71,21 +71,26 @@ elements.")
     (define-key map (kbd "C-M-f") 'scxml-diagram-mode--next-element)
     ;; normally backward-sexp
     (define-key map (kbd "C-M-b") 'scxml-diagram-mode--prev-element);; mark-prev)
+
     ;; normally backwards-list and forwards-list
     (define-key map (kbd "C-M-n") 'scxml-diagram-mode--descend-element)
     (define-key map (kbd "C-M-p") 'scxml-diagram-mode--ascend-element)
     (define-key map (kbd "q") 'scxml-diagram-mode--cancel)
-    (define-key map (kbd "r") 'scxml-diagram-mode--redraw)
+    (define-key map (kbd "g") 'scxml-diagram-mode--redraw)
     (define-key map (kbd "m") 'scxml-diagram-mode--toggle-mouse-mode)
 
     ;; drawing stuff.
     (define-key map (kbd "d") 'scxml-diagram-mode--toggle-edit-mode)
     (define-key map (kbd "s") 'scxml-diagram-mode--simplify)
     (define-key map (kbd "a") 'scxml-diagram-mode--automatic)
+
     (define-key map (kbd "M-f") 'scxml-diagram-mode--modify-right)
     (define-key map (kbd "M-b") 'scxml-diagram-mode--modify-left)
     (define-key map (kbd "M-p") 'scxml-diagram-mode--modify-up)
     (define-key map (kbd "M-n") 'scxml-diagram-mode--modify-down)
+    (define-key map (kbd "+") 'scxml-diagram-mode--modify-larger)
+    (define-key map (kbd "-") 'scxml-diagram-mode--modify-smaller)
+
 
     ;; document modification
     (define-key map (kbd "C-d") 'scxml-diagram-mode--delete-marked)
@@ -251,6 +256,24 @@ elements.")
     (if (scxml-diagram-mode--edit-idx)
         (scxml-diagram-mode--disable-edit-mode)
       (scxml-diagram-mode--mark-parent))))
+(defun scxml-diagram-mode--modify-larger (&optional increment)
+  "Modify currently focused thing to be larger, optionall by INCREMENT.
+
+Currently only able to zoom in when in viewport mode."
+  (interactive)
+  (scxml-record 'scxml-diagram-mode--modify-larger increment)
+  (when (eq scxml-diagram-mode--mouse-mode 'viewport)
+    (scxml-diagram-mode--zoom-in increment)))
+
+(defun scxml-diagram-mode--modify-smaller (&optional increment)
+  "Modify currently focused thing to be smaller, optionall by INCREMENT.
+
+Currently only able to zoom out when in viewport mode."
+  (interactive)
+  (scxml-record 'scxml-diagram-mode--modify-smaller increment)
+  (when (eq scxml-diagram-mode--mouse-mode 'viewport)
+    (scxml-diagram-mode--zoom-out increment)))
+
 (defun scxml-diagram-mode--modify (move-vector)
   "Modify the selected drawing element by move-vector"
   (if (eq scxml-diagram-mode--mouse-mode 'viewport)
@@ -288,12 +311,13 @@ elements.")
   "Redraw the screen."
   (interactive)
   (scxml-record 'scxml-diagram-mode--redraw)
-  (let ((start (float-time)))
-    (scxml-draw scxml-draw--diagram)
-    (let ((duration-ms (- (float-time) start)))
-      (message "Render time: %s ms" duration-ms))
-    (when scxml-diagram-mode--debug
-      (scxml-diagram-mode--debug-barf))))
+  (save-excursion
+    (let ((start (float-time)))
+      (scxml-draw scxml-draw--diagram)
+      (let ((duration-ms (- (float-time) start)))
+        (message "Render time: %s ms" duration-ms))
+      (when scxml-diagram-mode--debug
+        (scxml-diagram-mode--debug-barf)))))
 
 (defun scxml-diagram-mode--mouse-handler (event)
   "Handle any arbitrary non-movement mouse event"
@@ -438,6 +462,28 @@ elements.")
   "Zoom the viewport by alpha"
   (scxml-zoom (scxml-diagram-viewport scxml-draw--diagram) alpha)
   (scxml-diagram-mode--redraw))
+
+(defun scxml-diagram-mode--set-root-canvas-size (columns lines)
+  "Reset the size of the root canvavs to be COLUMNS by LINES characters."
+  (interactive
+   (let* ((margin 2)
+          (current-canvas (scxml-diagram-mode--canvas))
+          (default-width (- (window-body-width) margin))
+          (default-height (- (window-height nil 'floor) margin))
+          (current-width (round (scxml-width current-canvas)))
+          (current-height (round (scxml-height current-canvas)))
+          (width-prompt (format "Width (current:%d, default:%d): " current-width default-width))
+          (height-prompt (format "Height (current:%d, default:%d): " current-height default-height)))
+     (list (read-string width-prompt nil nil default-width)
+           (read-string height-prompt nil nil default-height))))
+  (when (not (numberp columns))
+    (setq columns (string-to-number columns)))
+  (when (not (numberp lines))
+    (setq lines (string-to-number lines)))
+  (let ((canvas (scxml-diagram-mode--canvas)))
+    (setf (scxml-x-max canvas) (+ columns (scxml-x-min canvas))
+          (scxml-y-max canvas) (+ lines (scxml-y-min canvas)))
+    (scxml-diagram-mode--redraw)))
 
 (defun scxml-diagram-mode--unmark-all (&optional do-redraw)
   "Unmark all elements"
@@ -763,50 +809,51 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
 (defun scxml-diagram-mode--debug-barf ()
   "Barf out a ton of debug info at the bottom of the diagram"
 
-  (scxml-draw--goto-pixel
-   (scxml-pixel :x 0
-                :y (round (+ 2 (scxml-required-pixel-height (scxml-diagram-mode--viewport))))))
-  (delete-region (point) (point-max))
-  (scxml-draw--goto-pixel
-   (scxml-pixel :x 0
-                :y (round(+ 3 (scxml-required-pixel-height (scxml-diagram-mode--viewport))))))
+  (save-excursion
+    (scxml-draw--goto-pixel
+     (scxml-pixel :x 0
+                  :y (round (+ 2 (scxml-required-pixel-height (scxml-diagram-mode--viewport))))))
+    (delete-region (point) (point-max))
+    (scxml-draw--goto-pixel
+     (scxml-pixel :x 0
+                  :y (round(+ 3 (scxml-required-pixel-height (scxml-diagram-mode--viewport))))))
 
-  (insert
-   (format "Viewport: %s\n" (scxml-diagram-viewport scxml-draw--diagram))
-   (format "mainCanv: %s\n" (scxml-diagram-mode--canvas))
-   (format "linkBuff: %s\n" (scxml-xml-buffer scxml-draw--diagram)))
+    (insert
+     (format "Viewport: %s\n" (scxml-diagram-viewport scxml-draw--diagram))
+     (format "mainCanv: %s\n" (scxml-diagram-mode--canvas))
+     (format "linkBuff: %s\n" (scxml-xml-buffer scxml-draw--diagram)))
 
-  (let ((marked scxml-diagram-mode--marked-element))
-    (if marked
-        (insert
-         (format "lastClik: %s\n" (if scxml-diagram-mode--last-click-pixel
-                                      (format "%s -> %s -> %s{%s} -> %s/%s"
-                                              (scxml-print scxml-diagram-mode--last-click-pixel)
-                                              (scxml-print (scxml-get-scratch-coord (scxml-diagram-mode--viewport)
-                                                                                    scxml-diagram-mode--last-click-pixel))
-                                              (scxml-print (scxml-get-coord (scxml-diagram-mode--viewport)
-                                                                            scxml-diagram-mode--last-click-pixel))
-                                              (scxml-print (scxml-get-scratch-coord (scxml-diagram-mode--viewport)
-                                                                                    (scxml-BL (scxml-get-coord (scxml-diagram-mode--viewport)
-                                                                                                               scxml-diagram-mode--last-click-pixel))))
-                                              (scxml-print (scxml-get-pixel (scxml-diagram-mode--viewport)
-                                                                            (scxml-BL (scxml-get-coord (scxml-diagram-mode--viewport)
-                                                                                                       scxml-diagram-mode--last-click-pixel))))
-                                              (scxml-print (scxml-get-pixel (scxml-diagram-mode--viewport)
-                                                                            (scxml-centroid (scxml-get-coord (scxml-diagram-mode--viewport)
-                                                                                                             scxml-diagram-mode--last-click-pixel)))))
-                                    "none"))
-         (format "Marked:   %s\n" (scxml-print marked))
-         (format "-EditIdx: %s @ %s \n" (scxml-diagram-mode--edit-idx)
-                 (when (scxml-diagram-mode--edit-idx)
-                   (scxml-edit-idx-point (scxml-element-drawing marked) (scxml-diagram-mode--edit-idx))))
-         (format "-Hint   : %s\n" (scxml-diagram-mode--debug-hint marked))
-         (format "-GeoType: %s\n" (eieio-object-class (scxml-element-drawing marked)))
-         (format "-Geometf: %s\n" (scxml-print (scxml-element-drawing marked))))
-      (insert "No marked element\n\n")))
-  (when scxml-recording
-    (let ((step 0))
-    (insert (mapconcat (lambda (x) (format "REC[%d]: %s" (incf step) x)) scxml-recording "\n")))))
+    (let ((marked scxml-diagram-mode--marked-element))
+      (if marked
+          (insert
+           (format "lastClik: %s\n" (if scxml-diagram-mode--last-click-pixel
+                                        (format "%s -> %s -> %s{%s} -> %s/%s"
+                                                (scxml-print scxml-diagram-mode--last-click-pixel)
+                                                (scxml-print (scxml-get-scratch-coord (scxml-diagram-mode--viewport)
+                                                                                      scxml-diagram-mode--last-click-pixel))
+                                                (scxml-print (scxml-get-coord (scxml-diagram-mode--viewport)
+                                                                              scxml-diagram-mode--last-click-pixel))
+                                                (scxml-print (scxml-get-scratch-coord (scxml-diagram-mode--viewport)
+                                                                                      (scxml-BL (scxml-get-coord (scxml-diagram-mode--viewport)
+                                                                                                                 scxml-diagram-mode--last-click-pixel))))
+                                                (scxml-print (scxml-get-pixel (scxml-diagram-mode--viewport)
+                                                                              (scxml-BL (scxml-get-coord (scxml-diagram-mode--viewport)
+                                                                                                         scxml-diagram-mode--last-click-pixel))))
+                                                (scxml-print (scxml-get-pixel (scxml-diagram-mode--viewport)
+                                                                              (scxml-centroid (scxml-get-coord (scxml-diagram-mode--viewport)
+                                                                                                               scxml-diagram-mode--last-click-pixel)))))
+                                      "none"))
+           (format "Marked:   %s\n" (scxml-print marked))
+           (format "-EditIdx: %s @ %s \n" (scxml-diagram-mode--edit-idx)
+                   (when (scxml-diagram-mode--edit-idx)
+                     (scxml-edit-idx-point (scxml-element-drawing marked) (scxml-diagram-mode--edit-idx))))
+           (format "-Hint   : %s\n" (scxml-diagram-mode--debug-hint marked))
+           (format "-GeoType: %s\n" (eieio-object-class (scxml-element-drawing marked)))
+           (format "-Geometf: %s\n" (scxml-print (scxml-element-drawing marked))))
+        (insert "No marked element\n\n")))
+    (when scxml-recording
+      (let ((step 0))
+        (insert (mapconcat (lambda (x) (format "REC[%d]: %s" (incf step) x)) scxml-recording "\n"))))))
 
 (provide 'scxml-diagram-mode)
 ;;; scxml-diagram-mode.el ends here
