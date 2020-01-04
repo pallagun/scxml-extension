@@ -136,7 +136,7 @@ Note: there should only be one child and it should be a transition."
         (highlight (scxml--highlight parallel))
         (edit-idx (scxml--edit-idx parallel)))
     (let* ((num-children (length (scxml-children parallel)))
-           (num-rows (floor (sqrt num-children)))
+           (num-rows (max 1 (floor (sqrt num-children))))
            (num-columns (ceiling (/ num-children num-rows))))
       (if (null hint)
           ;; Generate the drawing (not based on a hint)

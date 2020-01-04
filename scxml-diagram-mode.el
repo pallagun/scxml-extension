@@ -96,6 +96,7 @@ elements.")
     (define-key map (kbd "S") 'scxml-diagram-mode--add-child-state)
     (define-key map (kbd "T") 'scxml-diagram-mode--add-child-transition)
     (define-key map (kbd "I") 'scxml-diagram-mode--add-child-initial)
+    (define-key map (kbd "P") 'scxml-diagram-mode--add-child-parallel)
 
     map)
   "Keymap for scxml-diagram major mode")
@@ -729,6 +730,22 @@ the user is attempting to mark an edit idx."
                    (object-of-class-p child 'scxml-drawable-element)))
     (scxml-diagram-mode--apply-edit parent t)
     (scxml-diagram-mode--redraw)))
+(defun scxml-diagram-mode--add-child-parallel (id)
+  "Add a child <parallel> element to the marked element"
+  (interactive "sNew <parallel> id: ")
+  ;; TODO - this is mostly shared with add-child-state, fix that.
+  (let ((parent (or scxml-diagram-mode--marked-element
+                    (scxml-diagram-mode--display-element))))
+    (scxml-add-child parent (scxml-drawable-parallel :id id) t)
+    (scxml-visit parent
+                 (lambda (child)
+                   (scxml--set-hint child nil)
+                   (scxml--set-drawing-invalid child 't))
+                 (lambda (child)
+                   (object-of-class-p child 'scxml-drawable-element)))
+    (scxml-diagram-mode--apply-edit parent t)
+    (scxml-diagram-mode--redraw)))
+
 (defun scxml-diagram-mode--add-child-initial ()
   "Begin an <initial> adding mouse saga where the initial parent is the currently marked element."
   (interactive)
