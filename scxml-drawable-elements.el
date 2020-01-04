@@ -189,7 +189,10 @@ Note: there should only be one child and it should be a transition."
 
 (require 'scxml-drawing-arrow)          ;for transitions.
 (defclass scxml-drawable-transition (scxml-transition scxml-drawable-element)
-  ())
+  ()
+  :documentation "Note there is no scxml-build-drawing function
+  for a transition as they are all build as a collection, not
+  individually.")
 (cl-defmethod scxml--set-drawing-invalid ((transition scxml-drawable-transition) is-invalid &optional dont-cascade)
   "Note that when a transition goes from hinted to unhinted it cause other transitions to become Invalid.
 
@@ -209,17 +212,13 @@ transition to shuffle connector points."
                                           touched-states)
                                   (member (scxml-target element)
                                           touched-states))))))))
-(cl-defmethod scxml-build-drawing ((transition scxml-drawable-transition) (canvas scxml-canvas) &optional source-connector target-connector)
-  "?"
-  ;; TODO - I'm not sure how this works, but this needs to be looked at.
-  (error "TODO: Implementation"))
-
 
 (defun scxml--drawable-element-factory (type attrib-alist)
   "Build a drawable element of TYPE and having ATTRIB-ALIST properties."
   (let* ((base-xml-element-name (symbol-name type))
          (base-class (intern (format "scxml-%s" base-xml-element-name)))
          (base-slots (eieio-class-slots base-class))
+         ;; TODO - Is there something more appropriate than a cl--* function?
          (base-slot-symbols (mapcar 'cl--slot-descriptor-name base-slots))
          (drawable-class (intern (format "scxml-drawable-%s" base-xml-element-name)))
          (drawable-slots (eieio-class-slots drawable-class))
