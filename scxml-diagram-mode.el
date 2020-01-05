@@ -759,7 +759,6 @@ the user is attempting to mark an edit idx."
                    (object-of-class-p child 'scxml-drawable-element)))
     (scxml-diagram-mode--apply-edit parent t)
     (scxml-diagram-mode--redraw)))
-
 (defun scxml-diagram-mode--add-child-initial ()
   "Begin an <initial> adding mouse saga where the initial parent is the currently marked element."
   (interactive)
@@ -815,6 +814,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
                  (unless (object-of-class-p element 'scxml-scxml)
                    (error "This element does not have a settable name."))
                  (list (read-string "Name: " (scxml-element-name element)))))
+  (scxml-record 'scxml-diagram-mode--edit-name new-name)
   (let ((element scxml-diagram-mode--marked-element))
     (setf (scxml-element-name element) new-name)
     (scxml--set-drawing-invalid element t)
