@@ -174,6 +174,7 @@ Note: there should only be one child and it should be a transition."
                                         :divisions (scxml-divisions guide-stripe))))))))))
 (cl-defmethod scxml--set-drawing-invalid ((parallel scxml-drawable-parallel) is-invalid)
   "Mark this PARALLEL's drawing as IS-INVALID.  Will also invalidate any transitions in."
+  ;; TODO - this is very similar to the state-type set-drawing-invalid function.
   (cl-call-next-method parallel is-invalid)
   (when is-invalid
     ;; mark all transitions to or from this state as possibly invalid as well.
@@ -197,6 +198,7 @@ Note: there should only be one child and it should be a transition."
 If there are two transitions touching a single state and one of
 them goes from automatic to hinted, it could cause the other
 transition to shuffle connector points."
+  ;; TODO - this
   (cl-call-next-method transition is-invalid)
   (when (and is-invalid (not dont-cascade))
     (let ((touched-states (list (scxml-source transition)
