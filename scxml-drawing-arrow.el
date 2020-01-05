@@ -147,6 +147,12 @@ path (target-point))."))
           (scxml-print (scxml-arrow-source arrow))
           (scxml-print (scxml-arrow-path arrow))
           (scxml-print (scxml-arrow-target arrow))))
+(defun scxml--arrow-source-locked (arrow)
+  "Return t if the ARROW's source connector can not be move-edited."
+  (object-of-class-p (scxml-arrow-source arrow) 'scxml-drawing-connector-point))
+(defun scxml--arrow-target-locked (arrow)
+  "Return t if the ARROW's target connector can not be move-edited."
+  (object-of-class-p (scxml-arrow-target arrow) 'scxml-drawing-connector-point))
 (cl-defmethod scxml-edit-idx-point ((arrow scxml-arrow) (idx integer))
   "Return the scxml-point of ARROW's edit-idx IDX."
   ;; 0 is the start connector, N is the end connector
@@ -154,22 +160,35 @@ path (target-point))."))
   (when (< idx 0)
     (error "Arg: scxml--edit-idx-point: index must be >= 0"))
   (with-slots (source target path) arrow
-     (if (eq idx 0)                      ;start point?
+    ;; If the source connector isn't editable, effectively bump up the idx.
+    (when (scxml--arrow-source-locked arrow)
+      (incf idx))
+     (if (eq idx 0)                      ;start connector
          (scxml-connection-point source)
-       (let ((num-path-points (scxml-num-edit-idxs arrow)))
-         (when (>= idx num-path-points)
-           (error "Arg: scxml--edit-idx-points: idx must be <= num path points"))
-         (if (eq idx (1- num-path-points)) ;end point?
-             (scxml-connection-point target)
-           ;; middle someplace
-           (scxml-nth path (1- idx)))))))
+       (let ((num-path-pts (scxml-num-points path)))
+         ;; [0 1 2 3] -> #2
+         (if (< (1- idx) num-path-pts)
+             ;; return the (- idx 2)'th path point
+             (scxml-nth path (1- idx))
+           ;; return the last point if it's returnable.
+           (if (and (eq idx (1+ num-path-pts))
+                    (not (scxml--arrow-target-locked arrow)))
+               (scxml-connection-point target)
+             (error "Arg: scxml--edit-idx-points: idx must be <= num path points")))))))
 (cl-defmethod scxml-edit-idx-points ((arrow scxml-arrow))
   "Return all edit-idx points for ARROW in order"
-  (scxml--full-path arrow 0.0))
+  (let ((all-points (scxml--full-path arrow 0.0)))
+    (when (scxml--arrow-source-locked arrow)
+      (setq all-points (cdr all-points)))
+    (if (scxml--arrow-target-locked arrow)
+        (butlast all-points)
+      all-points)))
 (cl-defmethod scxml-num-edit-idxs ((arrow scxml-arrow))
   "Return the number of edit-idxs in ARROW."
-   ; + 2 to handle start and end connector points
-  (+ 2 (scxml-num-points (scxml-arrow-path arrow))))
+  ;; connectors to points are not editable.
+  (+ (scxml-num-points (scxml-arrow-path arrow))
+     (if (scxml--arrow-source-locked arrow) 0 1)
+     (if (scxml--arrow-target-locked arrow) 0 1)))
 
 (cl-defmethod scxml-build-hint ((arrow scxml-arrow) (parent-canvas scxml-canvas))
   "?"
@@ -207,7 +226,8 @@ This may not be possible due to constraint violation and in those
 cases this function may return nil."
   (let* ((full-pts (scxml--full-path arrow))
          (new-pts (scxml-nudge-path full-pts
-                                    edit-idx
+                                    (+ (if (scxml--arrow-source-locked arrow) 1 0)
+                                       edit-idx)
                                     move-vector)))
     (scxml---build-path-if-valid arrow new-pts)))
 
@@ -446,6 +466,7 @@ been correctly set."
   (error "implement me"))
 (cl-defmethod scxml--build-edge-edited ((arrow scxml-arrow) (edit-idx integer) move-direction)
   "Attempt to move one of the ARROW's EDIT-IDXs in MOVE-DIRECTION."
+  ;; TODO - delete this function?
   (with-slots (source target path) arrow
     (let* ((old-points (scxml--full-path arrow))
            (move-vector (scxml-vector-from-direction move-direction))

@@ -67,30 +67,31 @@ Might return the connector right back to you if alreay snapped."
                (<= edge-parametric 1.0))
       edge-parametric)))
 
-(cl-defmethod scxml-build-connector ((connector scxml-drawing-connector-rect) (target-point scxml-point) &optional allow-edge-change)
+(cl-defmethod scxml-build-connector ((connector scxml-drawing-connector-rect) (target-point scxml-point))
   "Build a brand new connector based off nudging CONNECTOR over to TARGET-POINT.
 
 Will return nil if the connector can't be built."
-  (with-slots ((rect node) edge) connector
-    (if (not allow-edge-change)
-        (let ((parametric (scxml---connector-parametric connector target-point edge)))
-          (when parametric
-            (scxml-drawing-connector-rect :node rect :edge edge :parametric parametric)))
-      (cl-loop for edge-candidate in (cons edge
-                                            (seq-filter (lambda (x) (not (equal x edge)))
-                                                        (list 'up
-                                                              'down
-                                                              'left
-                                                              'right)))
-               for parametric = (scxml---connector-parametric connector
-                                                              target-point
-                                                              edge-candidate)
-               until parametric
-               finally return (when parametric
-                                (scxml-drawing-connector-rect :node rect
-                                                 :edge edge-candidate
-                                                 :parametric parametric))
-               ))))
+  (let ((allow-edge-change t))
+    (with-slots ((rect node) edge) connector
+      (if (not allow-edge-change)
+          (let ((parametric (scxml---connector-parametric connector target-point edge)))
+            (when parametric
+              (scxml-drawing-connector-rect :node rect :edge edge :parametric parametric)))
+        (cl-loop for edge-candidate in (cons edge
+                                             (seq-filter (lambda (x) (not (equal x edge)))
+                                                         (list 'up
+                                                               'down
+                                                               'left
+                                                               'right)))
+                 for parametric = (scxml---connector-parametric connector
+                                                                target-point
+                                                                edge-candidate)
+                 until parametric
+                 finally return (when parametric
+                                  (scxml-drawing-connector-rect :node rect
+                                                                :edge edge-candidate
+                                                                :parametric parametric))
+                 )))))
 
 (provide 'scxml-drawing-connector-rect)
 ;;; scxml-drawing-connector-rect.el ends here
