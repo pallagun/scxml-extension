@@ -113,7 +113,7 @@ Children must be executable content.")
   "attributes: target"
   (append (list (cons 'target (scxml-target-id element)))
           (cl-call-next-method)))
-(cl-defmethod scxml-get-all-transitions-to ((element scxml-state-type))
+(cl-defmethod scxml-get-all-transitions-to ((element scxml-element-with-id))
   "Collect all transition elements which target STATE"
   (let ((target-id (scxml-element-id element)))
     (scxml-collect (scxml-root-element element)

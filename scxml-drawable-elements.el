@@ -172,6 +172,18 @@ Note: there should only be one child and it should be a transition."
                                         :axis (scxml-axis guide-stripe)
                                         :cells (scxml-cells guide-stripe)
                                         :divisions (scxml-divisions guide-stripe))))))))))
+(cl-defmethod scxml--set-drawing-invalid ((parallel scxml-drawable-parallel) is-invalid)
+  "Mark this PARALLEL's drawing as IS-INVALID.  Will also invalidate any transitions in."
+  (cl-call-next-method parallel is-invalid)
+  (when is-invalid
+    ;; mark all transitions to or from this state as possibly invalid as well.
+    (mapc (lambda (e) (scxml--set-drawing-invalid e 't))
+          (append                       ;TODO - I think I can unse nconc here
+           (seq-filter (lambda (child)
+                         (and (object-of-class-p child 'scxml-drawable-element)
+                              (not (object-of-class-p child 'scxml-drawable-transition))))
+                       (scxml-children parallel)) ;all from state.
+           (scxml-get-all-transitions-to parallel)))))
 
 (require 'scxml-drawing-arrow)          ;for transitions.
 (defclass scxml-drawable-transition (scxml-transition scxml-drawable-element)
