@@ -98,6 +98,7 @@ elements.")
     (define-key map (kbd "T") 'scxml-diagram-mode--add-child-transition)
     (define-key map (kbd "I") 'scxml-diagram-mode--add-child-initial)
     (define-key map (kbd "P") 'scxml-diagram-mode--add-child-parallel)
+    (define-key map (kbd "e n") 'scxml-diagram-mode--edit-name)
 
     map)
   "Keymap for scxml-diagram major mode")
@@ -808,6 +809,17 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
     (scxml-diagram-mode--redraw)
     (scxml-diagram-mode--apply-edit parent t)))
 
+(defun scxml-diagram-mode--edit-name (new-name)
+  "Edit the xml 'name' attribute of the currently marked element."
+  (interactive (let* ((element scxml-diagram-mode--marked-element))
+                 (unless (object-of-class-p element 'scxml-scxml)
+                   (error "This element does not have a settable name."))
+                 (list (read-string "Name: " (scxml-element-name element)))))
+  (let ((element scxml-diagram-mode--marked-element))
+    (setf (scxml-element-name element) new-name)
+    (scxml--set-drawing-invalid element t)
+    (scxml-diagram-mode--redraw)))
+
 (defun scxml-diagram-mode--delete-marked ()
   "Delete the marked element, mark the parent."
   (interactive)
@@ -842,8 +854,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
 
 (defun scxml-diagram-mode--apply-edit (element &optional include-children)
   "Check ELEMENT in linked XML buffer and apply changes from the diagram."
-  ;; going to need to inject tracking identifiers into the document and
-  ;; slam them into my scxml-elements
+  ;; TODO - debounce this, it gets bad when your doing mouse dragging.
   (scxml-xml-update-element scxml-draw--diagram element include-children))
 (defun scxml-diagram-mode--sync-linked-xml ()
   "Sync the entire diagram to the xml buffer if it exists."
