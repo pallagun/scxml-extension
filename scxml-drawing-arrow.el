@@ -181,7 +181,7 @@ path (target-point))."))
     (when (scxml--arrow-source-locked arrow)
       (setq all-points (cdr all-points)))
     (if (scxml--arrow-target-locked arrow)
-        (butlast all-points)
+        (nbutlast all-points)
       all-points)))
 (cl-defmethod scxml-num-edit-idxs ((arrow scxml-arrow))
   "Return the number of edit-idxs in ARROW."
@@ -194,22 +194,46 @@ path (target-point))."))
   "?"
   ;; TODO - I'm not sure how this works, but this needs to be looked at.
   (error "TODO: Implementation"))
-(defun scxml---build-path-if-valid (arrow new-pts)
+(defun scxml---build-path-if-valid (arrow new-pts &optional iterations)
   "If ARROW is valid to represend by new-pts, return a new scxml-arrow with those points"
+  ;; TODO - rename this 'build-arrow-if-valid', it's making an arrow, not a path.
+
   ;; TODO - examine why this is needed.
   ;; TODO - don't bother building a new connecto if it didn't move.
   ;; Actually, I think I should.
+
+  ;; TODO - don't bother calling build-connector if the point doesn't change?
   (let ((new-source-connector (scxml-build-connector (scxml-arrow-source arrow)
                                                      (first new-pts)))
         (new-target-connector (scxml-build-connector (scxml-arrow-target arrow)
                                                      (car (last new-pts)))))
     (if (and new-source-connector new-target-connector)
-        (scxml-arrow :source new-source-connector
-                     :target new-target-connector
-                     :path (scxml-cardinal-path :points
-                                                (nbutlast (cdr new-pts)))
-                     :parent (scxml-parent arrow))
-      'nil)))
+        (let ((new-arrow (scxml-arrow :source new-source-connector
+                                      :target new-target-connector
+                                      :path (scxml-cardinal-path :points
+                                                                 (nbutlast (cdr new-pts)))
+                                      :parent (scxml-parent arrow))))
+
+          ;; TODO - if either connector is a rect connector which jumped edges,
+          ;; Ensure you aren't creating a strangely locked arrow.
+          (when (and (scxml-drawing-connector-rect-p new-source-connector)
+                     (scxml-drawing-connector-rect-p (scxml-arrow-source arrow))
+                     (not (eq (scxml-node-edge new-source-connector)
+                              (scxml-node-edge (scxml-arrow-source arrow)))))
+            ;; Both connectors are rectangles and the edge has changed,
+            ;; check that path is sane.  TODO - fix this intelligently,
+            ;; currently I'm just reverting to auto-path
+            (scxml--arrow-set-default-path new-arrow))
+
+          (when (and (scxml-drawing-connector-rect-p new-target-connector)
+                     (scxml-drawing-connector-rect-p (scxml-arrow-target arrow))
+                     (not (eq (scxml-node-edge new-target-connector)
+                              (scxml-node-edge (scxml-arrow-target arrow)))))
+            ;; Both connectors are rectangles and the edge has changed,
+            ;; check that path is sane.
+            (scxml--arrow-set-default-path new-arrow))
+          new-arrow)
+      nil)))
 (cl-defmethod scxml-build-move-edited ((arrow scxml-arrow) (move-vector scxml-point))
   "Return a new arrow representing ARROW moved by MOVE-VECTOR.
 
@@ -464,32 +488,6 @@ been correctly set."
 
 
   (error "implement me"))
-(cl-defmethod scxml--build-edge-edited ((arrow scxml-arrow) (edit-idx integer) move-direction)
-  "Attempt to move one of the ARROW's EDIT-IDXs in MOVE-DIRECTION."
-  ;; TODO - delete this function?
-  (with-slots (source target path) arrow
-    (let* ((old-points (scxml--full-path arrow))
-           (move-vector (scxml-vector-from-direction move-direction))
-           (new-points (scxml-draw--nudge-path old-points edit-idx move-vector))
-           (source-parameters (scxml--get-connection-parameters-at-point
-                               source
-                               (first new-points)))
-           (target-parameters (scxml--get-connection-parameters-at-point
-                               target
-                               (car (last new-points)))))
-      (if (and source-parameters target-parameters)
-          (let* ((new-source (scxml-drawing-connector-rect :node (scxml-node source)
-                                              :edge (first source-parameters)
-                                              :parametric (second source-parameters)))
-                 (new-target (scxml-drawing-connector-rect :node (scxml-node target)
-                                              :edge (first target-parameters)
-                                              :parametric (second target-parameters)))
-                 (new-path (cdr (nbutlast new-points))))
-            (scxml-arrow :source new-source
-                         :target new-target
-                         :path (scxml-path :points new-path)
-                         :parent (scxml-parent arrow)))
-        'nil))))
 (cl-defgeneric scxml--generate-hint-rect ((source scxml-drawing) (target scxml-drawing))
   "Get a reference rectangle for the hint to be based on."
   ;; TODO - is this still used?

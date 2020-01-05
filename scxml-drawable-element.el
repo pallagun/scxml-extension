@@ -71,6 +71,8 @@ Used for parsing hints out of xml attributes."
 (cl-defmethod scxml--edit-idx ((element scxml-drawable-element))
   "Return the current edit-idx of ELEMENT, may be nil."
   (scxml-get-attrib element 'scxml---drawing-edit-idx))
+(cl-defgeneric scxml--set-edit-idx ((element scxml-drawable-element) &optional idx dont-update-drawing)
+  "Set the edit-xdi of ELEMENT's drawing to IDX (nillable).")
 (cl-defmethod scxml--set-edit-idx ((element scxml-drawable-element) &optional idx dont-update-drawing)
   "Set the edit-idx of the ELEMENT's drawing to IDX.
 

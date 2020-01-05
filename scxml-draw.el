@@ -110,6 +110,11 @@ Will throw if it can't move it. will not render!!"
           (setf (scxml-arrow-source arrow) source
                 (scxml-arrow-target arrow) target
                 (scxml-arrow-path arrow) path)
+          (let ((num-edit-idxs (scxml-num-edit-idxs edited-arrow))
+                (current-idx (scxml--edit-idx transition)))
+            (when (and current-idx
+                       (>= current-idx num-edit-idxs))
+              (scxml--set-edit-idx transition (1- num-edit-idxs))))
           (scxml--set-hint transition
                            (scxml-build-hint arrow parent-drawing-canvas))
           (scxml--set-drawing-invalid transition 't)
