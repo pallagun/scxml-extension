@@ -135,7 +135,6 @@ nil."
                                   element)
                (goto-char end-pos)))))))))
 
-
 ;; XML stuff that shouldn't be in here.
 (cl-defmethod scxml-insert-new-child ((parent-start-tag scxml-xmltok) (child scxml-element))
   "Insert the XML of CHILD as the last child of PARENT-RANGE."

@@ -246,7 +246,8 @@ below SEARCH-ROOT")
                    (when (string-equal (scxml-element-id element) id-to-find)
                      (cl-return-from scxml-element-find-by-id-block element)))
                  (lambda (element)
-                   (object-of-class-p element 'scxml-element-with-id)))))
+                   (object-of-class-p element 'scxml-element-with-id)))
+    nil))
 
 (defclass scxml-element-with-initial ()
   ((initial :initarg :initial

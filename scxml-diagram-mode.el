@@ -821,12 +821,23 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
   (let ((parent (scxml-parent element)))
     (when (null parent)
       (error "Unable to find parent of %s" (scxml-print element)))
+    ;; This is a hack to handle invalidation.
+    (mapc (lambda (sibling)
+            (scxml--set-drawing-invalid sibling 't))
+          (seq-filter (lambda (sibling)
+                        (object-of-class-p sibling 'scxml-drawable-element))
+                      (scxml-children parent)))
+    ;; (scxml--set-drawing-invalid element)
+
+    ;; TODO - make-orphan should be overridden for drawable-elements
+    ;; and should handle invalidation.  If the element is ever removed
+    ;; the drawing should all be invalidated.
     (scxml-make-orphan element)
-    (scxml-visit parent
-                 (lambda (sibling)
-                   (scxml--set-drawing-invalid sibling 't))
-                 (lambda (child)
-                   (object-of-class-p child 'scxml-drawable-element)))
+    ;; (scxml-visit parent
+    ;;              (lambda (sibling)
+    ;;                (scxml--set-drawing-invalid sibling 't))
+    ;;              (lambda (child)
+    ;;                (object-of-class-p child 'scxml-drawable-element)))
     (scxml-diagram-mode--apply-edit parent t)))
 
 (defun scxml-diagram-mode--apply-edit (element &optional include-children)
