@@ -4,6 +4,7 @@
 ;; An scxml-point  represents a coordinate/point in 2d space.
 
 ;;; Code:
+(require 'eieio)
 (require 'scxml-geometry-core)
 
 (defclass scxml-point ()
@@ -17,8 +18,8 @@
 (defun scxml-point- (x y)
   "Build an scxml-point at X Y.
 
-Equivalent of (scxml-point :x X :y Y). This function is mostly to
-spare a bit of typing."
+Equivalent of (scxml-point :x X :y Y).  This function is mostly
+to spare a bit of typing."
   (scxml-point :x (float x) :y (float y)))
 (cl-defmethod scxml-print ((point scxml-point))
   "Return a stringified version of POINT for human eyes."
@@ -102,9 +103,11 @@ RHR => Right Hand Rule."
 (cl-defmethod scxml-cardinal-direction-vector? ((A scxml-point))
   "Return non-nil if A is vertical or horizontal (but not zero)."
   (with-slots (x y) A
-    (and (equal 0.0 (abs (* x y)))
-         (not (and (equal 0.0 x)
-                   (equal 0.0 y))))))
+    (or (scxml-almost-zero x)
+        (scxml-almost-zero y))))
+    ;; (and (equal 0.0 (abs (* x y)))
+    ;;      (not (and (equal 0.0 x)
+    ;;                (equal 0.0 y))))))
 (cl-defmethod scxml-cardinal-displacement? ((A scxml-point) (B scxml-point))
   "Return non-nil if the displacement from A to B is a cardinal
 vector.

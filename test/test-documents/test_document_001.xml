@@ -1,0 +1,14 @@
+<scxml initial="A" version="1.0">
+  <state id="A">
+    <initial>
+      <transition target="A.1" />
+    </initial>
+    <state id="A.1">
+      <!-- <transition target="A.final" cond="true == false" /> -->
+    </state>
+    <final id="A.final">
+    </final>
+  </state>
+  <state id="B">
+  </state>
+</scxml>

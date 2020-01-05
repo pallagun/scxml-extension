@@ -5,7 +5,7 @@
 ;; constrained to be axis aligned
 
 ;;; Code:
-(require 'ert)
+(require 'eieio)
 (require 'scxml-geometry-point)
 (require 'scxml-geometry-span)
 (require 'scxml-geometry-segment)
@@ -130,28 +130,6 @@ proceeding counterclockwise around the rectangle."
        (scxml-almost-equal (scxml-x-max A) (scxml-x-max B) tolerance)
        (scxml-almost-equal (scxml-y-min A) (scxml-y-min B) tolerance)
        (scxml-almost-equal (scxml-y-max A) (scxml-y-max B) tolerance)))
-(cl-defmethod scxml-leaving-segment-collision-edge ((rect scxml-rect) (pt scxml-point))
-  "If you leave centroid of RECT headed towards PT, which edge do you hit?
-
-Returned as one of 4 symbols: 'up, 'down, 'left, 'right."
-  ;; TODO: this seems to be more of a drawing concern and possibly it
-  ;; should not be in the base rect file.
-  (let* ((centroid (scxml-centroid rect))
-         (path (scxml-segment :start centroid :end pt))
-         (char-vector (scxml-characteristic-vector path))
-         (to-tl (scxml-segment :start centroid :end (scxml-TL rect)))
-         (to-tr (scxml-segment :start centroid :end (scxml-TR rect)))
-         (cross-tl (scxml-cross-prod char-vector (scxml-characteristic-vector to-tl)))
-         (cross-tr (scxml-cross-prod char-vector (scxml-characteristic-vector to-tr))))
-    (cond ((and (>= cross-tl 0.0) (>= cross-tr 0.0))
-           'right)
-          ((and (<= cross-tl 0.0) (<= cross-tr 0.0))
-           'left)
-          ((and (>= cross-tl 0.0) (<= cross-tr 0.0))
-           'up)
-          ((and (<= cross-tl 0.0) (>= cross-tr 0.0))
-           'down)
-          ('t (error "Impossible?")))))
 (cl-defmethod scxml-x ((rect scxml-rect))
   "Return the x component of this RECT as a span."
   (with-slots (x-min x-max) rect
@@ -243,7 +221,7 @@ if any bounding segment of A intersects B."
                       when (scxml-has-intersection rect-segment B)
                       return t)))))
 (cl-defmethod scxml-has-intersection ((A scxml-rect) (B scxml-rect) &optional evaluation-mode)
-  "Return non-nil if A and B intersect"
+  "Return non-nil if A and B intersect."
   (and (scxml-has-intersection (scxml-x A) (scxml-x B) evaluation-mode)
        (scxml-has-intersection (scxml-y A) (scxml-y B) evaluation-mode)))
 (cl-defmethod scxml-bounding-pts ((A scxml-rect))
@@ -256,7 +234,6 @@ bottom left."
           (scxml-point :x x-max :y y-min)
           (scxml-point :x x-max :y y-max)
           (scxml-point :x x-min :y y-max))))
-
 
 (provide 'scxml-geometry-rect)
 ;;; scxml-geometry-rect.el ends here

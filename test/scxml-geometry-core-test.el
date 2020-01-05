@@ -1,6 +1,7 @@
 ;; core testing
 
 (require 'ert)
+(require 'scxml-geometry-core)
 
 (ert-deftest scxml-geometry-core-almost-equal ()
 
@@ -16,3 +17,6 @@
   (should (scxml-almost-equal 10 12 3))
   (should-not (scxml-almost-equal 10 12 2))
   (should-not (scxml-almost-equal 10 12 1)))
+
+
+(provide 'scxml-geometry-core-test)

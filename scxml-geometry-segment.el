@@ -5,6 +5,7 @@
 ;; It is directional, starting at START and ending at END.
 
 ;;; Code:
+(require 'eieio)
 (require 'scxml-geometry-point)
 (require 'scxml-geometry-span)
 
@@ -134,9 +135,7 @@ segments hit (non-parallel segments)."
 (cl-defmethod scxml---segment-collision-parametrics-vectorized ((A-start scxml-point) (A-char-vec scxml-point) (B-start scxml-point) (B-char-vec scxml-point))
   "Find the per-segment parametric coordinates where these two segments hit (non-parallel segments).
 
-This is returned as a plist of the form:
-('b-parametric b-parametric 'a-parametric a-parametric)
-TODO: this should probably just return a cons?"
+This is returned as (cons a-parametric b-parametric)."
   ;; (Ax(t), Ay(t)) = (Bx(s), By(s))
   ;; -------------------------
   ;; Asx + t Adx = Bsx + Bdx s
@@ -175,13 +174,12 @@ TODO: this should probably just return a cons?"
              (S2 (- (scxml-y Bs) (scxml-y As)))
              (a-parametric (/ (+ (* -1.0 Bdy S1) (* Bdx S2)) determinant))
              (b-parametric (/ (+ (* -1.0 Ady S1) (* Adx S2)) determinant)))
-        (plist-put (plist-put '() 'b-parametric b-parametric)
-                   'a-parametric a-parametric)))))
+        (cons a-parametric b-parametric)))))
 (cl-defmethod scxml-distance ((A scxml-segment) (B scxml-segment))
   "Return  the minimum distances between A and B"
   (let* ((parametrics (scxml---segment-collision-parametrics A B))
-         (a-parametric (plist-get parametrics 'a-parametric))
-         (b-parametric (plist-get parametrics 'b-parametric)))
+         (a-parametric (car parametrics))
+         (b-parametric (cdr parametrics)))
     (cond
      ;; A-start voronoi region
      ((< a-parametric 0.0)
@@ -219,36 +217,50 @@ TODO: this should probably just return a cons?"
        ;; B-segment voronoi region - special case - they touch
        ('t
         0.0))))))
-(cl-defmethod scxml-distance ((A scxml-segment) (B scxml-point))
-  "distance between a line and a point."
-  (let* ((A-start-to-B (scxml-subtract B (scxml-start A)))
-         (A-char-vec (scxml-characteristic-vector A))
+(cl-defmethod scxml---segment-point-distance (A-segment B-point)
+  "Return the distance information for A-SEGMENT and B-POINT.
+
+Return the actual distance as well as the voronoi zone of A in
+the form of (cons distance voronoi-zone).  Voronoi zone will be
+returned as one of: 'start, 'end or 'middle (of A-SEGMENT)."
+  (let* ((A-start-to-B (scxml-subtract B-point (scxml-start A-segment)))
+         (A-char-vec (scxml-characteristic-vector A-segment))
          (A-parametric (scxml-dot-prod (scxml-normalized A-char-vec)
                                        A-start-to-B))
-         (A-length (scxml-length A)))
-    (cond ((< A-parametric 0)
-           (scxml-distance (scxml-start A) B))
-          ((> A-parametric A-length)
-           (scxml-distance (scxml-end A) B))
-          ('t                           ; not in an end point voronoi zone
-           (abs (scxml-dot-prod A-start-to-B
-                                (scxml-rotate-90 (scxml-normalized A-char-vec) 1)))))))
+         (A-length (scxml-length A-segment)))
+    (cond ((<= A-parametric 0)
+           (cons (scxml-distance (scxml-start A-segment) B-point)
+                 'start))
+          ((>= A-parametric A-length)
+           (cons (scxml-distance (scxml-end A-segment) B-point)
+                 'end))
+
+          ('t                           ;; not in an end point voronoi zone
+           (cons (abs (scxml-dot-prod A-start-to-B
+                                      (scxml-rotate-90 (scxml-normalized A-char-vec) 1)))
+                 'middle)))))
+(cl-defmethod scxml-distance ((A scxml-segment) (B scxml-point))
+  "distance between a line and a point."
+  (car (scxml---segment-point-distance A B)))
 (cl-defmethod scxml-has-intersection ((A scxml-segment) (B scxml-point) &optional evaluation-mode)
   "Does A ever intersect B.
 
 Because B is a point, it doesn't have to be an exact intersection.
 It only has to be within an almost-zero distance."
-  ;; TODO: this is a bit of a hacked way to do this, probably a faster way.
-  (let ((base-distance (scxml-distance A B)))
-    (cond ((eq evaluation-mode 'strict)   ;don't allow either end point of A
-           (let ((start-distance (scxml-distance (scxml-start A) B))
-                 (end-distance (scxml-distance (scxml-end A) B)))
-             (< base-distance (max start-distance end-distance) scxml--almost-zero)))
-          ((eq evaluation-mode 'stacked)  ;don't allow the 'end' end point of A
-           (let ((end-distance (scxml-distance (scxml-end A) B)))
-             (< base-distance end-distance scxml--almost-zero)))
-          (t
-           (scxml-almost-zero base-distance)))))
+  (let* ((distance-info (scxml---segment-point-distance A B))
+         (distance (car distance-info))
+         (voronoi-region (cdr distance-info)))
+    (cond ((eq evaluation-mode 'strict)   ; don't allow either end point of A
+           (and (eq voronoi-region 'middle)
+                (let ((start-distance (scxml-distance (scxml-start A) B))
+                      (end-distance (scxml-distance (scxml-end A) B)))
+                  (< distance (max start-distance end-distance) scxml--almost-zero))))
+          ((eq evaluation-mode 'stacked)  ; don't allow the 'end' end point of A
+           (and (not (eq voronoi-region 'end))
+                (let ((end-distance (scxml-distance (scxml-end A) B)))
+                  (< distance end-distance scxml--almost-zero))))
+          (t                            ; allow any part of A or B.
+           (scxml-almost-zero distance)))))
 (cl-defmethod scxml-has-intersection ((A scxml-segment) (B scxml-segment) &optional evaluation-mode)
   "Does A ever intersect B."
   (scxml-pierced? A B
@@ -330,8 +342,8 @@ That should be sorted out before calling this."
                    (and allow-B-end
                         (scxml-intersection end-range b-parametric)))))))
       (let* ((parametrics (scxml---segment-collision-parametrics A B))
-             (a-parametric (plist-get parametrics 'a-parametric))
-             (b-parametric (plist-get parametrics 'b-parametric)))
+             (a-parametric (car parametrics))
+             (b-parametric (cdr parametrics)))
         (if (and (> a-parametric a-min)
                  (< a-parametric a-max)
                  (> b-parametric b-min)
@@ -341,8 +353,11 @@ That should be sorted out before calling this."
 (cl-defmethod scxml-coarse-direction ((segment scxml-segment))
   (scxml-coarse-direction (scxml-characteristic-vector segment)))
 (cl-defmethod scxml-get-parametric ((segment scxml-segment) (pt scxml-point) &optional distance-tolerance)
-  ;; todo - should this be a relative/global coordinate thing? I think it should...
-  "Get the parametric coordinate of this point along the segment."
+  "Get the parametric coordinate of PT along SEGMENT.
+
+Note: this is similar to scxml-relative-coordinate but as it
+could return a nil value it's differentiated with the
+-get-parametric name."
   (with-slots (start) segment
     (let* ((seg-start-to-pt (scxml-subtract pt start))
            (char-vec (scxml-characteristic-vector segment))

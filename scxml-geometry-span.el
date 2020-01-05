@@ -6,6 +6,7 @@
 ;; significant there is no requirement that start <= end.
 
 ;;; Code:
+(require 'eieio)
 
 (defclass scxml-span ()
   ((start :initarg :start
@@ -44,18 +45,23 @@
 (cl-defmethod scxml-inverse-scaled ((range scxml-span) (alpha number))
   "Return a span of SPAN scaled by 1/ALPHA."
   (scxml-scaled range (/ 1.0 alpha)))
+(defun scxml---span-ordered-intersection (A B)
+  "Get the intersection of the ordered spans A and B.
+
+A and B must be ordered before calling."
+  ;; TODO - consider having this return an actual float when appropriate.
+  (let ((start (max (scxml-start A) (scxml-start B)))
+        (end (min (scxml-end A) (scxml-end B))))
+    (if (<= start end)
+        (scxml-span :start start :end end)
+      'nil)))
 (cl-defmethod scxml-intersection ((A scxml-span) (B scxml-span))
   "Get the intersection of two spans.
 
 Result will be ordered."
-  ;; TODO - consider having this return an actual float whern appropriate.
-  (let* ((A (scxml-ordered A))
-         (B (scxml-ordered B))
-         (start (max (scxml-start A) (scxml-start B)))
-         (end (min (scxml-end A) (scxml-end B))))
-    (if (<= start end)
-        (scxml-span :start start :end end)
-      'nil)))
+  (scxml---span-ordered-intersection
+   (scxml---span-ordered-if-not A)
+   (scxml---span-ordered-if-not B)))
 (cl-defmethod scxml-contains ((container scxml-span) (coordinate number) &optional evaluation-mode)
   "Return non-nil if the CONTAINER contains COORDINATE using EVALUATION-MODE."
   (let ((container (scxml---span-ordered-if-not container)))
@@ -88,17 +94,17 @@ Result will be ordered."
   (scxml-contains A B evaluation-mode))
 (cl-defmethod scxml-has-intersection  ((A scxml-span) (B scxml-span) &optional evaluation-mode)
   "Return non-nil if A contains B using EVALUATION-MODE."
-  ;; TODO - this seems inefficient
-  (let ((intersection (scxml-intersection A B))
-        (A (scxml-ordered A)))
-    (and intersection
-         (cond ((eq evaluation-mode 'strict)
-                (and (< (scxml-start intersection) (scxml-end A))
-                     (> (scxml-end intersection) (scxml-start A))))
-               ((eq evaluation-mode 'stacked)
-                (< (scxml-start intersection) (scxml-end A)))
-               (t
-                t)))))
+  (let ((A (scxml---span-ordered-if-not A))
+        (B (scxml---span-ordered-if-not B)))
+    (let ((intersection (scxml---span-ordered-intersection A B)))
+      (and intersection
+           (cond ((eq evaluation-mode 'strict)
+                  (and (< (scxml-start intersection) (scxml-end A))
+                       (> (scxml-end intersection) (scxml-start A))))
+                 ((eq evaluation-mode 'stacked)
+                  (< (scxml-start intersection) (scxml-end A)))
+                 (t
+                  t))))))
 (cl-defmethod scxml-parametric ((span scxml-span) parametric-coord)
   "Get a point along SPAN by PARAMETRIC-COORD between [0,1]."
   (with-slots (start end) span
