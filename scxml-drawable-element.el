@@ -24,6 +24,11 @@
   (format "hasDrawing:%s, %s"
           (and (scxml-element-drawing element) t)
           (cl-call-next-method)))
+(cl-defmethod scxml-xml-element-name ((element scxml-drawable-element))
+  "Return the equivalent non-drawable name."
+  (substring
+   (symbol-name (eieio-object-class element))
+   (length "scxml-drawable-")))
 (cl-defmethod scxml-xml-attributes ((element scxml-drawable-element))
   "Return an xml attribute alist for ELEMENT.
 
@@ -32,7 +37,6 @@ Push in the drawing hint attribute."
            (cons scxml---hint-symbol
                  (scxml-get-attrib element scxml---hint-symbol nil)))
           (cl-call-next-method)))
-
 (cl-defgeneric scxml--drawing-invalid? ((element scxml-drawable-element))
   "Could the drawing for this ELEMENT be invalid? (i.e. needs to be replotted)"
   (scxml-get-attrib element 'scxml---drawing-invalid 't))

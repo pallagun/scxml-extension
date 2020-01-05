@@ -140,7 +140,7 @@ nil."
 (cl-defmethod scxml-insert-new-child ((parent-start-tag scxml-xmltok) (child scxml-element))
   "Insert the XML of CHILD as the last child of PARENT-RANGE."
   (scxml-insert-new-child parent-start-tag
-                          (scxml--xml-string child)
+                          (scxml-xml-string child)
                           child))
 (cl-defmethod scxml-update-xml-attributes ((xml-tag scxml-xmltok) (element scxml-drawable-element))
   "Get the attributes from ELEMENT and place them into XML-TAG's element"

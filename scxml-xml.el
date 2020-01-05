@@ -1,7 +1,9 @@
 ;;; scxml-xml.el --- scxml helper functions for dealing with xml -*- lexical-binding: t -*-
 
 ;;; Commentary:
-;; Some wrappers around xmltok and other nxml-mode functions
+;; Some wrappers around xmltok and other nxml-mode functions.  Note
+;; that all of these functions are entirely unaware of what buffer
+;; they're applied in.  That needs to be coordinated by calling code.
 
 ;;; Code:
 
@@ -11,7 +13,10 @@
 (require 'cl)
 
 (defclass scxml-xmltok ()
-  ((type :accessor scxml-type)
+  ((type :accessor scxml-type
+         :documentation "One of 'start-tag, 'end-tag,
+         'empty-element, etc.  Defined in nxml-mode near \";;
+         Token types returned by xmltok-forward.\"")
    (start :accessor scxml-start)
    (name-end :accessor scxml-name-end)
    (name-colon :accessor scxml-name-colon)
@@ -22,12 +27,12 @@
 (cl-defmethod scxml-print ((tag scxml-xmltok))
   "xml[%s]: %s"
   (scxml-type tag)
-  (buffer-substring (scxml-start tag) (scxml-next-token-pos tag)))
+  (buffer-substring-no-properties (scxml-start tag) (scxml-next-token-pos tag)))
 (defun scxml---attribute-key-value (attribute-marker)
-  (cons (buffer-substring (elt attribute-marker 0)
-                          (elt attribute-marker 2))
-        (buffer-substring (elt attribute-marker 3)
-                          (elt attribute-marker 4))))
+  (cons (buffer-substring-no-properties (elt attribute-marker 0)
+                                        (elt attribute-marker 2))
+        (buffer-substring-no-properties (elt attribute-marker 3)
+                                        (elt attribute-marker 4))))
 (cl-defmethod scxml--refresh ((tag scxml-xmltok))
   "Attempt to refresh TAG if it was changed.
 
@@ -38,8 +43,8 @@ of the TAG and not modified *anything* else in the document."
 
 (cl-defmethod scxml-tag-name ((xml-tag scxml-xmltok))
   "Get the tag name of this tag."
-  (buffer-substring (1+ (scxml-start xml-tag))
-                    (scxml-name-end xml-tag)))
+  (buffer-substring-no-properties (1+ (scxml-start xml-tag))
+                                  (scxml-name-end xml-tag)))
 (cl-defmethod scxml-get-text-prop ((xml-tag scxml-xmltok) &optional property-name)
   "Yank out the first character having an text property of 'scxml-element"
   (let ((property-name (or property-name 'scxml-element)))
@@ -53,11 +58,12 @@ of the TAG and not modified *anything* else in the document."
     (when attributes
       (cl-loop for attrib in attributes
                with attrib-alist = nil
+               ;; TODO - this sholud call out to scxml---attribute-key-value
                do (push (cons
-                         (buffer-substring (elt attrib 0)
-                                           (elt attrib 2))
-                         (buffer-substring (elt attrib 3)
-                                           (elt attrib 4)))
+                         (buffer-substring-no-substring (elt attrib 0)
+                                                        (elt attrib 2))
+                         (buffer-substring-no-substring (elt attrib 3)
+                                                        (elt attrib 4)))
                         attrib-alist)
                finally return attrib-alist))))
 (cl-defmethod scxml-find-end ((xml-tag scxml-xmltok))
@@ -66,9 +72,31 @@ of the TAG and not modified *anything* else in the document."
     (goto-char (scxml-start xml-tag))
     (nxml-forward-element 1)
     (scxml-xmltok-before)))
+(cl-defmethod scxml-find-or-create-end ((xml-tag scxml-xmltok))
+  "Find the end tag if it exists, if it does not create one and return it."
+  (let ((tag-type (scxml-type xml-tag)))
+    (cond ((eq tag-type 'start-tag)
+           ;; this is a start tag, it should have an end.
+           (let ((end-tag (scxml-find-end xml-tag)))
+             (unless end-tag
+               (error "xml parsing error, unable to find end tag?"))
+             end-tag))
+          ((eq tag-type 'empty-element)
+           (let ((original-end (scxml-next-token-pos xml-tag))
+                 (tag-name (scxml-tag-name xml-tag)))
+             (goto-char (1- original-end))
+             (delete-char -1)
+             (forward-char 1)
+             (insert "\n</" tag-name ">")
+             (goto-char original-end)
+             (scxml-xmltok-after)))
+          (t
+           (error "Unable to find or create end point for %s" xml-tag)))))
+
 (cl-defmethod scxml-insert-new-child ((parent-start-tag scxml-xmltok) (child string) &optional tracking-property-value)
   "Insert the XML of CHILD as the last child of PARENT-RANGE returning the new scxml-xmltok."
-  (let* ((parent-end-tag (scxml-find-end parent-start-tag))
+  ;; TODO - this should be called scxml-add-child like the other functions
+  (let* ((parent-end-tag (scxml-find-or-create-end parent-start-tag))
          (insert-start (scxml-start parent-end-tag)))
     (goto-char insert-start)
     (insert child "\n")
@@ -82,15 +110,16 @@ of the TAG and not modified *anything* else in the document."
     (goto-char insert-start)
     (scxml-xmltok-after)))
 (cl-defmethod scxml-children ((xml-tag scxml-xmltok))
-  "Get all the directi children tags of XML-TAG."
+  "Get all the direct child tags of XML-TAG."
   (let ((end-tag (and (eq (scxml-type xml-tag) 'start-tag)
                       (scxml-find-end xml-tag))))
     (when end-tag
       (goto-char (scxml-next-token-pos xml-tag))
       (let ((children nil)
+            (end-point (scxml-start end-tag))
             (child-tag (scxml-xmltok-after)))
         (while (and child-tag
-                    (not (eq child-tag end-tag)))
+                    (< (scxml-start child-tag) end-point))
           (when (and (memq (scxml-type child-tag)
                            (list 'start-tag 'empty-element))
                      (scxml-get-text-prop child-tag))

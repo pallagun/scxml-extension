@@ -189,6 +189,9 @@ Return value is undefined."
   (mapc (lambda (child)
           (scxml-visit child visitor filter))
         (scxml-children element)))
+
+(cl-defgeneric scxml-visit-all ((element scxml-element) visitor &optional filter)
+  "Visit all elements (parent or child, recursively) starting at the root element.")
 (cl-defmethod scxml-visit-all ((element scxml-element) visitor &optional filter)
   "Visit all elements (parent or child, recursively) starting at the root element"
   (scxml-visit (scxml-root-element element) visitor filter))

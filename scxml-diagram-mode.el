@@ -83,6 +83,7 @@ elements.")
     (define-key map (kbd "d") 'scxml-diagram-mode--toggle-edit-mode)
     (define-key map (kbd "s") 'scxml-diagram-mode--simplify)
     (define-key map (kbd "a") 'scxml-diagram-mode--automatic)
+    (define-key map (kbd "A") 'scxml-diagram-mode--all-automatic)
 
     (define-key map (kbd "M-f") 'scxml-diagram-mode--modify-right)
     (define-key map (kbd "M-b") 'scxml-diagram-mode--modify-left)
@@ -657,6 +658,18 @@ the user is attempting to mark an edit idx."
     (scxml--set-hint scxml-diagram-mode--marked-element 'nil)
     (scxml--set-drawing-invalid scxml-diagram-mode--marked-element 't)
     (scxml-diagram-mode--redraw)))
+(defun scxml-diagram-mode--all-automatic ()
+  "Set the marked element to 'automatic' mode (not manually hinted)."
+  (interactive)
+  (scxml-record 'scxml-diagram-mode--all-automatic)
+  (scxml-visit-all (scxml-diagram-mode--root)
+                   (lambda (element)
+                     (scxml--set-edit-idx element nil)
+                     (scxml--set-hint element nil)
+                     (scxml--set-drawing-invalid element t))
+                   (lambda (element)
+                     (object-of-class-p element 'scxml-drawable-element)))
+  (scxml-diagram-mode--redraw))
 
 (defun scxml-diagram-mode--move-to-edit-idx (drawing)
   "Move to the currently selected edit-idx of the DRAWING if it is set."
@@ -821,6 +834,12 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
   ;; going to need to inject tracking identifiers into the document and
   ;; slam them into my scxml-elements
   (scxml-xml-update-element scxml-draw--diagram element include-children))
+(defun scxml-diagram-mode--sync-linked-xml ()
+  "Sync the entire diagram to the xml buffer if it exists."
+  (interactive)
+  (scxml-xml-update-element scxml-draw--diagram
+                            (scxml-diagram-root scxml-draw--diagram)
+                            t))
 
 (cl-defgeneric scxml-diagram-mode--get-element ((selection-rect scxml-rect))
   "Return the element inside the SELECTION-RECT."
