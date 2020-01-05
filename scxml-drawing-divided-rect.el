@@ -231,7 +231,7 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
   ;; I should be able to add a cell to a stripe anywhere.
   ;; ---
   ;; automatic plotting - can just be drawn in order
-  ;;  - it's automatic so fuck you: you get what you get.
+  ;;  - it's automatic so whatever
   ;;  - for hinted
   ;;    - the hint can contain all the divisions and their layout
   ;;    - there's nothing stopping the hint from holding *some* identifier for what state goes in what cell of the nested stripes.

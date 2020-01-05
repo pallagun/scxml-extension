@@ -45,7 +45,7 @@
 
 ;; scratch is y-major
 (defun scxml---scratch-debug (scratch &optional x y)
-  "Fire out a debug about this scratch"
+  "Human visible debug message."
   (let* ((y-size (length scratch))
          (x-size (length (elt scratch 0)))
          (prefix (format "Scratch dim[%s, %s]" x-size y-size)))
@@ -74,7 +74,7 @@
   "Get the element from SCRATCH at X and Y coordinates."
   (elt (elt scratch y) x))
 (defun scxml---scratch-label (scratch x y string &optional style)
-  "Write a label STRING to SCRATCH starnting at X Y with STYLE."
+  "Write a label STRING to SCRATCH starting at X Y with STYLE."
   ;; this When is the check, remove to get back to normal
   (when (and string
              (<= 0 y (1- (scxml---scratch-size-y scratch))))
@@ -89,7 +89,7 @@
               (incf x-pos))
             string))))
 (defun scxml---scratch-set (scratch x y char &optional style)
-  "Set a 'pixel' in SCRATCH at X Y to be CHAR with nillable STYLE."
+  "Set scratch-pixel in SCRATCH at X Y to be CHAR optionally with STYLE."
   ;; TODO - should I use aset here?
   (setf (elt (elt scratch y) x)
         (cons char style)))
@@ -349,7 +349,7 @@ Right now this only properly works with single character labels."
                                            'scxml-drawing-edit)))
         ))))
 (defun scxml--scratch-write (scratch)
-  "Whereever you are, shit out the contents of SCRATCH."
+  "Write out SCRATCH contents to current point."
   (let ((size-y (length scratch))
         (size-x (length (elt scratch 0)))
         (default-char (get-byte 0 " ")))
