@@ -26,7 +26,7 @@ consumes the entire canvas."
     ;; mark all transitions to or from this state as possibly invalid as well.
     (mapc (lambda (element)
             (scxml--set-drawing-invalid element 't))
-          (append                       ;TODO - I think I can unse nconc here
+          (nconc
            (seq-filter (lambda (child)
                          (object-of-class-p child 'scxml-drawable-element))
                        (scxml-children element)) ;all from state.
@@ -179,10 +179,8 @@ Note: there should only be one child and it should be a transition."
   (when is-invalid
     ;; mark all transitions to or from this state as possibly invalid as well.
     (mapc (lambda (e) (scxml--set-drawing-invalid e 't))
-          (append                       ;TODO - I think I can unse nconc here
-           (seq-filter (lambda (child)
-                         (and (object-of-class-p child 'scxml-drawable-element)
-                              (not (object-of-class-p child 'scxml-drawable-transition))))
+          (nconc
+           (seq-filter (lambda (child) (object-of-class-p child 'scxml-drawable-element))
                        (scxml-children parallel)) ;all from state.
            (scxml-get-all-transitions-to parallel)))))
 
