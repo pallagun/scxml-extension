@@ -110,6 +110,8 @@ Will throw if it can't move it. will not render!!"
           (setf (scxml-arrow-source arrow) source
                 (scxml-arrow-target arrow) target
                 (scxml-arrow-path arrow) path)
+          ;; In some situations the number of edit idxs may change.
+          ;; In these situations the edit-idx must be kept valid.
           (let ((num-edit-idxs (scxml-num-edit-idxs edited-arrow))
                 (current-idx (scxml--edit-idx transition)))
             (when (and current-idx
