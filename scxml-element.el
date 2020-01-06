@@ -56,10 +56,14 @@ Generally filters out symbols that start with 'scxml---'."
   (let ((prop-name (downcase (symbol-name key))))
     (or (< (length prop-name) (1+ (length "scxml---")))
         (not (equal (substring prop-name 0 8) "scxml---")))))
-(cl-defmethod scxml-xml-string ((element scxml-element))
-  "Get a string holding the XML for ELEMENT and any/all children."
+(cl-defmethod scxml-xml-string ((element scxml-element) &optional exclude-children)
+  "Get a string holding the XML for ELEMENT.
+
+Normally all child elements will be rendered to xml and output as
+well.  When EXCLUDE-CHILDREN is true then no child elements will
+be included in the output."
   (let ((xml-name (scxml-xml-element-name element))
-        (children (scxml-children element))
+        (children (and (not exclude-children) (scxml-children element)))
         (attribute-list (mapcar (lambda (name-value)
                                   (format "%s=\"%s\"" (car name-value) (cdr name-value)))
                                 (seq-filter 'cdr
@@ -248,6 +252,14 @@ below SEARCH-ROOT")
                  (lambda (element)
                    (object-of-class-p element 'scxml-element-with-id)))
     nil))
+
+(cl-defmethod scxml-add-child :before ((parent scxml-element) (child-with-id scxml-element-with-id) &optional append)
+  "Add child element to parent ensuring id is unique in the entire tree."
+  (let ((proposed-id (scxml-element-id child-with-id)))
+    (when (and proposed-id
+               (> (length proposed-id) 0)
+               (scxml-element-find-by-id (scxml-root-element parent) proposed-id))
+      (error "Unable to add element with id %s, an element with that id already exists." proposed-id))))
 
 (defclass scxml-element-with-initial ()
   ((initial :initarg :initial

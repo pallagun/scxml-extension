@@ -481,6 +481,7 @@ Currently only able to zoom out when in viewport mode."
           (height-prompt (format "Height (current:%d, default:%d): " current-height default-height)))
      (list (read-string width-prompt nil nil default-width)
            (read-string height-prompt nil nil default-height))))
+  (scxml-record 'scxml-diagram-mode--set-root-canvas-size columns lines)
   (when (not (numberp columns))
     (setq columns (string-to-number columns)))
   (when (not (numberp lines))
@@ -617,9 +618,11 @@ the user is attempting to mark an edit idx."
 (defun scxml-diagram-mode--mark-element (element &optional do-not-redraw)
   "Mark the ELEMENT specified and redraw the display!"
   (if scxml-diagram-mode--mark-element-catch
-      (prog1
+      ;; Mark element catch
+      (unwind-protect
           (funcall scxml-diagram-mode--mark-element-catch element)
         (setq scxml-diagram-mode--mark-element-catch nil))
+    ;; normal mark element
     (scxml-diagram-mode--unmark-all)
     (setq scxml-diagram-mode--marked-element element)
     (scxml--set-highlight element 't)
@@ -733,6 +736,7 @@ the user is attempting to mark an edit idx."
 (defun scxml-diagram-mode--add-child-state (id)
   "Add a child <state> element to the marked element"
   (interactive "sNew <state> id: ")
+  (scxml-record 'scxml-diagram-mode--add-child-state id)
   (let ((parent (or scxml-diagram-mode--marked-element
                     (scxml-diagram-mode--display-element))))
     (scxml-add-child parent (scxml-drawable-state :id id) t)
@@ -747,6 +751,7 @@ the user is attempting to mark an edit idx."
 (defun scxml-diagram-mode--add-child-parallel (id)
   "Add a child <parallel> element to the marked element"
   (interactive "sNew <parallel> id: ")
+  (scxml-record 'scxml-diagram-mode--add-child-parallel id)
   ;; TODO - this is mostly shared with add-child-state, fix that.
   (let ((parent (or scxml-diagram-mode--marked-element
                     (scxml-diagram-mode--display-element))))
@@ -762,6 +767,7 @@ the user is attempting to mark an edit idx."
 (defun scxml-diagram-mode--add-child-initial ()
   "Begin an <initial> adding mouse saga where the initial parent is the currently marked element."
   (interactive)
+  (scxml-record 'scxml-diagram-mode--add-child-initial)
   (message "Mark the element to be the initial target.")
   (setq scxml-diagram-mode--mark-element-catch
         'scxml-diagram-mode--add-initial-with-transition-to))
@@ -786,6 +792,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
 (defun scxml-diagram-mode--add-child-transition ()
   "Begin a <transition> adding mouse saga where the transition parent is the currently marked element."
   (interactive)
+  (scxml-record 'scxml-diagram-mode--add-child-transition)
   (message "Mark the element to be the transition target.")
   (setq scxml-diagram-mode--mark-element-catch
         'scxml-diagram-mode--add-child-transition-to))
@@ -823,6 +830,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
 (defun scxml-diagram-mode--delete-marked ()
   "Delete the marked element, mark the parent."
   (interactive)
+  (scxml-record 'scxml-diagram-mode--delete-marked)
   (let ((parent (scxml-parent scxml-diagram-mode--marked-element)))
     (scxml-diagram-mode--delete scxml-diagram-mode--marked-element)
     (when parent
@@ -859,6 +867,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
 (defun scxml-diagram-mode--sync-linked-xml ()
   "Sync the entire diagram to the xml buffer if it exists."
   (interactive)
+  (scxml-record 'scxml-diagram-mode--sync-linked-xml)
   (scxml-xml-update-element scxml-draw--diagram
                             (scxml-diagram-root scxml-draw--diagram)
                             t))

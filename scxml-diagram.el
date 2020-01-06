@@ -136,10 +136,10 @@ nil."
                (goto-char end-pos)))))))))
 
 ;; XML stuff that shouldn't be in here.
-(cl-defmethod scxml-insert-new-child ((parent-start-tag scxml-xmltok) (child scxml-element))
+(cl-defmethod scxml-insert-new-child ((parent-start-tag scxml-xmltok) (child scxml-element) &optional exclude-children)
   "Insert the XML of CHILD as the last child of PARENT-RANGE."
   (scxml-insert-new-child parent-start-tag
-                          (scxml-xml-string child)
+                          (scxml-xml-string child exclude-children)
                           child))
 (cl-defmethod scxml-update-xml-attributes ((xml-tag scxml-xmltok) (element scxml-drawable-element))
   "Get the attributes from ELEMENT and place them into XML-TAG's element"
@@ -275,8 +275,9 @@ nil."
             ;; unable to find element, must add it.
             (let ((parent-range (scxml---xmltok-find-element
                                  (scxml-parent changed-element))))
+              ;; Insert just this parent tag, I'll recurse to add children.
               (setq xml-tag
-                    (scxml-insert-new-child parent-range changed-element))))
+                    (scxml-insert-new-child parent-range changed-element t))))
 
           ;; xml-tag can now be trusted - handle children
           (when include-children
