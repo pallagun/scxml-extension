@@ -98,6 +98,7 @@ elements.")
     (define-key map (kbd "T") 'scxml-diagram-mode--add-child-transition)
     (define-key map (kbd "I") 'scxml-diagram-mode--add-child-initial)
     (define-key map (kbd "P") 'scxml-diagram-mode--add-child-parallel)
+    (define-key map (kbd "F") 'scxml-diagram-mode--add-child-final)
     (define-key map (kbd "e n") 'scxml-diagram-mode--edit-name)
     (define-key map (kbd "e i") 'scxml-diagram-mode--edit-id)
 
@@ -734,21 +735,32 @@ the user is attempting to mark an edit idx."
    (scxml--increment-edit-idx scxml-diagram-mode--marked-element increment)
    (scxml-diagram-mode--redraw)))
 
+(defun scxml-diagram-mode--add-child-element (parent child)
+  "Add the child to parent and update the diagram."
+  (scxml-add-child parent child t)
+  (scxml-visit parent
+               (lambda (child)
+                 (scxml--set-hint child nil)
+                 (scxml--set-drawing-invalid child 't))
+               (lambda (child)
+                 (object-of-class-p child 'scxml-drawable-element)))
+  (scxml-diagram-mode--apply-edit parent t)
+  (scxml-diagram-mode--redraw))
+
 (defun scxml-diagram-mode--add-child-state (id)
   "Add a child <state> element to the marked element"
   (interactive "sNew <state> id: ")
   (scxml-record 'scxml-diagram-mode--add-child-state id)
   (let ((parent (or scxml-diagram-mode--marked-element
                     (scxml-diagram-mode--display-element))))
-    (scxml-add-child parent (scxml-drawable-state :id id) t)
-    (scxml-visit parent
-                 (lambda (child)
-                   (scxml--set-hint child nil)
-                   (scxml--set-drawing-invalid child 't))
-                 (lambda (child)
-                   (object-of-class-p child 'scxml-drawable-element)))
-    (scxml-diagram-mode--apply-edit parent t)
-    (scxml-diagram-mode--redraw)))
+    (scxml-diagram-mode--add-child-element parent (scxml-drawable-state :id id))))
+(defun scxml-diagram-mode--add-child-final (id)
+  "Add a child <state> element to the marked element"
+  (interactive "sNew <final> id: ")
+  (scxml-record 'scxml-diagram-mode--add-child-final id)
+  (let ((parent (or scxml-diagram-mode--marked-element
+                    (scxml-diagram-mode--display-element))))
+    (scxml-diagram-mode--add-child-element parent (scxml-drawable-final :id id))))
 (defun scxml-diagram-mode--add-child-parallel (id)
   "Add a child <parallel> element to the marked element"
   (interactive "sNew <parallel> id: ")
@@ -756,15 +768,7 @@ the user is attempting to mark an edit idx."
   ;; TODO - this is mostly shared with add-child-state, fix that.
   (let ((parent (or scxml-diagram-mode--marked-element
                     (scxml-diagram-mode--display-element))))
-    (scxml-add-child parent (scxml-drawable-parallel :id id) t)
-    (scxml-visit parent
-                 (lambda (child)
-                   (scxml--set-hint child nil)
-                   (scxml--set-drawing-invalid child 't))
-                 (lambda (child)
-                   (object-of-class-p child 'scxml-drawable-element)))
-    (scxml-diagram-mode--apply-edit parent t)
-    (scxml-diagram-mode--redraw)))
+    (scxml-diagram-mode--add-child-element (scxml-drawable-parallel :id id))))
 (defun scxml-diagram-mode--add-child-initial ()
   "Begin an <initial> adding mouse saga where the initial parent is the currently marked element."
   (interactive)
