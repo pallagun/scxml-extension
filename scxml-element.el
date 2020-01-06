@@ -229,10 +229,18 @@ FILTER."
   ((id :initarg :id
        :accessor scxml-element-id
        :initform nil
-       :type (or string null)))
+       :type (or string null)
+       ;; - todo - get this working? :writer scxml-set-element-id
+       ))
   :abstract t
   :documentation "Apply to an scxml element if it has an 'id'
   attribute that's significant.")
+(cl-defmethod scxml-set-element-id ((element scxml-element-with-id) (id string))
+  "Set the id of an element with protections."
+  (when (scxml-element-find-by-id (scxml-root-element element) id)
+    (error "An element with id of %s already exists" id))
+  (oset element id id))
+
 (cl-defmethod scxml-print ((idable-element scxml-element-with-id))
   (format "id:%s, %s"
           (scxml-element-id idable-element)

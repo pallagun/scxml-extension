@@ -99,6 +99,7 @@ elements.")
     (define-key map (kbd "I") 'scxml-diagram-mode--add-child-initial)
     (define-key map (kbd "P") 'scxml-diagram-mode--add-child-parallel)
     (define-key map (kbd "e n") 'scxml-diagram-mode--edit-name)
+    (define-key map (kbd "e i") 'scxml-diagram-mode--edit-id)
 
     map)
   "Keymap for scxml-diagram major mode")
@@ -814,6 +815,29 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
                    (object-of-class-p child 'scxml-drawable-element)))
     (scxml-diagram-mode--redraw)
     (scxml-diagram-mode--apply-edit parent t)))
+
+(defun scxml-diagram-mode--edit-id (new-id)
+  "Edit the xml 'id' attribute of the currently marked element."
+  (interactive "sNew Id:")
+  (scxml-record 'scxml-diagram-mode--edit-id new-id)
+  (let ((element scxml-diagram-mode--marked-element))
+    (unless (object-of-class-p element 'scxml-element-with-id)
+      (error "Currently selected element does not have an 'id' attribute to set."))
+    (let ((old-id (scxml-element-id element)))
+      ;; ensure all transitions which reference this id are also updated.
+      (scxml-set-element-id element new-id)
+      (scxml--set-drawing-invalid element t)
+
+      (scxml-visit-all element
+                       (lambda (transition)
+                         (setf (scxml-target-id transition) new-id)
+                         (scxml--set-drawing-invalid transition t))
+                       (lambda (element)
+                         (and (object-of-class-p element 'scxml-transition)
+                              (equal (scxml-target-id element) old-id))))
+
+      (scxml-diagram-mode--redraw))))
+
 
 (defun scxml-diagram-mode--edit-name (new-name)
   "Edit the xml 'name' attribute of the currently marked element."
