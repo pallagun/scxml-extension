@@ -640,6 +640,7 @@ the user is attempting to mark an edit idx."
   ;; TODO - should this be a cl-defmethod?
   (unless (scxml-point-p move-vector)
     (error "Must supply a scxml-point to specify move vector"))
+  ;; pass in viewport here, it has to get all the way to drawings.
   (scxml--modify-drawing-hint scxml-diagram-mode--marked-element
                               move-vector)
   (scxml-diagram-mode--apply-edit scxml-diagram-mode--marked-element)
@@ -765,10 +766,9 @@ the user is attempting to mark an edit idx."
   "Add a child <parallel> element to the marked element"
   (interactive "sNew <parallel> id: ")
   (scxml-record 'scxml-diagram-mode--add-child-parallel id)
-  ;; TODO - this is mostly shared with add-child-state, fix that.
   (let ((parent (or scxml-diagram-mode--marked-element
                     (scxml-diagram-mode--display-element))))
-    (scxml-diagram-mode--add-child-element (scxml-drawable-parallel :id id))))
+    (scxml-diagram-mode--add-child-element parent (scxml-drawable-parallel :id id))))
 (defun scxml-diagram-mode--add-child-initial ()
   "Begin an <initial> adding mouse saga where the initial parent is the currently marked element."
   (interactive)
