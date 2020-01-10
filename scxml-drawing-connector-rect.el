@@ -71,6 +71,30 @@ Might return the connector right back to you if alreay snapped."
   "Build a brand new connector based off nudging CONNECTOR over to TARGET-POINT.
 
 Will return nil if the connector can't be built."
+  (with-slots ((rect node) edge) connector
+    (cl-loop with best-connection-set = nil
+             for edge-candidate in '(up down left right)
+             for edge-segment = (scxml-edge rect edge-candidate)
+             for edge-parametric = (scxml-get-closest-parametric edge-segment target-point t)
+             for edge-point = (scxml-absolute-coordinates edge-segment edge-parametric)
+             for distance-sq = (scxml-distance-sq edge-point target-point)
+             if (null best-connection-set)
+               do (setq best-connection-set (list distance-sq edge-candidate edge-parametric))
+             else
+               if (or (< distance-sq (first best-connection-set))
+                      (and (<= distance-sq (first best-connection-set))
+                           (eq edge-candidate edge)))
+                 do (setq best-connection-set (list distance-sq edge-candidate edge-parametric))
+               end
+             end
+             finally return (scxml-drawing-connector-rect :node rect
+                                                          :edge (second best-connection-set)
+                                                          :parametric (third best-connection-set)))))
+
+(cl-defmethod scxml-build-connector-old ((connector scxml-drawing-connector-rect) (target-point scxml-point))
+  "Build a brand new connector based off nudging CONNECTOR over to TARGET-POINT.
+
+Will return nil if the connector can't be built."
   (let ((allow-edge-change t))
     (with-slots ((rect node) edge) connector
       (if (not allow-edge-change)

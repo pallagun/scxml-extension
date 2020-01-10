@@ -43,13 +43,13 @@
       (object-of-class-p element 'scxml-parallel)))
 
 ;; enhancements to scxml-element& friends to support drawing
-(cl-defgeneric scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector scxml-point))
+(cl-defgeneric scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector scxml-point) (viewport scxml-viewport))
   ;; TODO - this should move do scxml-drawable-element.el
-  "Modify the drawing hint for ELEMENT (within ROOT) by moving it or it's edit-idx by MOVE-VECTOR")
-(cl-defmethod scxml--modify-drawing-hint ((scxml scxml-scxml) (move-vector scxml-point))
+  "Modify the drawing hint for ELEMENT (within ROOT) by moving it or it's edit-idx by MOVE-VECTOR, perform modification so it looks correct in VIEWPORT.")
+(cl-defmethod scxml--modify-drawing-hint ((scxml scxml-scxml) (move-vector scxml-point) (viewport scxml-viewport))
   "Always returns nil, currently you can't modify these"
   nil)
-(cl-defmethod scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector scxml-point))
+(cl-defmethod scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector scxml-point) (viewport scxml-viewport))
   "Move or change ELEMENT by MOVE-VECTOR.
 
 When ELEMENT has an edit-idx highlighted the drawing will be
@@ -64,7 +64,9 @@ Will throw if it can't move it."
       (let* ((edit-idx (scxml--edit-idx element))
              (edited-rect (scxml-build-edited-drawing rect
                                                       edit-idx
-                                                      move-vector))
+                                                      move-vector
+                                                      viewport))
+             ;; TODO - use the parent drawing canvas function here.
              (parent (scxml-parent element))
              (parent-drawing (scxml-element-drawing parent))
              (parent-drawing-canvas (scxml-get-inner-canvas parent-drawing)))
@@ -91,7 +93,7 @@ Will throw if it can't move it."
           ;; this as possibly invalid as well).
           (scxml--set-drawing-invalid element 't)
           (scxml--set-hint element (scxml-build-hint edited-rect parent-drawing-canvas)))))))
-(cl-defmethod scxml--modify-drawing-hint ((transition scxml-transition) (move-vector scxml-point))
+(cl-defmethod scxml--modify-drawing-hint ((transition scxml-transition) (move-vector scxml-point) (viewport scxml-viewport))
   "Given some TRANSITION in edit-mode, move the current index by MOVE-VECTOR.
 
 Will throw if it can't move it. will not render!!"
@@ -99,7 +101,8 @@ Will throw if it can't move it. will not render!!"
          (edit-idx (scxml--edit-idx transition))
          (edited-arrow (scxml-build-edited-drawing arrow
                                                    edit-idx
-                                                   move-vector))
+                                                   move-vector
+                                                   viewport))
          (parent (scxml-parent transition))
          (parent-drawing (scxml-element-drawing parent))
          (parent-drawing-canvas (or (scxml-get-inner-canvas parent-drawing)

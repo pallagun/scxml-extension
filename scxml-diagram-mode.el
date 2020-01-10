@@ -642,7 +642,8 @@ the user is attempting to mark an edit idx."
     (error "Must supply a scxml-point to specify move vector"))
   ;; pass in viewport here, it has to get all the way to drawings.
   (scxml--modify-drawing-hint scxml-diagram-mode--marked-element
-                              move-vector)
+                              move-vector
+                              (scxml-diagram-mode--viewport))
   (scxml-diagram-mode--apply-edit scxml-diagram-mode--marked-element)
   (scxml-diagram-mode--redraw))
 (defun scxml-diagram-mode--simplify ()

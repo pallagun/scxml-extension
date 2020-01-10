@@ -12,8 +12,7 @@
            (derived (scxml-build-connector connector (scxml-point :x 0.0 :y 5.0)))
            (derived-left-1 (scxml-build-connector connector (scxml-point :x 0.0 :y 10.0)))
            (derived-left-2 (scxml-build-connector connector (scxml-point :x 0.0 :y 0.0)))
-           (derived-right (scxml-build-connector connector (scxml-point :x 10.0 :y 5.0)))
-           (shouldnt-work (scxml-build-connector connector (scxml-point :x 2.0 :y 2.0))))
+           (derived-right (scxml-build-connector connector (scxml-point :x 10.0 :y 5.0))))
       (should (and (eq (scxml-node derived) drawing)
                    (eql (scxml-node-edge derived) 'left)
                    (equal (scxml-edge-parametric derived) 0.5)))
@@ -25,7 +24,6 @@
                    (equal (scxml-edge-parametric derived-left-2) 1.0)))
       (should (and (eq (scxml-node derived-right) drawing)
                    (eql (scxml-node-edge derived-right) 'right)
-                   (equal (scxml-edge-parametric derived-right) 0.5)))
-      (should (not shouldnt-work)))))
+                   (equal (scxml-edge-parametric derived-right) 0.5))))))
 
 (provide 'scxml-drawing-connector-rect-test)

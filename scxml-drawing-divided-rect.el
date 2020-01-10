@@ -266,7 +266,7 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
   "Get the pixel locations of the edit idxs for DIVIDED-RECT as a list."
   (append (cl-call-next-method)
           (scxml---get-edit-points divided-rect divided-rect)))
-(cl-defmethod scxml-build-idx-edited ((divided-rect scxml-drawing-nest-rect) (edit-idx integer) (move-vector scxml-point))
+(cl-defmethod scxml-build-idx-edited ((divided-rect scxml-drawing-nest-rect) (edit-idx integer) (move-vector scxml-point) (viewport scxml-viewport))
   ;; This needs to be documented.
   (if (< edit-idx 8)
       (let ((rect-shell (cl-call-next-method)))
@@ -308,7 +308,7 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
                                  :axis (scxml-axis deep-clone)
                                  :cells (scxml-cells deep-clone)
                                  :divisions (scxml-divisions deep-clone))))))
-(cl-defmethod scxml-build-move-edited ((divided-rect scxml-drawing-nest-rect) (move-vector scxml-point))
+(cl-defmethod scxml-build-move-edited ((divided-rect scxml-drawing-nest-rect) (move-vector scxml-point) (viewport scxml-viewport))
   ;; TODO- possibly this would work for *all* scxml-drawings?
   (scxml-incf (clone divided-rect) move-vector))
 (cl-defmethod scxml-build-hint ((divided-rect scxml-drawing-nest-rect) (parent-canvas scxml-inner-canvas))
