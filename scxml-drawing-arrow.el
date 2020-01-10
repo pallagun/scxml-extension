@@ -279,7 +279,7 @@ path (target-point))."))
                           :path (scxml-cardinal-path :points
                                                      (nbutlast (cdr new-pts)))))
             ((or (and (not source-point-moved) (not source-point-match))
-                 (and (not target-point-moved) (not target-point-correct)))
+                 (and (not target-point-moved) (not target-point-match)))
              ;; at least one of the end point connectors was supposed to move
              ;; but did not move at all, this is invalid.
              nil)
