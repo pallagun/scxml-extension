@@ -178,14 +178,14 @@
                           (scxml-point- 2 1)
                           (scxml-point- 4 1))))
 
-      (should-be-almost-equal (scxml---path-append-simplify A B)
+      (should-be-almost-equal (scxml-simplified A B)
                               expected)
       (should (eq 3 (length A)))
-      (should-be-almost-equal (scxml---path-append-simplify nil A B)
+      (should-be-almost-equal (scxml-simplified nil A B)
                               expected)
-      (should-be-almost-equal (scxml---path-append-simplify nil A nil B nil)
+      (should-be-almost-equal (scxml-simplified nil A nil B nil)
                               expected)
-      (should-be-almost-equal (scxml---path-append-simplify nil nil A nil B nil nil)
+      (should-be-almost-equal (scxml-simplified nil nil A nil B nil nil)
                               expected))))
 
 (ert-deftest scxml-geometry-path-nudge-path ()

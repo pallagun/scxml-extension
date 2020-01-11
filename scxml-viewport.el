@@ -79,11 +79,11 @@ Uses drawing coordinate system."
 (cl-defmethod scxml-required-pixel-width ((viewport scxml-viewport))
   "How many pixels of width are required for this VIEWPORT to be fully visible."
   (ceiling (* (scxml-x (scxml-scaling viewport))
-              (scxml-length (scxml-x viewport)))))
+              (scxml-length (scxml-x-span viewport)))))
 (cl-defmethod scxml-required-pixel-height ((viewport scxml-viewport))
   "How many pixels of height are required for this VIEWPORT to be fully visible."
   (ceiling (* (scxml-y (scxml-scaling viewport))
-              (scxml-length (scxml-y viewport)))))
+              (scxml-length (scxml-y-span viewport)))))
 
 ;; Coordinate scheme conversions
 (cl-defmethod scxml-get-pixel-scaling ((viewport scxml-viewport))

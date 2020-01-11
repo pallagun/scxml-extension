@@ -130,26 +130,28 @@ proceeding counterclockwise around the rectangle."
        (scxml-almost-equal (scxml-x-max A) (scxml-x-max B) tolerance)
        (scxml-almost-equal (scxml-y-min A) (scxml-y-min B) tolerance)
        (scxml-almost-equal (scxml-y-max A) (scxml-y-max B) tolerance)))
-(cl-defmethod scxml-x ((rect scxml-rect))
+;; TODO - this should be scxml-x but it messes with the setf (scxml-x <scxml-point>)
+;; figure that out and address it.  Same for teh y.
+(cl-defmethod scxml-x-span ((rect scxml-rect))
   "Return the x component of this RECT as a span."
   (with-slots (x-min x-max) rect
     (scxml-span :start x-min :end x-max)))
-(cl-defmethod scxml-y ((rect scxml-rect))
+(cl-defmethod scxml-y-span ((rect scxml-rect))
   "Return the y component of this RECT as a span."
   (with-slots (y-min y-max) rect
     (scxml-span :start y-min :end y-max)))
 (cl-defmethod scxml-contains ((container scxml-rect) (containee scxml-point) &optional evaluation-mode)
   "Return non-nil if the CONTAINER contains CONTAINEE using EVALUATION-MODE."
-  (and (scxml-contains (scxml-x container) (scxml-x containee) evaluation-mode)
-       (scxml-contains (scxml-y container) (scxml-y containee) evaluation-mode)))
+  (and (scxml-contains (scxml-x-span container) (scxml-x containee) evaluation-mode)
+       (scxml-contains (scxml-y-span container) (scxml-y containee) evaluation-mode)))
 (cl-defmethod scxml-contains ((container scxml-rect) (containee scxml-rect) &optional evaluation-mode)
   "Return non-nil if the CONTAINER contains CONTAINEE using EVALUATION-MODE."
-  (and (scxml-contains (scxml-x container) (scxml-x containee) evaluation-mode)
-       (scxml-contains (scxml-y container) (scxml-y containee) evaluation-mode)))
+  (and (scxml-contains (scxml-x-span container) (scxml-x-span containee) evaluation-mode)
+       (scxml-contains (scxml-y-span container) (scxml-y-span containee) evaluation-mode)))
 (cl-defmethod scxml-relative-coordinates ((base-rect scxml-rect) (rect scxml-rect))
   "Return the coordinates of RECT relative to BASE-RECT."
-  (let ((x-span (scxml-relative-coordinates (scxml-x base-rect) (scxml-x rect)))
-        (y-span (scxml-relative-coordinates (scxml-y base-rect) (scxml-y rect))))
+  (let ((x-span (scxml-relative-coordinates (scxml-x-span base-rect) (scxml-x-span rect)))
+        (y-span (scxml-relative-coordinates (scxml-y-span base-rect) (scxml-y-span rect))))
     (scxml-rect :x-min (scxml-start x-span)
                 :x-max (scxml-end x-span)
                 :y-min (scxml-start y-span)
@@ -157,19 +159,19 @@ proceeding counterclockwise around the rectangle."
 (cl-defmethod scxml-relative-coordinates ((base-rect scxml-rect) (point scxml-point))
   "Return the coordinates of POINT relative to BASE-RECT."
   (with-slots (x y) point
-    (scxml-point :x (scxml-relative-coordinates (scxml-x base-rect) x)
-                 :y (scxml-relative-coordinates (scxml-y base-rect) y))))
+    (scxml-point :x (scxml-relative-coordinates (scxml-x-span base-rect) x)
+                 :y (scxml-relative-coordinates (scxml-y-span base-rect) y))))
 (cl-defmethod scxml-absolute-coordinates ((base-rect scxml-rect) (point scxml-point))
   "Return the absolute coordinates of POINT given relative coordinate base BASE-RECT."
   (with-slots (x y) point
-    (scxml-point :x (scxml-absolute-coordinates (scxml-x base-rect) x)
-                 :y (scxml-absolute-coordinates (scxml-y base-rect) y))))
+    (scxml-point :x (scxml-absolute-coordinates (scxml-x-span base-rect) x)
+                 :y (scxml-absolute-coordinates (scxml-y-span base-rect) y))))
 (cl-defmethod scxml-absolute-coordinates ((base-rect scxml-rect) (relative-rect scxml-rect))
     "Return the absolute coordinates of RELATIVE-RECT given relative coordinate base BASE-RECT."
-  (let ((x-span (scxml-absolute-coordinates (scxml-x base-rect)
-                                            (scxml-x relative-rect)))
-        (y-span (scxml-absolute-coordinates (scxml-y base-rect)
-                                            (scxml-y relative-rect))))
+  (let ((x-span (scxml-absolute-coordinates (scxml-x-span base-rect)
+                                            (scxml-x-span relative-rect)))
+        (y-span (scxml-absolute-coordinates (scxml-y-span base-rect)
+                                            (scxml-y-span relative-rect))))
     (scxml-rect :x-min (scxml-start x-span)
                 :x-max (scxml-end x-span)
                 :y-min (scxml-start y-span)
@@ -184,10 +186,10 @@ proceeding counterclockwise around the rectangle."
     B))
 (cl-defmethod scxml-intersection ((A scxml-rect) (B scxml-rect))
   "Return the intersection of A and B."
-  (let ((x-range (scxml-intersection (scxml-x A)
-                                     (scxml-x B)))
-        (y-range (scxml-intersection (scxml-y A)
-                                     (scxml-y B))))
+  (let ((x-range (scxml-intersection (scxml-x-span A)
+                                     (scxml-x-span B)))
+        (y-range (scxml-intersection (scxml-y-span A)
+                                     (scxml-y-span B))))
     (if (and x-range y-range)
         (scxml-rect :x-min (scxml-start x-range)
                     :x-max (scxml-end x-range)
@@ -222,8 +224,8 @@ if any bounding segment of A intersects B."
                       return t)))))
 (cl-defmethod scxml-has-intersection ((A scxml-rect) (B scxml-rect) &optional evaluation-mode)
   "Return non-nil if A and B intersect."
-  (and (scxml-has-intersection (scxml-x A) (scxml-x B) evaluation-mode)
-       (scxml-has-intersection (scxml-y A) (scxml-y B) evaluation-mode)))
+  (and (scxml-has-intersection (scxml-x-span A) (scxml-x-span B) evaluation-mode)
+       (scxml-has-intersection (scxml-y-span A) (scxml-y-span B) evaluation-mode)))
 (cl-defmethod scxml-bounding-pts ((A scxml-rect))
   "Return a list containing the vertices of the rectangle.
 

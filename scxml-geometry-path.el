@@ -180,8 +180,9 @@ The implementation is not efficient, use caution."
   "Return a simplified version of the PATH.
 
 Removes duplicates and colinear points."
+  ;; todo - this should return a cardinal path when it's given one.
   (with-slots (points) path
-    (scxml-path :points (scxml---path-append-simplify points))))
+    (scxml-path :points (scxml-simplified points))))
 
 (cl-defmethod scxml---get-deltas ((points list))
   "Given a list of N points, return a list of deltas between the points.
@@ -430,8 +431,8 @@ parameter.  No promises are made.
     (error "Write this part, that will handle min start and end segment distances"))
   (let ((points (scxml---path-cardinal start end entry-vector exit-vector min-segment-distance)))
     (scxml-cardinal-path :points points)))
-(defun scxml---path-append-simplify (&rest n-path-pts)
-  "Take all points from N-PATH-PTS lists and simplify them.
+(defun scxml-simplified (&rest n-path-pts)
+  "Take all points from N-PATH-PTS lists-of-points and simplify them.
 
 Remove duplicate points.
 Remove colinear intermediary points."

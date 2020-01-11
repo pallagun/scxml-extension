@@ -125,7 +125,7 @@ Will throw if it can't move it. will not render!!"
           (scxml--set-drawing-invalid transition 't)
           't)
       'nil)))
-(cl-defgeneric scxml--simplify-drawing-hint ((element scxml-drawable-element))
+(cl-defgeneric scxml--simplify-drawing-hint ((element scxml-drawable-element) (viewport scxml-viewport))
   ;; TODO - this should be moved out to the scxml-drawable-element.el file.
   "Given a drawable ELEMENT, simplify the drawing hint if it exists.")
 (cl-defmethod scxml--simplify-drawing-hint ((state scxml-state))

@@ -80,6 +80,10 @@ A drawing 'hint' is something that captures the intent of the
 drawing but not the exact pixels.  Something like box-on-the-left
 instead of an exact set of pixels/segments.  It may or may not be
 relative to the parent-canvas.")
+(cl-defgeneric scxml-build-simplified ((drawing scxml-drawing) (viewport scxml-viewport))
+  "Attempt to build a simplified DRAWING as seen by human eyes in VIEWPORT.
+
+VIEWPORT is used to establish how agressive the simplification can be.")
 
 (cl-defgeneric scxml-get-inner-canvas ((drawing scxml-drawing))
   "Return the inner canvas of DRAWING which may be nil.")

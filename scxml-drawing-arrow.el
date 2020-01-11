@@ -756,16 +756,112 @@ The arrow factory when building from a hint is smart enough to sort it all out."
                      :target snap-target
                      :path snap-path
                      :parent (scxml-parent arrow))))))
-(cl-defmethod scxml-simplify-path ((arrow scxml-arrow))
-  "Return a simplified path for this ARROW."
-  ;; check to see if you can snap the connectors
-  ;; Just slap the connector points on to the start and end of the path
-  ;; feed the whole thing to the path simplifier routine then back out
-  ;; the start and end points.
-  (let* ((simple-path (scxml-simplify
-                       (scxml-path :points (scxml--full-path arrow))))
-         (full-points (scxml-points simple-path))
-         (inner-points (cdr (nbutlast full-points))))
-    (scxml-path :points inner-points)))
+;; (ert-deftest scxml-build-simplified-test ()
+;;   (let ((points (list (scxml-point- 0 0)
+;;                       (scxml-point- 0.5 0)
+;;                       (scxml-point- 0.5 0.1)
+;;                       (scxml-point- 10 0.1)
+;;                       (scxml-point- 10 5))))
+;;     (scxml--arrow-path-simplify points 1.0 1.0)))
+
+;; (scxml--arrow-path-simplify (list (scxml-point- 0.0 0.0)
+;;                                   (scxml-point- 0.1 0.0)
+;;                                   (scxml-point- 0.1 0.5)
+;;                                   (scxml-point- 0.3 0.5)
+;;                                   (scxml-point- 10 0.5)
+;;                                   (scxml-point- 10 5)
+;;                                   (scxml-point- 10.5 5))
+;;                             1 1)
+(defun scxml--arrow-path-simplify (full-path-pts slack-allowance-x slack-allowance-y)
+  "actual simplifier"
+  ;; find any segments smaller than viewport's pixel size.
+  ;;    so this won't work. I have to do these comparisons absolutely.
+  (let ((last-path-pt)
+        (num-compacted-pts 1)
+        (num-pts 0)
+        (last-compacted-pt (first full-path-pts))
+        (compacted-pts (list (first full-path-pts))))
+    (cl-loop for real-pt in (cdr full-path-pts)
+             for delta = (scxml-subtract real-pt last-compacted-pt)
+             for abs-delta-x = (abs (scxml-x delta))
+             for abs-delta-y = (abs (scxml-y delta))
+             ;; if you went through either slack add a new point with the slack
+             ;; that went over.
+             do (cond ((>= abs-delta-x slack-allowance-x)
+                       ;; X went over allowance.
+                       (if (>= abs-delta-y slack-allowance-y)
+                           ;; X and Y went over allowance.
+                           (push real-pt compacted-pts)
+                         ;; X went over but Y did not.
+                         (push (scxml-point :x (scxml-x real-pt) :y (scxml-y last-compacted-pt))
+                               compacted-pts))
+                       (incf num-compacted-pts)
+                       (setq last-compacted-pt (first compacted-pts)))
+                      ((>= abs-delta-y slack-allowance-y)
+                       ;; Y went over but X did not
+                       (push (scxml-point :x (scxml-x last-compacted-pt) :y (scxml-y real-pt))
+                             compacted-pts)
+                       (setq last-compacted-pt (first compacted-pts))
+                       (incf num-compacted-pts)))
+             do (setq last-path-pt real-pt
+                      num-pts (1+ num-pts)))
+    (if (scxml-almost-equal last-path-pt last-compacted-pt)
+        ;; end point matches, no additional work needed.
+        (nreverse compacted-pts)
+      ;; End point does not match, amend the first N points to handle this.
+      ;; note: if the list is only 2 elements long this will be impossible and
+      ;;       the path router needs to be called.
+      (unless (>= num-compacted-pts 3)
+        (error "Resort to path planner."))
+
+      (let* ((required-delta (scxml-subtract last-path-pt last-compacted-pt))
+             (required-unit-vec (scxml-normalized required-delta)))
+        ;; go through compacted-pts, adding this delta until you hit a segment
+        ;; wich you don't need to.
+        ;; TODO - this only takes direction into account, it could produce paths
+        ;;        that overlap themselves.  - handle that.
+        (cl-loop for reverse-path on compacted-pts
+                 for start-pt = (first reverse-path)
+                 for end-pt = (second reverse-path)
+                 for segment-char-vec = (scxml-subtract end-pt start-pt)
+                 for segment-unit-vec = (scxml-normalized segment-char-vec)
+
+                 ;; the start point *must* be moved.
+                 do (scxml-incf start-pt required-delta)
+
+                 ;; if the dot product is zero, then you have to move this point, it won't have freedom
+                 ;; in the required direction.
+                 do (unless (scxml-almost-zero (scxml-dot-prod required-unit-vec segment-unit-vec))
+                      (cl-return))
+                 ))
+    (nreverse compacted-pts))))
+
+
+(cl-defmethod scxml-build-simplified ((arrow scxml-arrow) (viewport scxml-viewport))
+  "Attempt to simplify (modify) ARROW as seen on VIEWPORT."
+  (with-slots (source target) arrow
+    (let* ((full-path-pts (scxml--full-path arrow))
+           (slack (scxml-get-point-scaling viewport))
+           (simplified (scxml--arrow-path-simplify full-path-pts
+                                                   (scxml-x slack)
+                                                   (scxml-y slack)))
+           ;; TODO - the path-simplify should do this for me,
+           ;; modify it do do so on each pt evaluation.
+           (simplified-reduced (scxml-simplified simplified)))
+      (scxml-arrow :source source
+                   :target target
+                   :path (scxml-cardinal-path :points
+                                              (nbutlast (cdr simplified-reduced)))))))
+;; (cl-defmethod scxml-simplify-path ((arrow scxml-arrow))
+;;   "Return a simplified path for this ARROW."
+;;   ;; check to see if you can snap the connectors
+;;   ;; Just slap the connector points on to the start and end of the path
+;;   ;; feed the whole thing to the path simplifier routine then back out
+;;   ;; the start and end points.
+;;   (let* ((simple-path (scxml-simplify
+;;                        (scxml-path :points (scxml--full-path arrow))))
+;;          (full-points (scxml-points simple-path))
+;;          (inner-points (cdr (nbutlast full-points))))
+;;     (scxml-path :points inner-points)))
 
 (provide 'scxml-drawing-arrow)

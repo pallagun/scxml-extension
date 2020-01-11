@@ -8,6 +8,7 @@
 (require 'scxml-element)
 (require 'scxml-drawing)
 (require 'scxml-canvas)
+(require 'scxml-viewport)
 
 (defconst scxml---hint-symbol 'scxml---drawing-hint
   "The xml attribute name used to store drawing hints.")
@@ -122,9 +123,19 @@ Returns the current ELEMENT drawing."
         (scxml--set-drawing-invalid element 'nil)
         drawing)))
   (scxml-element-drawing element))
-
 (cl-defgeneric scxml-build-drawing ((element scxml-drawable-element) (canvas scxml-canvas))
   "Return a drawing for ELEMENT within CANVAS.")
+(cl-defgeneric scxml-simplify-drawing ((element scxml-drawable-element) (viewport scxml-viewport))
+  "Attempt to simplify the drawing for ELEMENT.")
+(cl-defmethod scxml-simplify-drawing ((element scxml-drawable-element) (viewport scxml-viewport))
+  "Attempt to simplify the drawing for ELEMENT."
+  (let ((simplified (scxml-build-simplified (scxml-element-drawing element)
+                                            viewport)))
+    (when simplified
+      (scxml--set-hint element
+                       (scxml-build-hint simplified
+                                         (scxml-get-parent-drawing-inner-canvas element)))
+      (scxml--set-drawing-invalid element t))))
 
 (cl-defgeneric scxml-parent-drawing ((element scxml-drawable-element))
   "Return the drawing of ELEMENT's parent scxml-element.")

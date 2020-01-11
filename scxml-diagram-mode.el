@@ -651,11 +651,18 @@ the user is attempting to mark an edit idx."
   (interactive)
   (scxml-record 'scxml-diagram-mode--simplify)
   (when scxml-diagram-mode--marked-element
-    (scxml--simplify-drawing-hint scxml-diagram-mode--marked-element)
-    (when (scxml-diagram-mode--edit-idx)
-      (scxml--set-edit-idx scxml-diagram-mode--marked-element
-                           (min (1- (scxml-num-edit-idxs scxml-diagram-mode--marked-element)))))
-    (scxml-diagram-mode--redraw)))
+    (let ((past-edit-idx (scxml--edit-idx scxml-diagram-mode--marked-element)))
+      (scxml-simplify-drawing scxml-diagram-mode--marked-element
+                              (scxml-diagram-mode--viewport))
+      (scxml--set-edit-idx scxml-diagram-mode--marked-element nil t)
+      ;; TODO - don't redraw the whole thing, just the marked elemnt's drawing
+      ;; to get a reliable num-edit-idxs.
+      (scxml-diagram-mode--redraw)
+      (when past-edit-idx
+        (let* ((num-edit-idxs (scxml-num-edit-idxs scxml-diagram-mode--marked-element))
+               (correct-idx (min past-edit-idx (1- num-edit-idxs))))
+          (scxml--set-edit-idx scxml-diagram-mode--marked-element 0)
+          (scxml-diagram-mode--edit-idx-increment correct-idx))))))
 
 (defun scxml-diagram-mode--automatic ()
   "Set the marked element to 'automatic' mode (not manually hinted)."
@@ -842,8 +849,6 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
                               (equal (scxml-target-id element) old-id))))
 
       (scxml-diagram-mode--redraw))))
-
-
 (defun scxml-diagram-mode--edit-name (new-name)
   "Edit the xml 'name' attribute of the currently marked element."
   (interactive (let* ((element scxml-diagram-mode--marked-element))
