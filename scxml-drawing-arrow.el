@@ -294,150 +294,46 @@ path (target-point))."))
                             :parent (scxml-parent arrow)
                             :path (scxml-cardinal-path :points
                                                        (nbutlast (cdr full-path))))))))))
-      ;;       ;; it this point you know
-      ;;       (
+;; (defun scxml---build-path-if-valid (arrow new-pts &optional iterations)
+;;   "If ARROW is valid to represend by new-pts, return a new scxml-arrow with those points"
+;;   ;; TODO - rename this 'build-arrow-if-valid', it's making an arrow, not a path.
 
-      ;;        ;; this is not an end point move but the edges changed.  invalid.
-      ;;        nil)
-      ;;       (
-      ;;       ((and (or (not (scxml-almost-equal current-source-point new-source-point))
-      ;;                 (not (scxml-almost-equal current-target-point new-target-point)))
-      ;;             ;; the connector points have moved. but not enough.
-      ;;             (or (not (scxml-almost-equal new-source-point first-path-point))
-      ;;                 (not (scxml-almost-equal new-target-point last-path-point))))
+;;   ;; TODO - examine why this is needed.
+;;   ;; TODO - don't bother building a new connecto if it didn't move.
+;;   ;; Actually, I think I should.
 
+;;   ;; TODO - don't bother calling build-connector if the point doesn't change?
+;;   (let ((new-source-connector (scxml-build-connector (scxml-arrow-source arrow)
+;;                                                      (first new-pts)))
+;;         (new-target-connector (scxml-build-connector (scxml-arrow-target arrow)
+;;                                                      (car (last new-pts)))))
+;;     (if (and new-source-connector new-target-connector)
+;;         (let ((new-arrow (scxml-arrow :source new-source-connector
+;;                                       :target new-target-connector
+;;                                       :path (scxml-cardinal-path :points
+;;                                                                  (nbutlast (cdr new-pts)))
+;;                                       :parent (scxml-parent arrow))))
 
-      ;;       ;; -end points didn't move
-      ;;       ;; --assemble a path and whatever
-      ;;       ;; -end points moved but not enough
-      ;;       ;; -- enable stretching.
-      ;;       ;; -end points moved enough
-      ;;       ;; -- assemble a path and whatever.
+;;           ;; TODO - if either connector is a rect connector which jumped edges,
+;;           ;; Ensure you aren't creating a strangely locked arrow.
+;;           (when (and (scxml-drawing-connector-rect-p new-source-connector)
+;;                      (scxml-drawing-connector-rect-p (scxml-arrow-source arrow))
+;;                      (not (eq (scxml-node-edge new-source-connector)
+;;                               (scxml-node-edge (scxml-arrow-source arrow)))))
+;;             ;; Both connectors are rectangles and the edge has changed,
+;;             ;; check that path is sane.  TODO - fix this intelligently,
+;;             ;; currently I'm just reverting to auto-path
+;;             (scxml--arrow-set-default-path new-arrow))
 
-      ;;       ((or (not (scxml-almost-equal new-source-point first-path-point))
-      ;;            (not (scxml-almost-equal new-target-point last-path-point)))
-      ;;        ;; This is not specifically and end point move but one of the end points
-      ;;        ;; did move, but not enough.
-
-      ;;        ;;              ;;
-      ;;        ;; this is *not an end poin
-
-
-
-      ;;               ;; this is an end point move and one of the end points jumped.
-      ;; (if (and (not is-endpoint-move)
-      ;;          (or (not (eq (scxml-node-edge current-source)
-      ;;                       (scxml-node-edge new-source)))
-      ;;              (not (eq (scxml-node-edge current-target)
-      ;;                       (scxml-node-edge new-target)))))
-      ;;     ;; not an end point move and either of the connectors jumped edges, abort
-      ;;     nil
-
-      ;;   ;; either it is an end point move or your edges are the same.
-      ;;   (if (and (eq (scxml-node-edge current-source)
-      ;;                (scxml-node-edge new-source))
-      ;;            (eq (scxml-node-edge current-target)
-      ;;                (scxml-node-edge new-target))
-      ;;            (scxml-almost-equal current-source-point new-source-point)
-      ;;            (scxml-almost-equal first-path-point new-source-point)
-      ;;            (scxml-almost-equal current-target-point new-target-point)
-      ;;            (scxml-almost-equal last-path-point new-target-point))
-      ;;       ;; end points are not moved, fire out the path.
-      ;;       ;; TODO - optimize this, if they don't move you'll know before
-      ;;       ;; you even build them, you could just clone them.
-      ;;       ;; TODO - this might even be able to be that the *edge* is the same?
-      ;;       (scxml-arrow :source new-source
-      ;;                    :target new-target
-      ;;                    :parent (scxml-parent arrow)
-      ;;                    :path (scxml-cardinal-path :points
-      ;;                                               (nbutlast (cdr new-pts))))
-      ;;     ;; one or both of the connectors have moved.
-      ;;     ;; you may need path segments added at the start/end or to stretch.
-      ;;     (unless (eq (scxml-node-edge current-source)
-      ;;                 (scxml-node-edge new-source))
-      ;;       ;; Source connect has jumped edges, ensure there is a perpendicular start.
-      ;;       (let ((first-segment (scxml-segment :start (first new-pts)
-      ;;                                           :end (second new-pts)))
-      ;;             (required-vector (scxml-vector-from-direction
-      ;;                               (scxml-node-edge new-source))))
-      ;;         (when (or (scxml-almost-zero (scxml-length first-segment))
-      ;;                   (<= 0 (scxml-dot-prod
-      ;;                          (scxml-characteristic-vector first-segment)
-      ;;                          required-vector)))
-      ;;           (push (scxml-subtract first-path-point
-      ;;                                 (scxml-scaled required-vector
-      ;;                                               connector-offset))
-      ;;                 new-pts)
-      ;;           )))
-
-      ;;     (unless (eq (scxml-node-edge current-target)
-      ;;                 (scxml-node-edge new-target))
-      ;;       ;; Source connect has jumped edges, ensure there is a perpendicular start.
-      ;;       (let ((last-segment (scxml-segment :start (car last-path-links)
-      ;;                                          :end last-path-point))
-      ;;             (required-vector (scxml-vector-from-direction
-      ;;                               (scxml-node-edge new-target))))
-      ;;         (when (or (scxml-almost-zero (scxml-length first-segment))
-      ;;                   (<= 0 (scxml-dot-prod
-      ;;                          (scxml-characteristic-vector first-segment)
-      ;;                          required-vector)))
-      ;;           (setq new-pts (append
-      ;;                          new-pts
-      ;;                          (list (scxml-add last-path-point
-      ;;                                           (scxml-scaled required-vector
-      ;;                                                         connector-offset))))))))
-
-      ;;     (let* ((full-path (scxml---path-stretch new-pts
-      ;;                                             (scxml-connection-point new-source)
-      ;;                                             (scxml-connection-point new-target)))
-      ;;            (new-arrow (scxml-arrow :source new-source
-      ;;                                    :target new-target
-      ;;                                    :parent (scxml-parent arrow)
-      ;;                                    :path (scxml-cardinal-path
-      ;;                                           :points
-      ;;                                           (nbutlast (cdr full-path))))))
-      ;;       new-arrow))))))
-
-(defun scxml---build-path-if-valid (arrow new-pts &optional iterations)
-  "If ARROW is valid to represend by new-pts, return a new scxml-arrow with those points"
-  ;; TODO - rename this 'build-arrow-if-valid', it's making an arrow, not a path.
-
-  ;; TODO - examine why this is needed.
-  ;; TODO - don't bother building a new connecto if it didn't move.
-  ;; Actually, I think I should.
-
-  ;; TODO - don't bother calling build-connector if the point doesn't change?
-  (let ((new-source-connector (scxml-build-connector (scxml-arrow-source arrow)
-                                                     (first new-pts)))
-        (new-target-connector (scxml-build-connector (scxml-arrow-target arrow)
-                                                     (car (last new-pts)))))
-    (if (and new-source-connector new-target-connector)
-        (let ((new-arrow (scxml-arrow :source new-source-connector
-                                      :target new-target-connector
-                                      :path (scxml-cardinal-path :points
-                                                                 (nbutlast (cdr new-pts)))
-                                      :parent (scxml-parent arrow))))
-
-          ;; TODO - if either connector is a rect connector which jumped edges,
-          ;; Ensure you aren't creating a strangely locked arrow.
-          (when (and (scxml-drawing-connector-rect-p new-source-connector)
-                     (scxml-drawing-connector-rect-p (scxml-arrow-source arrow))
-                     (not (eq (scxml-node-edge new-source-connector)
-                              (scxml-node-edge (scxml-arrow-source arrow)))))
-            ;; Both connectors are rectangles and the edge has changed,
-            ;; check that path is sane.  TODO - fix this intelligently,
-            ;; currently I'm just reverting to auto-path
-            (scxml--arrow-set-default-path new-arrow))
-
-          (when (and (scxml-drawing-connector-rect-p new-target-connector)
-                     (scxml-drawing-connector-rect-p (scxml-arrow-target arrow))
-                     (not (eq (scxml-node-edge new-target-connector)
-                              (scxml-node-edge (scxml-arrow-target arrow)))))
-            ;; Both connectors are rectangles and the edge has changed,
-            ;; check that path is sane.
-            (scxml--arrow-set-default-path new-arrow))
-          new-arrow)
-      nil)))
+;;           (when (and (scxml-drawing-connector-rect-p new-target-connector)
+;;                      (scxml-drawing-connector-rect-p (scxml-arrow-target arrow))
+;;                      (not (eq (scxml-node-edge new-target-connector)
+;;                               (scxml-node-edge (scxml-arrow-target arrow)))))
+;;             ;; Both connectors are rectangles and the edge has changed,
+;;             ;; check that path is sane.
+;;             (scxml--arrow-set-default-path new-arrow))
+;;           new-arrow)
+;;       nil)))
 (cl-defmethod scxml-build-move-edited ((arrow scxml-arrow) (move-vector scxml-point) (viewport scxml-viewport))
   "Return a new arrow representing ARROW moved by MOVE-VECTOR.
 
@@ -756,22 +652,6 @@ The arrow factory when building from a hint is smart enough to sort it all out."
                      :target snap-target
                      :path snap-path
                      :parent (scxml-parent arrow))))))
-;; (ert-deftest scxml-build-simplified-test ()
-;;   (let ((points (list (scxml-point- 0 0)
-;;                       (scxml-point- 0.5 0)
-;;                       (scxml-point- 0.5 0.1)
-;;                       (scxml-point- 10 0.1)
-;;                       (scxml-point- 10 5))))
-;;     (scxml--arrow-path-simplify points 1.0 1.0)))
-
-;; (scxml--arrow-path-simplify (list (scxml-point- 0.0 0.0)
-;;                                   (scxml-point- 0.1 0.0)
-;;                                   (scxml-point- 0.1 0.5)
-;;                                   (scxml-point- 0.3 0.5)
-;;                                   (scxml-point- 10 0.5)
-;;                                   (scxml-point- 10 5)
-;;                                   (scxml-point- 10.5 5))
-;;                             1 1)
 (defun scxml--arrow-path-simplify (full-path-pts slack-allowance-x slack-allowance-y)
   "actual simplifier"
   ;; find any segments smaller than viewport's pixel size.
@@ -836,7 +716,6 @@ The arrow factory when building from a hint is smart enough to sort it all out."
                  ))
     (nreverse compacted-pts))))
 
-
 (cl-defmethod scxml-build-simplified ((arrow scxml-arrow) (viewport scxml-viewport))
   "Attempt to simplify (modify) ARROW as seen on VIEWPORT."
   (with-slots (source target) arrow
@@ -852,16 +731,5 @@ The arrow factory when building from a hint is smart enough to sort it all out."
                    :target target
                    :path (scxml-cardinal-path :points
                                               (nbutlast (cdr simplified-reduced)))))))
-;; (cl-defmethod scxml-simplify-path ((arrow scxml-arrow))
-;;   "Return a simplified path for this ARROW."
-;;   ;; check to see if you can snap the connectors
-;;   ;; Just slap the connector points on to the start and end of the path
-;;   ;; feed the whole thing to the path simplifier routine then back out
-;;   ;; the start and end points.
-;;   (let* ((simple-path (scxml-simplify
-;;                        (scxml-path :points (scxml--full-path arrow))))
-;;          (full-points (scxml-points simple-path))
-;;          (inner-points (cdr (nbutlast full-points))))
-;;     (scxml-path :points inner-points)))
 
 (provide 'scxml-drawing-arrow)
