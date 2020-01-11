@@ -653,7 +653,7 @@ The arrow factory when building from a hint is smart enough to sort it all out."
                      :path snap-path
                      :parent (scxml-parent arrow))))))
 (defun scxml--arrow-path-simplify (full-path-pts slack-allowance-x slack-allowance-y)
-  "actual simplifier"
+  "actual simplifier - returns the first argument when it fails."
   ;; find any segments smaller than viewport's pixel size.
   ;;    so this won't work. I have to do these comparisons absolutely.
   (let ((last-path-pt)
@@ -691,30 +691,36 @@ The arrow factory when building from a hint is smart enough to sort it all out."
       ;; End point does not match, amend the first N points to handle this.
       ;; note: if the list is only 2 elements long this will be impossible and
       ;;       the path router needs to be called.
-      (unless (>= num-compacted-pts 3)
-        (error "Resort to path planner."))
+      (if (>= num-compacted-pts 3)
+          (let* ((required-delta (scxml-subtract last-path-pt last-compacted-pt))
+                 (required-unit-vec (scxml-normalized required-delta))
+                 (failure))
+            ;; go through compacted-pts, adding this delta until you hit a segment
+            ;; wich you don't need to.
+            ;; TODO - this only takes direction into account, it could produce paths
+            ;;        that overlap themselves.  - handle that.
+            (cl-loop for reverse-path on compacted-pts
+                     for start-pt = (first reverse-path)
+                     for end-pt = (second reverse-path)
+                     when (and end-pt)
+                     do (progn (setq failure t)
+                               (cl-return))
+                     for segment-char-vec = (scxml-subtract end-pt start-pt)
+                     for segment-unit-vec = (scxml-normalized segment-char-vec)
 
-      (let* ((required-delta (scxml-subtract last-path-pt last-compacted-pt))
-             (required-unit-vec (scxml-normalized required-delta)))
-        ;; go through compacted-pts, adding this delta until you hit a segment
-        ;; wich you don't need to.
-        ;; TODO - this only takes direction into account, it could produce paths
-        ;;        that overlap themselves.  - handle that.
-        (cl-loop for reverse-path on compacted-pts
-                 for start-pt = (first reverse-path)
-                 for end-pt = (second reverse-path)
-                 for segment-char-vec = (scxml-subtract end-pt start-pt)
-                 for segment-unit-vec = (scxml-normalized segment-char-vec)
+                     ;; the start point *must* be moved.
+                     do (scxml-incf start-pt required-delta)
 
-                 ;; the start point *must* be moved.
-                 do (scxml-incf start-pt required-delta)
-
-                 ;; if the dot product is zero, then you have to move this point, it won't have freedom
-                 ;; in the required direction.
-                 do (unless (scxml-almost-zero (scxml-dot-prod required-unit-vec segment-unit-vec))
-                      (cl-return))
-                 ))
-    (nreverse compacted-pts))))
+                     ;; if the dot product is zero, then you have to move this point, it won't have freedom
+                     ;; in the required direction.
+                     do (unless (scxml-almost-zero (scxml-dot-prod required-unit-vec segment-unit-vec))
+                          (cl-return)))
+            (if failure
+                full-path-pts
+              (nreverse compacted-pts)))
+        ;; Only 2 points or less in the path. do not attepmt correction
+        ;; just give up
+        full-path-pts))))
 
 (cl-defmethod scxml-build-simplified ((arrow scxml-arrow) (viewport scxml-viewport))
   "Attempt to simplify (modify) ARROW as seen on VIEWPORT."
@@ -726,10 +732,11 @@ The arrow factory when building from a hint is smart enough to sort it all out."
                                                    (scxml-y slack)))
            ;; TODO - the path-simplify should do this for me,
            ;; modify it do do so on each pt evaluation.
-           (simplified-reduced (scxml-simplified simplified)))
-      (scxml-arrow :source source
-                   :target target
-                   :path (scxml-cardinal-path :points
-                                              (nbutlast (cdr simplified-reduced)))))))
+           (simplified-reduced (and simplified (scxml-simplified simplified))))
+      (when simplified-reduced
+        (scxml-arrow :source source
+                     :target target
+                     :path (scxml-cardinal-path :points
+                                                (nbutlast (cdr simplified-reduced))))))))
 
 (provide 'scxml-drawing-arrow)
