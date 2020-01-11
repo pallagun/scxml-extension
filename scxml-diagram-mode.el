@@ -669,6 +669,8 @@ the user is attempting to mark an edit idx."
   (interactive)
   (scxml-record 'scxml-diagram-mode--automatic)
   (when scxml-diagram-mode--marked-element
+    ;; TODO - this should ensure that no collisions occur when
+    ;; toggling to automatic mode.
     (scxml--set-edit-idx scxml-diagram-mode--marked-element 'nil)
     (scxml--set-hint scxml-diagram-mode--marked-element 'nil)
     (scxml--set-drawing-invalid scxml-diagram-mode--marked-element 't)
@@ -835,7 +837,8 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
   (let ((element scxml-diagram-mode--marked-element))
     (unless (object-of-class-p element 'scxml-element-with-id)
       (error "Currently selected element does not have an 'id' attribute to set."))
-    (let ((old-id (scxml-element-id element)))
+    (let ((old-id (scxml-element-id element))
+          (edited-elements (list element)))
       ;; ensure all transitions which reference this id are also updated.
       (scxml-set-element-id element new-id)
       (scxml--set-drawing-invalid element t)
@@ -843,12 +846,17 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
       (scxml-visit-all element
                        (lambda (transition)
                          (setf (scxml-target-id transition) new-id)
-                         (scxml--set-drawing-invalid transition t))
+                         (scxml--set-drawing-invalid transition t)
+                         (push transition edited-elements))
                        (lambda (element)
                          (and (object-of-class-p element 'scxml-transition)
                               (equal (scxml-target-id element) old-id))))
 
-      (scxml-diagram-mode--redraw))))
+      (scxml-diagram-mode--redraw)
+      (mapc (lambda (element)
+              (scxml-diagram-mode--apply-edit element nil))
+            edited-elements)
+      )))
 (defun scxml-diagram-mode--edit-name (new-name)
   "Edit the xml 'name' attribute of the currently marked element."
   (interactive (let* ((element scxml-diagram-mode--marked-element))
@@ -859,7 +867,8 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
   (let ((element scxml-diagram-mode--marked-element))
     (setf (scxml-element-name element) new-name)
     (scxml--set-drawing-invalid element t)
-    (scxml-diagram-mode--redraw)))
+    (scxml-diagram-mode--redraw)
+    (scxml-diagram-mode--apply-edit element nil)))
 
 (defun scxml-diagram-mode--delete-marked ()
   "Delete the marked element, mark the parent."
