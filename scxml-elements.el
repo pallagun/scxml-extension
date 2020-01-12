@@ -75,6 +75,14 @@ Child <transition> element may not have 'cond' or 'event' attributes and must be
 (cl-defmethod scxml-print ((initial scxml-initial))
   "Spit out a string representing ELEMENT for human eyeballs"
   (format "initial(%s)" (cl-call-next-method initial)))
+(cl-defmethod scxml-add-child :before ((initial scxml-initial) (any-child scxml-element))
+  "Ensure this child is valid"
+  (when (not (object-of-class-p any-child 'scxml-transition))
+    (error "The child of an <initial> element must be a transition"))
+  (when (null (scxml-target-id any-child))
+    (error "The child on an <initial> element must be a <transition> with the id set"))
+  (when (> (scxml-num-children initial) 0)
+    (error "An <initial> element may only have a single child element")))
 
 (defclass scxml-parallel (scxml-element scxml-element-with-id)
   ()
@@ -153,6 +161,39 @@ No attributes are required.
 Attributes recognized: id, type['shallow' or 'deep', default: 'shallow']
 Children: must contain exactly one unconditional <transition>
 indicating default history.")
+
+;; interactions
+
+(cl-defmethod scxml-add-child :before ((parent scxml-element) (initial scxml-initial))
+  "Ensure it's valid to add an scxml-initial to this state"
+  ;; <initial> elements are only allowed to be added if this state has
+  ;; child states. additionally if an <initial> element is added it must
+  ;; already have a valid target.
+  (when (not (object-of-class-p parent 'scxml-state))
+    (error "<initial> elements are only valid as children of a <state>"))
+
+  (cl-flet ((validate-and-retrieve-initial-target
+             (lambda (initial-element)
+               (let ((children (scxml-children initial-element)))
+                 (when (not (= (length children) 1))
+                   (error "<initial> elements must have exactly one child, a <transition>"))
+                 (let ((transition (first children)))
+                   (when (not (object-of-class-p transition 'scxml-transition))
+                     (error "<initial> elements must have exactly one child, a <transition>"))
+                   (let ((target-id (scxml-target-id transition)))
+                     (when (<= (length target-id) 0)
+                       (error "<initial> elements must have a child <transition> with a valid target"))
+                     target-id))))))
+    (let ((initial-target (validate-and-retrieve-initial-target initial))
+          (found-target-element))
+      (cl-loop for sibling in (scxml-children parent)
+               when (object-of-class-p sibling 'scxml-initial)
+                 do (error "An element may only have a single <initial> child")
+               when (and (object-of-class-p sibling 'scxml-element-with-id)
+                         (equal (scxml-element-id sibling) initial-target))
+                 do (setq found-target-element t))
+      (when (not found-target-element)
+        (error "<initial> elements must have a <transition> which targets a sibling")))))
 
 (defun scxml--element-factory (type attrib-alist &optional skip-slots)
   "Build a childless element by TYPE and their ATTRIB-ALIST.

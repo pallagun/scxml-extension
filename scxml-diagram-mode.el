@@ -231,7 +231,6 @@ elements.")
   (let ((element scxml-diagram-mode--marked-element))
     (and element (scxml--edit-idx element))))
 
-;; User action responders
 (defun scxml-diagram-mode--next-element ()
   "Head to the next thing"
   (interactive)
@@ -757,7 +756,6 @@ the user is attempting to mark an edit idx."
                  (object-of-class-p child 'scxml-drawable-element)))
   (scxml-diagram-mode--apply-edit parent t)
   (scxml-diagram-mode--redraw))
-
 (defun scxml-diagram-mode--add-child-state (id)
   "Add a child <state> element to the marked element"
   (interactive "sNew <state> id: ")
