@@ -21,6 +21,12 @@ If value is non-nil, this function will be executed instead
 of the normal element marking routine.  Used for interactive selection of
 elements.")
 (make-variable-buffer-local 'scxml-diagram-mode--mark-element-catch)
+(defvar scxml-diagram-mode--down-mouse-1-catch nil
+  "Override the normal mouse-down behavior by executing this lambda.
+
+If this is set it will be called with the clicked pixel an the only argument.")
+(make-variable-buffer-local 'scxml-diagram-mode--down-mouse-1-catch)
+
 (defvar scxml-diagram-mode--mouse-mode 'nil
   "Indicate what mouse mode you are in.
 'viewport: - mode for panning/zooming the viewport
@@ -94,6 +100,7 @@ elements.")
 
     ;; document modification
     (define-key map (kbd "C-d") 'scxml-diagram-mode--delete-marked)
+    (define-key map (kbd "b") 'scxml-diagram-mode--test-add-box)
     (define-key map (kbd "S") 'scxml-diagram-mode--add-child-state)
     (define-key map (kbd "T") 'scxml-diagram-mode--add-child-transition)
     (define-key map (kbd "I") 'scxml-diagram-mode--add-child-initial)
@@ -348,6 +355,13 @@ Currently only able to zoom out when in viewport mode."
                  (last-pixel start-pixel)
                  (event-count 0))
             (setq scxml-diagram-mode--last-click-pixel start-pixel)
+
+            (when (and scxml-diagram-mode--down-mouse-1-catch
+                       (eq event-type 'down-mouse-1))
+              (funcall scxml-diagram-mode--down-mouse-1-catch start-pixel)
+              ;; Skip the initial mouse down behavior.
+              (setq event-count 1)
+              (setq scxml-diagram-mode--down-mouse-1-catch nil))
             ;; (message "Mouse Down px: %s, %s"
             ;;          (scxml-print start-pixel)
             ;;          (scxml-print last-pixel))
@@ -369,6 +383,7 @@ Currently only able to zoom out when in viewport mode."
                            (start (scxml-get-coord-centroid (scxml-diagram-mode--viewport) last-pixel))
                            (end (scxml-get-coord-centroid (scxml-diagram-mode--viewport) current-pixel))
                            (delta (scxml-subtract end start)))
+
                       ;; (message "delta pixel raw: %s" (scxml-subtract end start))
                       ;; (message "Mouse Event[%d]: start: %s, delta %s, t-delta %s, dir %s"
                       ;;          event-count
@@ -744,6 +759,38 @@ the user is attempting to mark an edit idx."
   (scxml-save-excursion
    (scxml--increment-edit-idx scxml-diagram-mode--marked-element increment)
    (scxml-diagram-mode--redraw)))
+
+(defun scxml-diagram-mode--add-box-and-begin-resize (pixel)
+  "add a state at point and jump to edit-idx mode"
+  ;; resolve wherever point is.
+  ;; add a child state to it @ that point with size zero.
+  ;; turn on edit mode.
+  ;; assign edit idx to BR - (2)
+  ;; continue?
+  (let* ((pixel (scxml-draw--get-pixel-at-point))
+         (drawing-coord (scxml-get-coord (scxml-diagram-mode--viewport) pixel))
+         (parent-element (scxml-find-element-selection scxml-draw--diagram drawing-coord)))
+    ;; find the closest coordinate to drawing-coord within parent's inner-canvas
+    ;; and begin the element there.
+    (unless parent-element
+      (error "Unable to determine where to add new element"))
+
+    (let ((valid-area (scxml-get-inner-canvas (scxml-element-drawing parent-element))))
+      ;; check valid area.
+      (let ((new-element (scxml-drawable-state)))
+        (scxml--set-hint new-element (scxml-build-hint drawing-coord valid-area))
+        (scxml-add-child parent-element new-element)
+        (scxml--set-drawing-invalid new-element t)
+        (scxml-diagram-mode--mark-element new-element t)
+        (scxml--set-edit-idx new-element 2)
+        (scxml-diagram-mode--redraw)))))
+
+(defun scxml-diagram-mode--test-add-box ()
+  "Begin box-add-and-resize work"
+  (interactive)
+  (scxml-record 'scxml-diagram-mode--test-add-box)
+  (setq scxml-diagram-mode--down-mouse-1-catch
+        'scxml-diagram-mode--add-box-and-begin-resize))
 
 (defun scxml-diagram-mode--add-child-element (parent child)
   "Add the child to parent and update the diagram."
