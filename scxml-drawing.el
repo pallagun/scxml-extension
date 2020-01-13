@@ -52,6 +52,9 @@ By default, assume zero."
   "Get the scxml-point location of the given edit IDX in DRAWING")
 (cl-defgeneric scxml-edit-idx-points ((drawing scxml-drawing))
   "Get a list of all the edit-idx points for this DRAWING in order")
+(cl-defmethod scxml-edit-idx-points ((drawing scxml-drawing))
+  "By default, none."
+  nil)
 
 (cl-defgeneric scxml-build-edited-drawing ((drawing scxml-drawing) edit-idx (move-vector scxml-point) (viewport scxml-viewport))
   "Derive an edited drawing from DRAWING, EDIT-IDX (nillable) and MOVE-VECTOR for VIEWPORT.

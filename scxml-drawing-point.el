@@ -16,9 +16,6 @@
 (cl-defmethod scxml-num-edit-idxs ((pt-drawing scxml-drawing-point))
   "A point drawing has no edit idxs"
   0)
-(cl-defmethod scxml-edit-idx-points ((pt-drawing scxml-drawing-point))
-  "A point drawing has no edit idxs, this will always return nil"
-  nil)
 (cl-defmethod scxml-edit-idx-point ((pt-drawing scxml-drawing-point) (idx integer))
   "A point drawing has no edit idxs, this will always error"
   (error "Invalid edit-mode idx"))

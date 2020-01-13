@@ -422,7 +422,8 @@ Currently only able to zoom out when in viewport mode."
                     (funcall scxml-diagram-mode--up-mouse-1-catch last-pixel)
                   (setq scxml-diagram-mode--up-mouse-1-catch last-pixel)))
 
-              (message "Exit mouse event: %s" event))
+              ;; (message "Exit mouse event: %s" event)
+              )
             (setq event-type (car event))))
 
         ;; handle a click event (not a drag or down event)
