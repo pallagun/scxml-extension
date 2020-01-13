@@ -26,6 +26,11 @@ elements.")
 
 If this is set it will be called with the clicked pixel an the only argument.")
 (make-variable-buffer-local 'scxml-diagram-mode--down-mouse-1-catch)
+(defvar scxml-diagram-mode--up-mouse-1-catch nil
+  "Override the normal mouse-up behavior by executing this lambda.
+
+If this is set it will be called with no arguments.")
+(make-variable-buffer-local 'scxml-diagram-mode--up-mouse-1-catch)
 
 (defvar scxml-diagram-mode--mouse-mode 'nil
   "Indicate what mouse mode you are in.
@@ -358,10 +363,12 @@ Currently only able to zoom out when in viewport mode."
 
             (when (and scxml-diagram-mode--down-mouse-1-catch
                        (eq event-type 'down-mouse-1))
-              (funcall scxml-diagram-mode--down-mouse-1-catch start-pixel)
-              ;; Skip the initial mouse down behavior.
-              (setq event-count 1)
-              (setq scxml-diagram-mode--down-mouse-1-catch nil))
+              (unwind-protect
+                  (progn
+                    (funcall scxml-diagram-mode--down-mouse-1-catch start-pixel)
+                    ;; Skip the initial mouse down behavior.
+                    (setq event-count 1))
+                (setq scxml-diagram-mode--down-mouse-1-catch nil)))
             ;; (message "Mouse Down px: %s, %s"
             ;;          (scxml-print start-pixel)
             ;;          (scxml-print last-pixel))
@@ -406,7 +413,16 @@ Currently only able to zoom out when in viewport mode."
                                  (error "Unknown mouse event type: %s" event-type)))
                         ;; default mouse mode can only modify.
                         (scxml-diagram-mode--modify delta)))
-                    (setq last-pixel current-pixel)))))
+                    (setq last-pixel current-pixel))))
+              (when (and (eq (car event) 'drag-mouse-1)
+                         scxml-diagram-mode--up-mouse-1-catch)
+                ;; drag-mouse-1 is complete which means you must have let go of the
+                ;; mouse button.
+                (unwind-protect
+                    (funcall scxml-diagram-mode--up-mouse-1-catch last-pixel)
+                  (setq scxml-diagram-mode--up-mouse-1-catch last-pixel)))
+
+              (message "Exit mouse event: %s" event))
             (setq event-type (car event))))
 
         ;; handle a click event (not a drag or down event)
@@ -679,15 +695,23 @@ the user is attempting to mark an edit idx."
           (scxml-diagram-mode--edit-idx-increment correct-idx))))))
 
 (defun scxml-diagram-mode--automatic ()
-  "Set the marked element to 'automatic' mode (not manually hinted)."
+  "Set the marked element and all siblings to 'automatic' mode (not manually hinted)."
   (interactive)
   (scxml-record 'scxml-diagram-mode--automatic)
   (when scxml-diagram-mode--marked-element
     ;; TODO - this should ensure that no collisions occur when
-    ;; toggling to automatic mode.
-    (scxml--set-edit-idx scxml-diagram-mode--marked-element 'nil)
-    (scxml--set-hint scxml-diagram-mode--marked-element 'nil)
-    (scxml--set-drawing-invalid scxml-diagram-mode--marked-element 't)
+    ;; toggling to automatic mode.  It'll do that now by making
+    ;; all the siblings go to automatic as well.
+    (scxml--set-edit-idx scxml-diagram-mode--marked-element nil)
+    (let ((parent (scxml-parent scxml-diagram-mode--marked-element)))
+      ;; If you find a parent invalid all siblings, otherwise just you.
+      (if parent
+          (mapc (lambda (sibling)
+                  (scxml--set-hint sibling nil)
+                  (scxml--set-drawing-invalid sibling t))
+                (scxml-children parent))
+        (scxml--set-hint scxml-diagram-mode--marked-element nil)))
+    (scxml--set-drawing-invalid scxml-diagram-mode--marked-element t)
     (scxml-diagram-mode--redraw)))
 (defun scxml-diagram-mode--all-automatic ()
   "Set the marked element to 'automatic' mode (not manually hinted)."
@@ -760,6 +784,7 @@ the user is attempting to mark an edit idx."
    (scxml--increment-edit-idx scxml-diagram-mode--marked-element increment)
    (scxml-diagram-mode--redraw)))
 
+
 (defun scxml-diagram-mode--add-box-and-begin-resize (pixel)
   "add a state at point and jump to edit-idx mode"
   ;; resolve wherever point is.
@@ -776,6 +801,14 @@ the user is attempting to mark an edit idx."
       (error "Unable to determine where to add new element"))
 
     (let ((valid-area (scxml-get-inner-canvas (scxml-element-drawing parent-element))))
+
+      ;; TODO - this check is very constraining. but without it there would need
+      ;; to be very smart resolving of collisions.
+      ;; e.g. it would be possible to start a drawing rect in an inner canvas
+      ;;      and that inner-canvas in entirely consumed by children.
+      (unless (scxml-contains valid-area drawing-coord)
+
+        (error "Must select a pixel entirely inside a valid inner canvas"))
       ;; check valid area.
       (let ((new-element (scxml-drawable-state)))
         (scxml--set-hint new-element (scxml-build-hint drawing-coord valid-area))
@@ -783,8 +816,10 @@ the user is attempting to mark an edit idx."
         (scxml--set-drawing-invalid new-element t)
         (scxml-diagram-mode--mark-element new-element t)
         (scxml--set-edit-idx new-element 2)
-        (scxml-diagram-mode--redraw)))))
-
+        (scxml-diagram-mode--redraw)
+        ;; enable the next catch.
+        (setq scxml-diagram-mode--up-mouse-1-catch
+              (lambda (pixel) (scxml-diagram-mode--disable-edit-mode)))))))
 (defun scxml-diagram-mode--test-add-box ()
   "Begin box-add-and-resize work"
   (interactive)
@@ -793,14 +828,17 @@ the user is attempting to mark an edit idx."
         'scxml-diagram-mode--add-box-and-begin-resize))
 
 (defun scxml-diagram-mode--add-child-element (parent child)
-  "Add the child to parent and update the diagram."
+  "Add the child to parent and update the diagram.
+
+This will also invalidate any drawing hints for siblings."
   (scxml-add-child parent child t)
   (scxml-visit parent
                (lambda (child)
                  (scxml--set-hint child nil)
                  (scxml--set-drawing-invalid child 't))
                (lambda (child)
-                 (object-of-class-p child 'scxml-drawable-element)))
+                 (and (object-of-class-p child 'scxml-drawable-element)
+                      (not (eq child parent)))))
   (scxml-diagram-mode--apply-edit parent t)
   (scxml-diagram-mode--redraw))
 (defun scxml-diagram-mode--add-child-state (id)
