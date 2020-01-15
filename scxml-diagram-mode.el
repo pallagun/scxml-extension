@@ -113,6 +113,7 @@ If this is set it will be called with no arguments.")
     (define-key map (kbd "F") 'scxml-diagram-mode--add-child-final)
     (define-key map (kbd "e n") 'scxml-diagram-mode--edit-name)
     (define-key map (kbd "e i") 'scxml-diagram-mode--edit-id)
+    (define-key map (kbd "e I") 'scxml-diagram-mode--edit-initial)
 
     map)
   "Keymap for scxml-diagram major mode")
@@ -785,7 +786,6 @@ the user is attempting to mark an edit idx."
    (scxml--increment-edit-idx scxml-diagram-mode--marked-element increment)
    (scxml-diagram-mode--redraw)))
 
-
 (defun scxml-diagram-mode--add-box-and-begin-resize (pixel)
   "add a state at point and jump to edit-idx mode"
   ;; resolve wherever point is.
@@ -874,8 +874,6 @@ This will also invalidate any drawing hints for siblings."
   "Add an <initial> child in currently marked element to TARGET.
 
 If you're a human you probably want to call the interactive scxml-diagram-mode--add-child-initial."
-  (when (not (object-of-class-p target 'scxml-state-type))
-    (error "Invalid target for initial transition."))
   (let* ((parent scxml-diagram-mode--marked-element)
          (new-transition (scxml-drawable-transition :target (scxml-element-id target)))
          (new-initial (scxml-drawable-initial)))
@@ -924,7 +922,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
     (let ((old-id (scxml-element-id element))
           (edited-elements (list element)))
       ;; ensure all transitions which reference this id are also updated.
-      (scxml-set-element-id element new-id)
+      (setf (scxml-element-id element) new-id)
       (scxml--set-drawing-invalid element t)
 
       (scxml-visit-all element
@@ -945,11 +943,28 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
   "Edit the xml 'name' attribute of the currently marked element."
   (interactive (let* ((element scxml-diagram-mode--marked-element))
                  (unless (object-of-class-p element 'scxml-scxml)
-                   (error "This element does not have a settable name."))
+                   (error "This element does not have a settable name attribute"))
                  (list (read-string "Name: " (scxml-element-name element)))))
   (scxml-record 'scxml-diagram-mode--edit-name new-name)
   (let ((element scxml-diagram-mode--marked-element))
     (setf (scxml-element-name element) new-name)
+    (scxml--set-drawing-invalid element t)
+    (scxml-diagram-mode--redraw)
+    (scxml-diagram-mode--apply-edit element nil)))
+(defun scxml-diagram-mode--edit-initial (new-initial)
+  "Edit the xml 'initial' attribute of the currently marked element."
+  (interactive (let* ((element scxml-diagram-mode--marked-element))
+                 (unless (object-of-class-p element 'scxml-element-with-initial)
+                   (error "This element does not have a settable initial attribute"))
+                 (list (read-string "Initial: " (scxml-element-initial element)))))
+  (scxml-record 'scxml-diagram-mode--edit-initial new-initial)
+  (let ((element scxml-diagram-mode--marked-element))
+    ;; Might not have been called interactively, validate again.
+    ;; TODO - is there a better way to do this?
+    (unless (object-of-class-p element 'scxml-element-with-initial)
+      (error "This element does not have a settable initial attribute"))
+    (setf (scxml-element-initial element) new-initial)
+    ;; TODO - this should invalidate all of element's children/siblings too?
     (scxml--set-drawing-invalid element t)
     (scxml-diagram-mode--redraw)
     (scxml-diagram-mode--apply-edit element nil)))

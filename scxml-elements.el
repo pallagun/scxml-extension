@@ -108,7 +108,18 @@ Children:
   ((target :initarg :target
            :accessor scxml-target-id
            :type string
-           :documentation "This is actually the target ID value from scxml, not the target scxml-element"))
+           :documentation "This is actually the target ID value from scxml, not the target scxml-element")
+   (event :initarg :event
+          :accessor scxml-events
+          :type (or null list)
+          :documentation "A list of event discriptors")
+   (cond-expr :initarg :cond
+              :accessor scxml-cond-expr
+              :type (or null string)
+              :documentation "Conidition for the transition which must evaluate to a boolean")
+   ;; TODO - 'type'
+   )
+
   :documentation "Scxml <transition> element.
 
 No attributes are required.
