@@ -199,6 +199,11 @@ Return value is undefined."
 (cl-defmethod scxml-visit-all ((element scxml-element) visitor &optional filter)
   "Visit all elements (parent or child, recursively) starting at the root element"
   (scxml-visit (scxml-root-element element) visitor filter))
+(cl-defgeneric scxml-collect ((element scxml-element) filter)
+    "Return a list of ELEMENT and ELEMENT's children filtered by FILTER.
+
+May include ELEMENT or children at any depth if they satisfy
+FILTER.")
 (cl-defmethod scxml-collect ((element scxml-element) filter)
   "Return a list of ELEMENT and ELEMENT's children filtered by FILTER.
 
@@ -229,18 +234,20 @@ FILTER."
   ((id :initarg :id
        :accessor scxml-element-id
        :initform nil
-       :type (or string null)
-       ;; - todo - get this working? :writer scxml-set-element-id
-       ))
+       :type (or string null)))
   :abstract t
   :documentation "Apply to an scxml element if it has an 'id'
   attribute that's significant.")
-(cl-defmethod scxml-set-element-id ((element scxml-element-with-id) (id string))
-  "Set the id of an element with protections."
-  (when (scxml-element-find-by-id (scxml-root-element element) id)
-    (error "An element with id of %s already exists" id))
-  (oset element id id))
+(cl-defmethod (setf scxml-element-id) :before (id (element scxml-element-with-id))
+  "Validate the id before setting.
 
+This should function with the :writer slot option for defclass
+but that does not appear to be working?"
+  (when id
+    ;; must validate
+    (when (scxml-element-find-by-id (scxml-root-element element) id)
+      (error "An element with id of %s already exists" id)))
+  (oset element id id))
 (cl-defmethod scxml-print ((idable-element scxml-element-with-id))
   (format "id:%s, %s"
           (scxml-element-id idable-element)
@@ -261,14 +268,6 @@ below SEARCH-ROOT")
                    (object-of-class-p element 'scxml-element-with-id)))
     nil))
 
-(cl-defmethod scxml-add-child :before ((parent scxml-element) (child-with-id scxml-element-with-id) &optional append)
-  "Add child element to parent ensuring id is unique in the entire tree."
-  (let ((proposed-id (scxml-element-id child-with-id)))
-    (when (and proposed-id
-               (> (length proposed-id) 0)
-               (scxml-element-find-by-id (scxml-root-element parent) proposed-id))
-      (error "Unable to add element with id %s, an element with that id already exists." proposed-id))))
-
 (defclass scxml-element-with-initial ()
   ((initial :initarg :initial
             :accessor scxml-element-initial
@@ -277,6 +276,32 @@ below SEARCH-ROOT")
   :abstract t
   :documentation "Apply to an scxml element if it has an
   'initial' attribute that's significant.")
+(cl-defmethod scxml-print ((initialable-element scxml-element-with-initial))
+  (format "initial:%s, %s"
+          (scxml-element-initial initialable-element)
+          (cl-call-next-method)))
+(cl-defmethod (setf scxml-element-initial) :before (initial (element scxml-element-with-initial))
+   "Validate the INITIAL attribute before setting.
+
+This should function with the :writer slot option for defclass
+but that does not appear to be working?"
+  ;; initial must reference a valid child and none of the
+  ;; existing children can be <initial> elements.
+  (when initial
+    ;; must validate
+    (let ((found))
+      (mapc (lambda (child)
+              (when (object-of-class-p child 'scxml-initial)
+                (error "Unable to set initial attribute when a child <initial> element exists"))
+              (when (and (not found)
+                         (object-of-class-p child 'scxml-element-id)
+                         (equal (scxml-element-id child) initial))
+                (setq found t)))
+            (scxml-children element))
+      (when (not found)
+        (error "Unable to find child element with id: %s" initial))))
+  (oset element initial initial))
+
 
 (provide 'scxml-element)
 ;;; scxml-element.el ends here

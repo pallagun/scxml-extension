@@ -19,8 +19,9 @@ Recognized attributes: initial, name, datamodel, binding
 Locked attributes: xmlns, version,")
 (cl-defmethod scxml-print ((scxml scxml-scxml))
   "Pretty print SCXML for human eyeballs."
-  (format "scxml(name:%s, %s)"
+  (format "scxml(name:%s, initial:%s, %s)"
           (scxml-element-name scxml)
+          (scxml-element-initial scxml)
           (cl-call-next-method)))
 (cl-defmethod scxml-xml-attributes ((element scxml-scxml))
   "attributes: initial, name, xmlns, version, datamodel, binding.
@@ -44,7 +45,9 @@ Only doing xmlnns and version here."
 Recognized attributes: id, initial")
 (cl-defmethod scxml-print ((state scxml-state))
   "Spit out a string representing ELEMENT for human eyeballs"
-  (format "state(%s)" (cl-call-next-method state)))
+  (format "state(id: %s, %s)"
+          (scxml-element-id state)
+          (cl-call-next-method state)))
 (cl-defmethod scxml-xml-attributes ((element scxml-state))
   "attributes: id, initial"
   (append
@@ -163,7 +166,23 @@ Children: must contain exactly one unconditional <transition>
 indicating default history.")
 
 ;; interactions
+(cl-defmethod scxml-add-child :before ((parent scxml-element) (child scxml-element) &optional append)
+  "Add CHILD element to PARENT ensuring id attribute is unique in the entire tree.
 
+Validate based on element id attribute - the ids must not be duplicated."
+  ;; if the child is an scxml-element-with-initial
+  (let* ((new-idables (scxml-collect child
+                                     (lambda (e)
+                                       (object-of-class-p e 'scxml-element-with-id))))
+         (new-ids (filter #'identity (mapcar 'scxml-element-id new-idables))))
+    (scxml-visit-all parent
+                     (lambda (idable-element)
+                       (let ((id (scxml-element-id idable-element)))
+                         (when (and id
+                                    (member id new-ids))
+                           (error "Added child (or decendent) has a conflicting id: \"%s\"" id))))
+                     (lambda (element)
+                       (object-of-class-p element 'scxml-element-with-id)))))
 (cl-defmethod scxml-add-child :before ((parent scxml-element) (initial scxml-initial))
   "Ensure it's valid to add an scxml-initial to this state"
   ;; <initial> elements are only allowed to be added if this state has
