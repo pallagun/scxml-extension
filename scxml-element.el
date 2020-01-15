@@ -294,7 +294,7 @@ but that does not appear to be working?"
               (when (object-of-class-p child 'scxml-initial)
                 (error "Unable to set initial attribute when a child <initial> element exists"))
               (when (and (not found)
-                         (object-of-class-p child 'scxml-element-id)
+                         (object-of-class-p child 'scxml-element-with-id)
                          (equal (scxml-element-id child) initial))
                 (setq found t)))
             (scxml-children element))
