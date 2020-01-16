@@ -107,19 +107,21 @@ Children:
 (defclass scxml-transition (scxml-element)
   ((target :initarg :target
            :accessor scxml-target-id
-           :type string
-           :documentation "This is actually the target ID value from scxml, not the target scxml-element")
-   (event :initarg :event
-          :accessor scxml-events
-          :type (or null list)
-          :documentation "A list of event discriptors")
+           :type (or null string)
+           :initform nil
+           :documentation "Attribute: \"target\".  This is actually the target ID value from scxml, not the target scxml-element")
+   (events :initarg :events
+           :accessor scxml-events
+           :type (or null list)
+           :initform nil
+           :documentation "Attribute: \"event\".  A list of event discriptors though in xml it is a space separated string.")
    (cond-expr :initarg :cond
               :accessor scxml-cond-expr
               :type (or null string)
-              :documentation "Conidition for the transition which must evaluate to a boolean")
+              :initform nil
+              :documentation "Attribute: \"cond\". Condition for the transition which must evaluate to a boolean.")
    ;; TODO - 'type'
    )
-
   :documentation "Scxml <transition> element.
 
 No attributes are required.
@@ -128,12 +130,18 @@ Recognized attributes: event, cond, target, type
 Children must be executable content.")
 (cl-defmethod scxml-print ((transition scxml-transition))
   "Spit out a string representing ELEMENT for human eyeballs"
-  (format "transition(targetId:%s, %s)"
-          (scxml-target-id transition)
-          (cl-call-next-method)))
+  (with-slots (target events cond-expr) transition
+    (format "transition(targetId:%s, event:%s, cond:%s, %s)"
+            target
+            events
+            cond-expr
+            (cl-call-next-method))))
 (cl-defmethod scxml-xml-attributes ((element scxml-transition))
   "attributes: target"
-  (append (list (cons 'target (scxml-target-id element)))
+  (append (seq-filter (lambda (key-value) (cdr key-value))
+                      (list (cons 'target (scxml-target-id element))
+                            (cons 'event (mapconcat #'identity (scxml-events element) " "))
+                            (cons 'cond-expr (scxml-cond-expr element))))
           (cl-call-next-method)))
 (cl-defmethod scxml-get-all-transitions-to ((element scxml-element-with-id))
   "Collect all transition elements which target STATE"

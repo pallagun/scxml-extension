@@ -11,6 +11,7 @@
 
 (defclass scxml-element ()
   ((_attributes :initarg :attributes
+                ;; TODO - remove the initarg for this?
                 ;; :accessor scxml-element-attributes
                 :initform nil
                 :type (or hash-table null))
