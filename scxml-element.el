@@ -194,7 +194,6 @@ Return value is undefined."
   (mapc (lambda (child)
           (scxml-visit child visitor filter))
         (scxml-children element)))
-
 (cl-defgeneric scxml-visit-all ((element scxml-element) visitor &optional filter)
   "Visit all elements (parent or child, recursively) starting at the root element.")
 (cl-defmethod scxml-visit-all ((element scxml-element) visitor &optional filter)
@@ -230,6 +229,49 @@ FILTER."
                 (when (cl-member A-element B-parents :test 'eq)
                   (cl-return-from scxml-find-parent A-element)))
               A-parents)))))
+(cl-defmethod scxml-find-nearest-mutual-parent-variadic (&rest elements)
+  "Given a series of elements return their closest mutual ancestor."
+  (cl-labels ((build-parent-list
+               (element)
+               (if element
+                   (let ((parent (scxml-parent element)))
+                     (cons element (build-parent-list parent)))
+                 'nil)))
+    (let* ((parent-lists (mapcar #'build-parent-list elements))
+           (first-parent-list (first parent-lists))
+           (rest-parent-lists (cdr parent-lists)))
+      (cl-block find-parent
+        (cl-loop for first-list-element in first-parent-list
+                 when (cl-every (lambda (other-list)
+                                  (cl-find-if (lambda (other-list-entry)
+                                                (eq other-list-entry first-list-element))
+                                              other-list)))
+                 do (cl-return find-parent first-parent-list))))))
+
+(cl-defgeneric scxml-visit-parents ((element scxml-element) visitor)
+  "Visit all the parents of ELEMENT with VISITOR in increasing parent order.")
+(cl-defmethod scxml-visit-parents ((element scxml-element) visitor)
+  "Visit all the parents of ELEMENT with VISITOR in increasing parent order.
+
+Visitor should be of the form (lambda (parent-element) ...)."
+  (let ((parent (scxml-parent element)))
+    (while parent
+      (funcall visitor parent)
+      (setq parent (scxml-parent parent)))))
+(cl-defgeneric scxml-is-descendant ((element scxml-element) (possible-descendant scxml-element))
+  "Return non-nil if POSSIBLE-DESCENDANT is a descendant of ELEMENT.
+
+When the arguments are equal the return value is nil.")
+(cl-defmethod scxml-is-descendant ((element scxml-element) (possible-descendant scxml-element))
+  "Return non-nil if POSSIBLE-DESCENDANT is a descendant of ELEMENT.
+
+When the arguments are equal the return value is nil."
+  (cl-block find-upward
+    (scxml-visit-parents possible-descendant
+                         (lambda (looking-upward)
+                           (when (eq looking-upward element)
+                             (cl-return-from find-upward t))))
+    nil))
 
 (defclass scxml-element-with-id ()
   ((id :initarg :id

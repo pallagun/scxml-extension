@@ -131,5 +131,15 @@
     (should (eq (scxml-element-find-by-id parent "child-a-a")
                 child-a-a))))
 
+(ert-deftest scxml-element-find-nearest-mutual-parent ()
+  (let ((root (scxml-scxml))
+        (left (scxml-state))
+        (right (scxml-state))
+        (left-left (scxml-state))
+        (left-right (scxml-state))
+        (right-right (scxml-state))
+        (right-left (scxml-state)))
+    aoeuaoeuaou
 
+(cl-defmethod scxml-find-nearest-mutual-parent-variadic (&rest elements)
 (provide 'scxml-element-test)

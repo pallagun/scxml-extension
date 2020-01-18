@@ -8,7 +8,15 @@
 (require 'seq)
 (require 'scxml-element)
 
-(defclass scxml-scxml (scxml-element scxml-element-with-initial)
+(defclass scxml-element-with-child-initial ()
+  ()
+  :documentation "Indcates that this element may have a child element of type <initial>.")
+
+;; may not need a scxml-base-scxml?
+(defclass scxml-base-scxml (scxml-element)
+  ()
+  :abstract t)
+(defclass scxml-scxml (scxml-base-scxml scxml-element-with-initial)
   ((name :initarg :name
          :accessor scxml-element-name
          :initform nil
@@ -38,8 +46,9 @@ Only doing xmlnns and version here."
   ()
   :abstract t
   :documentation "Abstract parent class for <state> and <final>, both of which are state-ish")
-
-(defclass scxml-state (scxml-state-type scxml-element-with-initial)
+(defclass scxml-interp-state (scxml-state-type scxml-element-with-child-initial)
+  ())
+(defclass scxml-state (scxml-state-type scxml-element-with-initial scxml-element-with-child-initial)
   ()
   :documentation "Scxml <state> element.
 Recognized attributes: id, initial")
@@ -120,8 +129,13 @@ Children:
               :type (or null string)
               :initform nil
               :documentation "Attribute: \"cond\". Condition for the transition which must evaluate to a boolean.")
-   ;; TODO - 'type'
-   )
+   (type :initarg :type
+         :accessor scxml-type
+         :initform 'external
+         :type symbol
+         :documentation "Attribute: \"type\".  Transition type to determine if the parent state is exited when transitioning to a child state.  Must be one of 'external or 'internal"
+         ;; todo - setf for this slot to protect against incorrect value.
+         ))
   :documentation "Scxml <transition> element.
 
 No attributes are required.
@@ -207,7 +221,7 @@ Validate based on element id attribute - the ids must not be duplicated."
   ;; <initial> elements are only allowed to be added if this state has
   ;; child states. additionally if an <initial> element is added it must
   ;; already have a valid target.
-  (when (not (object-of-class-p parent 'scxml-state))
+  (when (not (object-of-class-p parent 'scxml-element-with-child-initial))
     (error "<initial> elements are only valid as children of a <state>"))
 
   (cl-flet ((validate-and-retrieve-initial-target

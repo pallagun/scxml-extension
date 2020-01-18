@@ -114,6 +114,8 @@ If this is set it will be called with no arguments.")
     (define-key map (kbd "e n") 'scxml-diagram-mode--edit-name)
     (define-key map (kbd "e i") 'scxml-diagram-mode--edit-id)
     (define-key map (kbd "e I") 'scxml-diagram-mode--edit-initial)
+    (define-key map (kbd "e e") 'scxml-diagram-mode--edit-events)
+    (define-key map (kbd "e c") 'scxml-diagram-mode--edit-cond-expr)
 
     map)
   "Keymap for scxml-diagram major mode")
@@ -968,6 +970,48 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
     (scxml--set-drawing-invalid element t)
     (scxml-diagram-mode--redraw)
     (scxml-diagram-mode--apply-edit element nil)))
+(defun scxml-diagram-mode--edit-events (new-events)
+  "Edit the xml \"event\" attribute of the currently marked element."
+  (interactive (let* ((element scxml-diagram-mode--marked-element))
+                 (unless (object-of-class-p element 'scxml-transition)
+                   (error "This element does not have a settable event attribute"))
+                 (let ((events (scxml-events element)))
+                   (list (read-string "Events: " (mapconcat #'identity events " "))))))
+  (scxml-record 'scxml-diagram-mode--edit-events new-events)
+  (let ((element scxml-diagram-mode--marked-element)
+        (events-list (split-string new-events nil t nil)))
+
+    ;; Might not have been called interactively, validate again.
+    ;; TODO - is there a better way to do this?
+    (unless (object-of-class-p element 'scxml-transition)
+      (error "This element does not have a settable event attribute"))
+
+    (setf (scxml-events element) events-list)
+    (scxml--set-drawing-invalid element t)
+    (scxml-diagram-mode--redraw)
+    (scxml-diagram-mode--apply-edit element nil)))
+
+(defun scxml-diagram-mode--edit-events (new-events)
+  "Edit the xml \"event\" attribute of the currently marked element."
+  (interactive (let* ((element scxml-diagram-mode--marked-element))
+                 (unless (object-of-class-p element 'scxml-transition)
+                   (error "This element does not have a settable event attribute"))
+                 (let ((events (scxml-events element)))
+                   (list (read-string "Events: " (mapconcat #'identity events " "))))))
+  (scxml-record 'scxml-diagram-mode--edit-events new-events)
+  (let ((element scxml-diagram-mode--marked-element)
+        (events-list (split-string new-events nil t nil)))
+
+    ;; Might not have been called interactively, validate again.
+    ;; TODO - is there a better way to do this?
+    (unless (object-of-class-p element 'scxml-transition)
+      (error "This element does not have a settable event attribute"))
+
+    (setf (scxml-events element) events-list)
+    (scxml--set-drawing-invalid element t)
+    (scxml-diagram-mode--redraw)
+    (scxml-diagram-mode--apply-edit element nil)))
+
 
 (defun scxml-diagram-mode--delete-marked ()
   "Delete the marked element, mark the parent."
