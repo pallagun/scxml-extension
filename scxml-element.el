@@ -33,6 +33,8 @@
 (cl-defmethod cl-print-object ((object scxml-element) stream)
   "Pretty print the OBJECT to STREAM."
   (princ (scxml-print object) stream))
+(cl-defgeneric scxml-xml-element-name ((element scxml-element))
+  "Return what the xml element name would be for this ELEMENT.")
 (cl-defmethod scxml-xml-element-name ((element scxml-element))
   "return what the xml element name would be for this ELEMENT.
 
@@ -214,40 +216,33 @@ FILTER."
                  (lambda (x) (push x matches))
                  filter)
     matches))
-(cl-defmethod scxml-find-nearest-mutual-parent ((A scxml-element) (B scxml-element))
-  "Given elements A and B return their closest mutual parent element."
-  (cl-labels ((build-parent-list
-               (element)
-               (if element
-                   (let ((parent (scxml-parent element)))
-                     (cons element (build-parent-list parent)))
-                 'nil)))
-    (let ((A-parents (build-parent-list A))
-          (B-parents (build-parent-list B)))
-      (cl-block scxml-find-parent
-        (mapc (lambda (A-element)
-                (when (cl-member A-element B-parents :test 'eq)
-                  (cl-return-from scxml-find-parent A-element)))
-              A-parents)))))
-(cl-defmethod scxml-find-nearest-mutual-parent-variadic (&rest elements)
-  "Given a series of elements return their closest mutual ancestor."
-  (cl-labels ((build-parent-list
-               (element)
-               (if element
-                   (let ((parent (scxml-parent element)))
-                     (cons element (build-parent-list parent)))
-                 'nil)))
+(defalias 'scxml-lcca 'scxml-find-nearest-mutual-parent
+  "Return the scxml's LCCA (Least Common Compound Ancestor) of all elements.")
+(cl-defmethod scxml-find-nearest-mutual-parent (&rest elements)
+  "Given a series of elements return their closest mutual ancestor.
+
+Currently does not validate that elements are actually
+scxml-elements.  Possibly it should do that?"
+  (cl-flet ((build-parent-list
+             (element)
+             (let ((parents)
+                   (parent (scxml-parent element)))
+               (while parent
+                 (push parent parents)
+                 (setq parent (scxml-parent parent)))
+               (nreverse parents))))
     (let* ((parent-lists (mapcar #'build-parent-list elements))
            (first-parent-list (first parent-lists))
-           (rest-parent-lists (cdr parent-lists)))
+           (rest-parent-lists (rest parent-lists)))
       (cl-block find-parent
         (cl-loop for first-list-element in first-parent-list
-                 when (cl-every (lambda (other-list)
-                                  (cl-find-if (lambda (other-list-entry)
-                                                (eq other-list-entry first-list-element))
-                                              other-list)))
-                 do (cl-return find-parent first-parent-list))))))
-
+                 when (cl-every (lambda (other-ancestry)
+                                  (cl-find-if (lambda (entry)
+                                                (eq entry first-list-element))
+                                              other-ancestry))
+                                rest-parent-lists)
+                 do (cl-return-from find-parent first-list-element))
+        ))))
 (cl-defgeneric scxml-visit-parents ((element scxml-element) visitor)
   "Visit all the parents of ELEMENT with VISITOR in increasing parent order.")
 (cl-defmethod scxml-visit-parents ((element scxml-element) visitor)
@@ -261,17 +256,67 @@ Visitor should be of the form (lambda (parent-element) ...)."
 (cl-defgeneric scxml-is-descendant ((element scxml-element) (possible-descendant scxml-element))
   "Return non-nil if POSSIBLE-DESCENDANT is a descendant of ELEMENT.
 
-When the arguments are equal the return value is nil.")
+Note: argument order is flipped between this function and the
+scxml reference algorithm.  When the arguments are equal the
+return value is nil.")
 (cl-defmethod scxml-is-descendant ((element scxml-element) (possible-descendant scxml-element))
   "Return non-nil if POSSIBLE-DESCENDANT is a descendant of ELEMENT.
 
-When the arguments are equal the return value is nil."
+Note: argument order is flipped between this function and the
+scxml reference algorithm.  When the arguments are equal the
+return value is nil."
   (cl-block find-upward
     (scxml-visit-parents possible-descendant
                          (lambda (looking-upward)
                            (when (eq looking-upward element)
                              (cl-return-from find-upward t))))
     nil))
+(cl-defgeneric scxml-xml-document-coordinate ((element scxml-element))
+  "Return the xml document coordinate of ELEMENT.
+
+Xml Document Coordinate is defined as a list of Xml Document
+Ordinates in descending order (from document root to ELEMENT).
+
+Xml Document Ordinate is defined is the index of a child element
+within it's parent.  e.g. <parent><a /><b /></parent> would have
+element <a /> at the 0-th index and <b /> as the 1st index.
+
+Given:
+ <grandparent>
+  <parent-a />
+  <parent-b>
+   <child-a />
+   <child-b />
+  </parent-b>
+ </grandparent>
+
+the coordinate of element <child-a> would be '(1 0).
+
+Note: a root element would have a coordinate of nil."
+  (let ((ordinates)
+        (current-element element)
+        (current-parent (scxml-parent element)))
+    (while current-parent
+      (let* ((siblings (scxml-children current-parent))
+             (ordinate (position current-element siblings)))
+        (unless ordinate
+          (error "Invalid element tree"))
+        (push ordinate ordinates)
+        (setq current-element current-parent)
+        (setq current-parent (scxml-parent current-element))))
+    ordinates))
+(defun scxml-xml-document-order-predicate (a b)
+  "Return non-nil if A comes before B in document order."
+  (let ((a-coordinates (scxml-xml-document-coordinate a))
+        (b-coordinates (scxml-xml-document-coordinate b)))
+    ;; Note - if one of these is the root element you could still technically sort it.
+    (unless (and a-coordinates b-coordinates)
+      (error "Either trying to sort the root element or invalid elements"))
+    (cl-loop for a-ordinate in a-coordinates
+             for b-ordinate in b-coordinates
+             unless (eq a-ordinate b-ordinate)
+             do (cl-return (< a-ordinate b-ordinate))
+             finally return nil)))
 
 (defclass scxml-element-with-id ()
   ((id :initarg :id

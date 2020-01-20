@@ -46,8 +46,6 @@ Only doing xmlnns and version here."
   ()
   :abstract t
   :documentation "Abstract parent class for <state> and <final>, both of which are state-ish")
-(defclass scxml-interp-state (scxml-state-type scxml-element-with-child-initial)
-  ())
 (defclass scxml-state (scxml-state-type scxml-element-with-initial scxml-element-with-child-initial)
   ()
   :documentation "Scxml <state> element.

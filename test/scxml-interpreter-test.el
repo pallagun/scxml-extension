@@ -23,6 +23,4 @@
     (let ((instance (scxml-build-instance machine)))
       instance)))
 
-(princ test)
-
-(scxml-xml-string (oref test _type))
+(scxml-run-instance test)
