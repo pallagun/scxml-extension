@@ -1,7 +1,7 @@
 ;;; scxml-interpreter --- instantiate and run state machines -*- lexical-binding: t -*-
 
 ;;; Commentary:
-
+`
 ;;; Code:
 (require 'eieio)
 (require 'scxml-element)
@@ -64,7 +64,9 @@ Usage:
                  (car back)
                (setq back (cdr back))))
             ((eq cmd 'is-empty)
-             (not (or front back)))))))
+             (not (or front back)))
+            ((eq cmd 'length)
+             (+ (length front) (length back)))))))
 (defclass scxml-instance ()
   ((_type :type scxml-interp-state
           :documentation "The scxml state machine type to run")
@@ -85,6 +87,15 @@ Usage:
              :initform 'early
              :documentation "Must be either 'early or 'late, specification defaults to early"))
   :documentation "An instance of a state machine.")
+(cl-defmethod scxml-print ((instance scxml-instance))
+  (with-slots ((configuration _configuration)
+               (internal _internal-queue)
+               (external _external-queue)) instance
+    (format "instance: conf: (%s), internal-size %d, external-size %d"
+            (mapconcat 'scxml-element-id configuration " ")
+            (funcall internal 'length)
+            (funcall external 'length))))
+
 (cl-defgeneric scxml-build-instance ((type scxml-scxml))
   "Build an scxml-instance")
 (cl-defmethod scxml-build-instance ((type scxml-scxml))
@@ -92,7 +103,7 @@ Usage:
   (let ((instance (scxml-instance)))
     (oset instance _type (scxml--expand-type type))
     instance))
-(cl-defmethod scxml-run-instance ((instance scxml-instance))
+(cl-defmethod scxml-run-instance ((instance scxml-instance) &optional allow-suspend)
   "Begin scxml interpretation.
 
 procedure interpret(doc):
@@ -113,7 +124,14 @@ procedure interpret(doc):
   (oset instance _running t)
   (let ((initial-transitions (scxml--interp-get-initial-transitions (oref instance _type))))
     (scxml--interp-enter-states instance initial-transitions))
-  (scxml--interp-main-event-loop instance))
+  (scxml--interp-main-event-loop instance allow-suspend))
+(cl-defmethod scxml-continue ((instance scxml-instance) &optional allow-suspend)
+  "When an instance is still running but suspended this will resurrect it."
+  (scxml--interp-main-event-loop instance allow-suspend))
+(cl-defmethod scxml-enqueue-event ((instance scxml-instance) (event scxml-event))
+  "Place an event on the instances external event queue."
+  (with-slots ((external-queue _external-queue)) instance
+    (funcall external-queue 'push event)))
 
 (cl-defmethod scxml--interp-cast ((element scxml-element))
   (error "Implement for this type"))
@@ -239,22 +257,26 @@ procedure enterStates(enabledTransitions):
                do (push s configuration)
                do (push s states-to-invoke)
                ;; TODO - Currently unable to handle late binding.
-               when (eq binding 'late)
+               when (and (eq binding 'late)
+                         nil)           ;TODO (nil should be 'and state.isFirstEntry
                  do (error "Late binding is not yet implemented")
                ;; TODO - Currently unable to handle executable content. in onentry
                ;; TODO - Currently unable to handle executable content when entering a state for default
                ;; TODO - Currently unable to handle executable content when looking at default-history-content.
                when (scxml--interp-is-final-state s)
-               do (if (eq (scxml-parent s) root)
-                      (setf running nil)
-                    (let ((parent (scxml-parent s))
-                          (grand-parent (scxml-parent parent)))
-                      (funcall #'internal-queue 'push (scxml-event :name (format "done.state.%s" (scxml-element-id parent))
-                                                                   :data "there sholud be state's done data here?"))
-                      (when (and (scxml--interp-is-parallel-state grandparent)
-                                 (every #'scxml--interp-is-in-final-state instance (scxml-children grandparent)))
-                        (funcall #'internal-queue 'push (scxml-event :name (format "done.state.%s" (scxml-element-id grandparent)))))))))))
-(defun scxml--interp-main-event-loop (instance)
+                 do (if (eq (scxml-parent s) root)
+                        (setf running nil)
+                      (let ((parent (scxml-parent s))
+                            (grand-parent (scxml-parent parent)))
+                        (funcall internal-queue
+                                 'push (scxml-event :name (format "done.state.%s" (scxml-element-id parent))
+                                                    :data "there sholud be state's done data here?"))
+                        (when (and (scxml--interp-is-parallel-state grandparent)
+                                   (every #'scxml--interp-is-in-final-state
+                                          (scxml-children grandparent)))
+                          (funcall internal-queue
+                                   'push (scxml-event :name (format "done.state.%s" (scxml-element-id grandparent)))))))))))
+(defun scxml--interp-main-event-loop (instance &optional enable-suspend)
   "Main event loop to be run after initialization & bootstapping.
 
 procedure mainEventLoop():
@@ -306,26 +328,55 @@ procedure mainEventLoop():
     # End of outer while running loop.  If we get here, we have reached a top-level final state or have been cancelled
     exitInterpreter()"
   (with-slots ((running _running)
-               (internal-queue _internal_queue)) instance
-    (while running
-      (let ((enabled-transitions)
-            (macrostep-done))
-        (while (and running (not (macrostep-done)))
-          (setq enabled-transitions
-                (scxml--interp-select-eventless-transitions instance))
-          (if (null enabled-transitions)
-              (if (funcall internal-queue 'is-empty)
-                  (setq macrostep-done t)
-                (let ((internal-event (funcall internal-queue 'pop)))
-                  ;; set datamodel [_event] to this event.
-                  (setq enabled-transitions
-                        (scxml--interp-select-transitions internal-event)))))
-          (if (not (null enabled-transitions))
-              (scxml--microstep enabled-transitions))
+               (states-to-invoke _states-to-invoke)
+               (external-queue _external-queue)
+               (configuration _configuration)
+               (internal-queue _internal-queue)) instance
+    (cl-block outer-running-block
+      (while running
+        (cl-block inner-running-block
+          (let ((enabled-transitions)
+                (macrostep-done))
+            (while (and running (not macrostep-done))
+              (setf enabled-transitions
+                    (scxml--interp-select-eventless-transitions instance))
+              (if (null enabled-transitions)
+                  (if (funcall internal-queue 'is-empty)
+                      (setq macrostep-done t)
+                    (let ((internal-event (funcall internal-queue 'pop)))
+                      ;; set datamodel [_event] to this event.
+                      (setq enabled-transitions
+                            (scxml--interp-select-transitions instance
+                                                              internal-event)))))
+              (when (not (null enabled-transitions))
+                (scxml--microstep instance enabled-transitions)))
+            (when (not running)
+              (cl-return-from running-block))
 
+            ;; wait for external event.
+            (cl-loop for state in (sort states-to-invoke #'scxml--interp-entry-order)
+                     ;; do nothing, There are no <invoke> elements yet.
+                     )
+            (setf states-to-invoke nil)
 
-          ;; stopped
-        )))))
+            (when (not (funcall internal-queue 'is-empty))
+              (cl-return-from inner-running-block))
+
+            ;; this is the wait point.
+            (when (and enable-suspend (funcall external-queue 'is-empty))
+              ;; suspend.
+              (cl-return-from outer-running-block))
+            (let ((external-event (funcall external-queue 'pop)))
+              (when external-event
+                ;; set datamodel[_event] to this event
+                (cl-loop for state in configuration
+                         do (cl-loop for inv in nil
+                                     ;; this sholud be for invokes in state.invoke
+                                     ))
+                (setf enabled-transitions (scxml--interp-select-transitions instance
+                                                                            external-event))
+                (when enabled-transitions
+                  (scxml--interp-microstep instance enabled-transitions))))))))))
 
 (defun scxml--interp-microstep (instance enabled-transitions)
   "Reference:
@@ -335,7 +386,7 @@ procedure microstep(enabledTransitions):
     executeTransitionContent(enabledTransitions)
     enterStates(enabledTransitions)"
   (scxml--interp-exit-states instance enabled-transitions)
-  (scxml--interp-execute-transition-content enabled-transitions)
+  ;; (scxml--interp-execute-transition-content enabled-transitions)
   (scxml--interp-enter-states instance enabled-transitions))
 
 (defun scxml--interp-exit-states (instance enabled-transitions)
@@ -359,17 +410,22 @@ procedure exitStates(enabledTransitions):
         for inv in s.invoke:
             cancelInvoke(inv)
         configuration.delete(s)"
-  (with-slots ((states-to-invoke _states-to-invoke)) instance
-    (let ((states-to-exit (scxml--interp-compute-exit-set instance enabled-transition)))
+  (with-slots ((states-to-invoke _states-to-invoke)
+               (configuration _configuration)) instance
+    (let ((states-to-exit (scxml--interp-compute-exit-set instance enabled-transitions)))
       (cl-loop for s in states-to-exit
                do (remove s states-to-invoke))
       (setq states-to-exit (sort states-to-exit #'scxml--interp-exit-order))
       (cl-loop for s in states-to-exit
                do (cl-loop for h in nil ;; s.history - no history yet.
                            when (eq (scxml-type h) 'deep)
-                           do)))))
-                           HERE, right above.
-
+                           do (error "not yet implementedshould be an if/else..")))
+      (cl-loop for s in states-to-exit
+               do (cl-loop for content in nil ;no content yet
+                           do (error "not yet implemented, content processing."))
+               do (cl-loop for inv in nil ;no state invokes yet.
+                           do (error "not yet implemented. invoke cancellation."))
+               do (setf configuration (remove s configuration))))))
 
 (defun scxml--interp-compute-exit-set (instance transitions)
   "Reference:
@@ -392,6 +448,46 @@ function computeExitSet(transitions)
                              when (scxml-is-descendant domain s)
                              do (push s states-to-exit)))
       states-to-exit)))
+
+(defun scxml--interp-select-transitions (instance event)
+  "Reference:
+
+function selectTransitions(event):
+    enabledTransitions = new OrderedSet()
+    atomicStates = configuration.toList().filter(isAtomicState).sort(documentOrder)
+    for state in atomicStates:
+        loop: for s in [state].append(getProperAncestors(state, null)):
+            for t in s.transition.sort(documentOrder):
+                if t.event and nameMatch(t.event, event.name) and conditionMatch(t):
+                    enabledTransitions.add(t)
+                    break loop
+    enabledTransitions = removeConflictingTransitions(enabledTransitions)
+    return enabledTransitions"
+  (with-slots ((configuration _configuration)) instance
+  (let ((enabled-transitions)
+        (atomic-states (sort (seq-filter #'scxml--interp-is-atomic-state
+                                         configuration)
+                             #'scxml-xml-document-order-predicate)))
+    (cl-loop
+     for state in atomic-states
+     do (cl-loop
+         named loop-enabled-transition
+         for s in (cons state (scxml--interp-get-proper-ancestors state nil))
+
+         do (cl-loop
+             for tr in (sort (seq-filter (lambda (x)
+                                           (object-of-class-p x 'scxml-transition))
+                                         (scxml-children s))
+                             #'scxml-xml-document-order-predicate)
+             do (when (and (scxml-events tr)
+                           (member (scxml-name event)
+                                   (scxml-events tr))
+                           (scxml--interp-condition-match instance tr))
+                  (push tr enabled-transitions)
+                  (cl-return-from loop-enabled-transition)))))
+    (setq enabled-transitions
+          (scxml--interp-remove-conflicting-transitions instance enabled-transitions))
+    enabled-transitions)))
 
 (defun scxml--interp-select-eventless-transitions (instance)
   "Grab all valid transitions with no event.
@@ -477,7 +573,10 @@ function removeConflictingTransitions(enabledTransitions):
 (defun scxml--interp-condition-match (instance transition)
   "Return non-nil if the transition's condition evaluates to true."
   ;; TODO - this.
-  nil)
+  (let ((condition (scxml-cond-expr transition)))
+    (if (null condition)
+        t
+      (error "Condition evaluation not yet implemented."))))
 
  ;; done?
 (defun scxml--interp-is-state (any)
