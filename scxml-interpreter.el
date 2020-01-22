@@ -132,6 +132,8 @@ procedure interpret(doc):
   "Place an event on the instances external event queue."
   (with-slots ((external-queue _external-queue)) instance
     (funcall external-queue 'push event)))
+(cl-defmethod scxml-configuration ((instance scxml-instance))
+  (copy-list (oref instance _configuration)))
 
 (cl-defmethod scxml--interp-cast ((element scxml-element))
   (error "Implement for this type"))

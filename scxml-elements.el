@@ -20,7 +20,11 @@
   ((name :initarg :name
          :accessor scxml-element-name
          :initform nil
-         :type (or string null)))
+         :type (or string null))
+   (datamodel :initarg :datamodel
+              :accessor scxml-datamodel
+              :initform 'null           ;default to the null datamodel.
+              :type symbol))
   :documentation "The main <scxml /> element.
 
 Recognized attributes: initial, name, datamodel, binding
@@ -205,7 +209,7 @@ Validate based on element id attribute - the ids must not be duplicated."
   (let* ((new-idables (scxml-collect child
                                      (lambda (e)
                                        (object-of-class-p e 'scxml-element-with-id))))
-         (new-ids (filter #'identity (mapcar 'scxml-element-id new-idables))))
+         (new-ids (seq-filter #'identity (mapcar 'scxml-element-id new-idables))))
     (scxml-visit-all parent
                      (lambda (idable-element)
                        (let ((id (scxml-element-id idable-element)))
