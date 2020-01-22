@@ -22,9 +22,12 @@
          :initform nil
          :type (or string null))
    (datamodel :initarg :datamodel
-              :accessor scxml-datamodel
-              :initform 'null           ;default to the null datamodel.
-              :type symbol))
+              :accessor scxml-datamodel-type
+              :type (or string null))
+   (binding :initarg :binding
+            :accessor scxml-binding
+            :initform nil            ;must be one of 'early or 'late.  defaults to early.
+            :type (or symbol null)))
   :documentation "The main <scxml /> element.
 
 Recognized attributes: initial, name, datamodel, binding

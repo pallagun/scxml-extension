@@ -22,6 +22,15 @@
 ;; (defclass scxml-pseudo-initial (scxml-pseudo-element)
 ;;   ())
 
+(defun scxml--random-string (&optional length)
+  "Generate a random string of LENGTH."
+  (let ((length (or length 12))
+        (offset ?A)
+        (range (- ?Z ?A))
+        (chars))
+    (dotimes (i length (apply #' string chars))
+      (push (+ offset (random range)) chars))))
+
 (defclass scxml-interp-state (scxml-state-type scxml-element-with-child-initial)
   ())
 (cl-defmethod scxml-print ((interp scxml-interp-state))
@@ -67,6 +76,57 @@ Usage:
              (not (or front back)))
             ((eq cmd 'length)
              (+ (length front) (length back)))))))
+(defclass scxml-datamodel ()
+  ((type :initarg :type
+         :type symbol
+         :initform 'null)
+   (store :type hash-table
+          :initform (make-hash-table)))
+  :documentation "datamodel wrapper.")
+(cl-defmethod scxml-print ((datamodel scxml-datamodel))
+  "Return a string for human eyes."
+  (let ((lines))
+    (maphash (lambda (key val)
+               (push (format "[%s => %s]" key (prin1-to-string val)) lines))
+             (oref datamodel store))
+    (format "[type: %s=>{%s}]"
+            (oref datamodel type)
+            (mapconcat #'identity lines ", "))))
+(cl-defgeneric scxml-set-unprotected ((datamodel scxml-datamodel) (key string) value)
+  "Set KEY to VALUE in DATAMODEL.  Return VALUE.")
+(cl-defmethod scxml-set-unprotected ((datamodel scxml-datamodel) (key string) value)
+  "Set KEY to VALUE in DATAMODEL.  Return VALUE."
+  (puthash key value (oref datamodel store))
+  value)
+(cl-defgeneric scxml-get ((datamodel scxml-datamodel) (key string) &optional default)
+  "Return the value of KEY in DATAMODEL."
+  (gethash key (oref datamodel store) default ))
+(cl-defgeneric scxml-set ((datamodel scxml-datamodel) (key string) value)
+  "Set KEY to VALUE in DATAMODEL with protections.  Return VALUE.")
+(cl-defmethod scxml-set ((datamodel scxml-datamodel) (key string) value)
+  "Don't let users set keys starting with an underscore."
+  (when (<= (length key) 0)
+    (error "Key must have non-zero length"))
+  (when (eq ?_ (elt key 0))
+    (error "Key must not begin with an underscore"))
+  (scxml-set-unprotected datamodel key value))
+
+(cl-defmethod scxml-initialize-system ((datamodel scxml-datamodel) (name string))
+  (let ((default-data `((_event . nil)
+                        (_sessionid . ,(scxml--random-string 20))
+                        (_name . ,name)
+                        (_ioprocessors . nil)
+                        (_x.system . 'emacs/scxml-mode)
+                        (_x.version . alpha))))
+    (mapc (lambda (cell)
+            (let ((key-symbol (car cell))
+                  (value (cdr cell)))
+              (scxml-set-unprotected datamodel (symbol-name key-symbol) value)))
+          default-data)))
+(cl-defgeneric scxml-initialize ((datamodel scxml-datamodel) (element scxml-element))
+  (error "write me"))
+
+
 (defclass scxml-instance ()
   ((_type :type scxml-interp-state
           :documentation "The scxml state machine type to run")
@@ -80,7 +140,8 @@ Usage:
    (_external-queue :initform (scxml--queue))
    (_history-value :type hash-table
                    :initform (make-hash-table))
-   (_datamodel :initform nil)
+   (_datamodel :initarg :datamodel
+               :type scxml-datamodel)
    (_running ; :type boolean?
              :initform nil)
    (_binding :type symbol
@@ -90,18 +151,24 @@ Usage:
 (cl-defmethod scxml-print ((instance scxml-instance))
   (with-slots ((configuration _configuration)
                (internal _internal-queue)
+               (datamodel _datamodel)
                (external _external-queue)) instance
-    (format "instance: conf: (%s), internal-size %d, external-size %d"
+    (format "instance: conf: (%s), internal-size %d, external-size %d, dm: %s"
             (mapconcat 'scxml-element-id configuration " ")
             (funcall internal 'length)
-            (funcall external 'length))))
+            (funcall external 'length)
+            (scxml-print datamodel))))
 
 (cl-defgeneric scxml-build-instance ((type scxml-scxml))
   "Build an scxml-instance")
 (cl-defmethod scxml-build-instance ((type scxml-scxml))
   ;; TODO - validate?
-  (let ((instance (scxml-instance)))
+  (let* ((raw-datamodel-type (scxml-datamodel-type type))
+         (datamodel-type (if raw-datamodel-type raw-datamodel-type 'null))
+         (datamodel (scxml-datamodel :type datamodel-type))
+         (instance (scxml-instance :datamodel datamodel)))
     (oset instance _type (scxml--expand-type type))
+    (scxml-initialize-system datamodel (scxml-element-name type))
     instance))
 (cl-defmethod scxml-run-instance ((instance scxml-instance) &optional allow-suspend)
   "Begin scxml interpretation.
@@ -138,14 +205,13 @@ procedure interpret(doc):
 (cl-defmethod scxml--interp-cast ((element scxml-element))
   (error "Implement for this type"))
 (cl-defmethod scxml--interp-cast ((element scxml-scxml))
-  (let ((scxml (scxml-interp-scxml :id (format "%s" (random))))
+  (let ((scxml (scxml-interp-scxml :id (scxml--random-string)))
         (name (scxml-element-name element)))
     (when name
       (scxml-put-attrib scxml 'name name))
     scxml))
 (cl-defmethod scxml--interp-cast ((element scxml-state))
-  (scxml-interp-state :id (or (scxml-element-id element)
-                              (format "%s" (random)))))
+  (scxml-interp-state :id (or (scxml-element-id element) (scxml--random-string))))
 (cl-defmethod scxml--interp-cast ((element scxml-transition))
   (scxml-transition :target (scxml-target-id element)
                     :events (scxml-events element)
