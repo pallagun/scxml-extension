@@ -188,10 +188,16 @@ procedure interpret(doc):
     executeGlobalScriptElement(doc)
     enterStates([doc.initial.transition])
     mainEventLoop()"
-  (oset instance _running t)
-  (let ((initial-transitions (scxml--interp-get-initial-transitions (oref instance _type))))
-    (scxml--interp-enter-states instance initial-transitions))
-  (scxml--interp-main-event-loop instance allow-suspend))
+  (with-slots ((binding _binding)
+               (running _running)
+               (type _type)
+               (datamodel _datamodel)) instance
+    (when (eq binding 'early)
+      (scxml-initialize datamodel type))
+    (setf running t)
+    (let ((initial-transitions (scxml--interp-get-initial-transitions type)))
+      (scxml--interp-enter-states instance initial-transitions))
+    (scxml--interp-main-event-loop instance allow-suspend)))
 (cl-defmethod scxml-continue ((instance scxml-instance) &optional allow-suspend)
   "When an instance is still running but suspended this will resurrect it."
   (scxml--interp-main-event-loop instance allow-suspend))
