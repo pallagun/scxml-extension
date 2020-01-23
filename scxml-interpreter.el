@@ -1,7 +1,7 @@
 ;;; scxml-interpreter --- instantiate and run state machines -*- lexical-binding: t -*-
 
 ;;; Commentary:
-`
+
 ;;; Code:
 (require 'eieio)
 (require 'scxml-element)
@@ -52,6 +52,14 @@
          :initform nil
          :accessor scxml-data))
   :description "Scxml event")
+(cl-defgeneric scxml-to-hash-table ((event scxml-event))
+  "Return an association list representation of EVENT.")
+(cl-defmethod scxml-to-hash-table ((event scxml-event))
+  "Return an association list representation of EVENT."
+  (let ((table (make-hash-table :size 2 :test 'equal)))
+    (puthash 'name (scxml-name event) table)
+    (puthash 'data (scxml-data event) table)
+    table))
 
 (defun scxml--queue ()
   "real quick, build a fifo, stolen from http://irreal.org/blog/?p=40
@@ -81,17 +89,24 @@ Usage:
          :type symbol
          :initform 'null)
    (store :type hash-table
-          :initform (make-hash-table)))
+          :initform (make-hash-table :test 'equal)))
   :documentation "datamodel wrapper.")
 (cl-defmethod scxml-print ((datamodel scxml-datamodel))
   "Return a string for human eyes."
-  (let ((lines))
-    (maphash (lambda (key val)
-               (push (format "[%s => %s]" key (prin1-to-string val)) lines))
-             (oref datamodel store))
-    (format "[type: %s=>{%s}]"
+  (cl-labels ((print-table
+               (hash)
+               (let ((lines))
+                 (maphash (lambda (key val)
+                            (let ((human-val (if (hash-table-p val)
+                                                 (print-table val)
+                                               (prin1-to-string val))))
+                              (push (format "%s => %s" key human-val) lines)))
+                          hash)
+                 (format "[%s]"
+                         (mapconcat #'identity lines ", ")))))
+    (format "{type: %s=>%s}"
             (oref datamodel type)
-            (mapconcat #'identity lines ", "))))
+            (print-table (oref datamodel store)))))
 (cl-defgeneric scxml-set-unprotected ((datamodel scxml-datamodel) (key string) value)
   "Set KEY to VALUE in DATAMODEL.  Return VALUE.")
 (cl-defmethod scxml-set-unprotected ((datamodel scxml-datamodel) (key string) value)
@@ -112,24 +127,27 @@ Usage:
   (scxml-set-unprotected datamodel key value))
 
 (cl-defmethod scxml-initialize-system ((datamodel scxml-datamodel) (name string))
-  (let ((default-data `((_event . nil)
+  (let ((default-system-info '((system . 'emacs/scxml-mode)
+                       (version . alpha)))
+        (default-data `((_event . nil)
                         (_sessionid . ,(scxml--random-string 20))
                         (_name . ,name)
-                        (_ioprocessors . nil)
-                        (_x.system . 'emacs/scxml-mode)
-                        (_x.version . alpha))))
-    (mapc (lambda (cell)
-            (let ((key-symbol (car cell))
-                  (value (cdr cell)))
-              (scxml-set-unprotected datamodel (symbol-name key-symbol) value)))
-          default-data)))
+                        (_ioprocessors . nil))))
+    (let ((system-info (make-hash-table :size 2 :test 'equal)))
+      (mapc (lambda (cell) (puthash (car cell) (cdr cell) system-info))
+            default-system-info)
+      (scxml-set-unprotected datamodel "_x" system-info)
+      (mapc (lambda (cell)
+              (let ((key-symbol (car cell))
+                    (value (cdr cell)))
+                (scxml-set-unprotected datamodel (symbol-name key-symbol) value)))
+            default-data))))
 (cl-defgeneric scxml-initialize ((datamodel scxml-datamodel) (element scxml-element))
-  (error "write me"))
-
-
+  ;; I don't have a datamodel yet so i'm covered for now.
+  nil)
 (defclass scxml-instance ()
-  ((_type :type scxml-interp-state
-          :documentation "The scxml state machine type to run")
+  ((_state-machine :type scxml-interp-state
+                   :documentation "The scxml state machine type to run")
    ;; The rest of these slots are based off the
    ;; "Algorithm for SCXML Interpretation right from the docs.
    (_configuration :type list
@@ -139,7 +157,7 @@ Usage:
    (_internal-queue :initform (scxml--queue))
    (_external-queue :initform (scxml--queue))
    (_history-value :type hash-table
-                   :initform (make-hash-table))
+                   :initform (make-hash-table :test 'equal))
    (_datamodel :initarg :datamodel
                :type scxml-datamodel)
    (_running ; :type boolean?
@@ -159,16 +177,16 @@ Usage:
             (funcall external 'length)
             (scxml-print datamodel))))
 
-(cl-defgeneric scxml-build-instance ((type scxml-scxml))
+(cl-defgeneric scxml-build-instance ((state-machine scxml-scxml))
   "Build an scxml-instance")
-(cl-defmethod scxml-build-instance ((type scxml-scxml))
+(cl-defmethod scxml-build-instance ((state-machine scxml-scxml))
   ;; TODO - validate?
-  (let* ((raw-datamodel-type (scxml-datamodel-type type))
+  (let* ((raw-datamodel-type (scxml-datamodel-type state-machine))
          (datamodel-type (if raw-datamodel-type raw-datamodel-type 'null))
          (datamodel (scxml-datamodel :type datamodel-type))
          (instance (scxml-instance :datamodel datamodel)))
-    (oset instance _type (scxml--expand-type type))
-    (scxml-initialize-system datamodel (scxml-element-name type))
+    (oset instance _state-machine (scxml--expand-type state-machine))
+    (scxml-initialize-system datamodel (scxml-element-name state-machine))
     instance))
 (cl-defmethod scxml-run-instance ((instance scxml-instance) &optional allow-suspend)
   "Begin scxml interpretation.
@@ -190,12 +208,12 @@ procedure interpret(doc):
     mainEventLoop()"
   (with-slots ((binding _binding)
                (running _running)
-               (type _type)
+               (state-machine _state-machine)
                (datamodel _datamodel)) instance
     (when (eq binding 'early)
-      (scxml-initialize datamodel type))
+      (scxml-initialize datamodel state-machine))
     (setf running t)
-    (let ((initial-transitions (scxml--interp-get-initial-transitions type)))
+    (let ((initial-transitions (scxml--interp-get-initial-transitions state-machine)))
       (scxml--interp-enter-states instance initial-transitions))
     (scxml--interp-main-event-loop instance allow-suspend)))
 (cl-defmethod scxml-continue ((instance scxml-instance) &optional allow-suspend)
@@ -208,21 +226,29 @@ procedure interpret(doc):
 (cl-defmethod scxml-configuration ((instance scxml-instance))
   (copy-list (oref instance _configuration)))
 
+(cl-defmethod scxml--interp-default-id ((element scxml-element))
+  ;; Get a unique id for this element.
+  ;; in the future this can just generate random stuff but
+  ;; at present I want it to be something I can back out if needed.
+  (format "xml-pos:%s"
+          (prin1-to-string (scxml-xml-document-coordinate right))))
+
 (cl-defmethod scxml--interp-cast ((element scxml-element))
   (error "Implement for this type"))
 (cl-defmethod scxml--interp-cast ((element scxml-scxml))
-  (let ((scxml (scxml-interp-scxml :id (scxml--random-string)))
+  (let ((scxml (scxml-interp-scxml :id (scxml--interp-default-id element)))
         (name (scxml-element-name element)))
     (when name
       (scxml-put-attrib scxml 'name name))
     scxml))
 (cl-defmethod scxml--interp-cast ((element scxml-state))
-  (scxml-interp-state :id (or (scxml-element-id element) (scxml--random-string))))
+  (scxml-interp-state :id (or (scxml-element-id element)
+                              (scxml--interp-default-id element))))
 (cl-defmethod scxml--interp-cast ((element scxml-transition))
   (scxml-transition :target (scxml-target-id element)
                     :events (scxml-events element)
                     :cond (scxml-cond-expr element)))
-(cl-defmethod scxml--expand-type ((type scxml-scxml))
+(cl-defmethod scxml--expand-type ((state-machine scxml-scxml))
   "Create a clone of TYPE for execution.
 
 Expand 'initial' attributes and clone."
@@ -256,7 +282,7 @@ Expand 'initial' attributes and clone."
                          (nreverse new-children)))
                  (formalize-initial-attribute pseudo-element element)
                  pseudo-element)))
-    (expand type)))
+    (expand state-machine)))
 
 (cl-defmethod scxml--interp-get-initial-transitions ((element scxml-interp-state))
   "Get the ELEMENT's intial child, then get that initial's transition set as a list."
@@ -275,7 +301,6 @@ Expand 'initial' attributes and clone."
     (when initial-child
       (let ((transition (first (scxml-children initial-child))))
         (list (scxml-target transition))))))
-
 
 (defun scxml--interp-enter-states (instance enabled-transitions)
   "Enter states indicated by transitions.
@@ -311,13 +336,13 @@ procedure enterStates(enabledTransitions):
   (with-slots ((configuration _configuration)
                (states-to-invoke _states-to-invoke)
                (binding _binding)
-               (root _type)
+               (root _state-machine)
                (running _running)
                (internal-queue _internal-queue)) instance
     (let ((states-to-enter)
           (sorted-states-to-enter)        ;currently not sure if I need two variables but I'm being extra safe.
           (states-for-default-entry)
-          (default-history-context (make-hash-table)))
+          (default-history-context (make-hash-table :test 'equal)))
       (let ((updates (scxml--interp-compute-entry-set enabled-transitions
                                                       states-to-enter
                                                       states-for-default-entry
@@ -405,6 +430,7 @@ procedure mainEventLoop():
                (states-to-invoke _states-to-invoke)
                (external-queue _external-queue)
                (configuration _configuration)
+               (datamodel _datamodel)
                (internal-queue _internal-queue)) instance
     (cl-block outer-running-block
       (while running
@@ -418,7 +444,9 @@ procedure mainEventLoop():
                   (if (funcall internal-queue 'is-empty)
                       (setq macrostep-done t)
                     (let ((internal-event (funcall internal-queue 'pop)))
-                      ;; set datamodel [_event] to this event.
+                      (scxml-set-unprotected datamodel
+                                             "_event"
+                                             (scxml-to-hash-table internal-event))
                       (setq enabled-transitions
                             (scxml--interp-select-transitions instance
                                                               internal-event)))))
@@ -442,7 +470,9 @@ procedure mainEventLoop():
               (cl-return-from outer-running-block))
             (let ((external-event (funcall external-queue 'pop)))
               (when external-event
-                ;; set datamodel[_event] to this event
+                (scxml-set-unprotected datamodel
+                                       "_event"
+                                       (scxml-to-hash-table external-event))
                 (cl-loop for state in configuration
                          do (cl-loop for inv in nil
                                      ;; this sholud be for invokes in state.invoke

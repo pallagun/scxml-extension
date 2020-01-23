@@ -15,19 +15,20 @@
 
 
 (defvar test nil)
-(progn
-  (setq test
-        (let ((machine (scxml-scxml :name "anything" :initial "left"))
-              (left (scxml-state :id "left"))
-              (right (scxml-state :id "right")))
-          (scxml-add-children machine left right)
-          (scxml-add-children left (scxml-transition :target "right" :events '("go-right")))
-          (scxml-add-children right (scxml-transition :target "left" :events '("go-left")))
-          (let ((instance (scxml-build-instance machine)))
-            instance)))
-  (scxml-run-instance test t))
+(setq machine (scxml-scxml :name "anything" :initial "left"))
+(setq left (scxml-state :id "left"))
+(setq right (scxml-state :id "right"))
+(scxml-add-children machine left right)
+(scxml-add-children left (scxml-transition :target "right" :events '("go-right")))
+(scxml-add-children right (scxml-transition :target "left" :events '("go-left")))
+(setq test (scxml-build-instance machine))
 
+(scxml-run-instance test t)
 (scxml-print test)
 (scxml-enqueue-event test (scxml-event :name "go-right"))
 (scxml-enqueue-event test (scxml-event :name "go-left"))
 (scxml-continue test t)
+
+
+
+(prin1-to-string (scxml-xml-document-coordinate right))
