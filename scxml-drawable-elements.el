@@ -82,8 +82,15 @@ consumes the entire canvas."
 (require 'scxml-drawing-point)          ;for initials.
 (defconst scxml--drawable-initial-label "I"
   "What text label to use for rendering <initial> elements, should be a single character.")
+(defconst scxml--drawable-synthetic-initial-label "i"
+  "What text label to use for rendering initial=\"...\" attributes, should be a single character.")
 (defclass scxml-drawable-initial (scxml-initial scxml-drawable-element)
-  ())
+  ()
+  :documentation "A drawable <initial> element")
+(defclass scxml-drawable-synthetic-initial (scxml-drawable-initial scxml-synthetic-drawing)
+  ()
+  :documentation "A drawable representation of an element's
+  'initial=\"...\"' attribute.")
 (cl-defmethod scxml--set-drawing-invalid ((initial scxml-drawable-initial) is-invalid)
   "Mark INITIAL's drawing as invalid as well as all children.
 
@@ -101,12 +108,15 @@ Note: there should only be one child and it should be a transition."
                           (if (scxml-element-drawing initial) 't 'nil))
   (let ((hint (scxml--hint initial))
         (highlight (scxml--highlight initial))
+        (label (if (object-of-class-p initial 'scxml-drawable-synthetic-initial)
+                   scxml--drawable-synthetic-initial-label
+                 scxml--drawable-initial-label))
         (centroid (scxml-centroid canvas)))
     (if (null hint)
         ;; Generate the drawing (not based on a hint)
         (scxml-drawing-point :x (scxml-x centroid)
                              :y (scxml-y centroid)
-                             :label scxml--drawable-initial-label
+                             :label label
                              :highlight highlight
                              :edit-idx nil
                              :parent initial)
@@ -116,7 +126,7 @@ Note: there should only be one child and it should be a transition."
         (let ((placement (scxml-absolute-coordinates parent-drawing-canvas hint)))
           (scxml-drawing-point :x (scxml-x placement)
                                :y (scxml-y placement)
-                               :label scxml--drawable-initial-label
+                               :label label
                                :highlight highlight
                                :edit-idx nil
                                :parent initial))))))

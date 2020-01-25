@@ -1,6 +1,6 @@
 ;;; scxml-element --- scxml element level functions -*- lexical-binding: t -*-
 
-;;; Commentary:
+;;; COMMENTARY:
 ;; The scxml-element is used as the base class for any <element
 ;; with="attributes">or child</element> in a valid <scxml> document.
 
@@ -85,6 +85,8 @@ be included in the output."
                        children-xml
                        end-tag)
                  ""))))
+(cl-defgeneric scxml-children ((element scxml-element))
+  "Return the children of ELEMENT.")
 (cl-defmethod scxml-children ((element scxml-element))
   "Return the children of ELEMENT."
   (oref element _children))
@@ -94,6 +96,18 @@ be included in the output."
 (cl-defmethod scxml-parent ((element scxml-element))
   "Return the parent of ELEMENT."
   (oref element _parent))
+(cl-defgeneric scxml-siblings ((element scxml-element))
+  "Return the siblings of ELEMENT")
+(cl-defmethod scxml-siblings ((element scxml-element))
+  "Return the siblings of ELEMENT"
+  (let ((parent (scxml-parent element)))
+    (if parent
+        (seq-filter (lambda (parents-child)
+                      (not (eq parents-child element)))
+                    (scxml-children parent))
+      nil)))
+(cl-defgeneric scxml-make-orphan ((element scxml-element))
+  "Break ELEMENT away from any parent elements.")
 (cl-defmethod scxml-make-orphan ((element scxml-element))
   "Break ELEMENT away from any parent elements."
   (with-slots (_parent) element
@@ -216,6 +230,11 @@ FILTER."
                  (lambda (x) (push x matches))
                  filter)
     matches))
+(cl-defgeneric scxml-collect-all ((element scxml-element) filter)
+  "Return a list of all elements passing FILTER which are parent, child or siblings of ELEMENT.")
+(cl-defmethod scxml-collect-all ((element scxml-element) filter)
+  "Return a list of all elements passing FILTER which are parent, child or siblings of ELEMENT."
+  (scxml-collect (scxml-root-element element) filter))
 (defalias 'scxml-lcca 'scxml-find-nearest-mutual-parent
   "Return the scxml's LCCA (Least Common Compound Ancestor) of all elements.")
 (cl-defmethod scxml-find-nearest-mutual-parent (&rest elements)
@@ -326,6 +345,9 @@ Note: a root element would have a coordinate of nil."
   :abstract t
   :documentation "Apply to an scxml element if it has an 'id'
   attribute that's significant.")
+(defun scxml-element-with-id-classp (any-object)
+  "Equivalent of (object-of-class-p ANY-OBJECT 'scxml-element-with-id)"
+  (object-of-class-p any-object 'scxml-element-with-id))
 (cl-defmethod (setf scxml-element-id) :before (id (element scxml-element-with-id))
   "Validate the id before setting.
 
@@ -364,6 +386,9 @@ below SEARCH-ROOT")
   :abstract t
   :documentation "Apply to an scxml element if it has an
   'initial' attribute that's significant.")
+(defun scxml-element-with-initial-classp (any-object)
+  "Equivalent of (object-of-class-p ANY-OBJECT 'scxml-element-with-initial)"
+  (object-of-class-p any-object 'scxml-element-with-initial))
 (cl-defmethod scxml-print ((initialable-element scxml-element-with-initial))
   (format "initial:%s, %s"
           (scxml-element-initial initialable-element)

@@ -204,54 +204,156 @@ Children: must contain exactly one unconditional <transition>
 indicating default history.")
 
 ;; interactions
-(cl-defmethod scxml-add-child :before ((parent scxml-element) (child scxml-element) &optional append)
-  "Add CHILD element to PARENT ensuring id attribute is unique in the entire tree.
+(cl-defmethod scxml--validate-add-child ((parent scxml-element) (child scxml-element))
+  "Return non-nil if CHILD is a valid child of PARENT.
 
-Validate based on element id attribute - the ids must not be duplicated."
-  ;; if the child is an scxml-element-with-initial
-  (let* ((new-idables (scxml-collect child
-                                     (lambda (e)
-                                       (object-of-class-p e 'scxml-element-with-id))))
-         (new-ids (seq-filter #'identity (mapcar 'scxml-element-id new-idables))))
-    (scxml-visit-all parent
-                     (lambda (idable-element)
-                       (let ((id (scxml-element-id idable-element)))
-                         (when (and id
-                                    (member id new-ids))
-                           (error "Added child (or decendent) has a conflicting id: \"%s\"" id))))
-                     (lambda (element)
-                       (object-of-class-p element 'scxml-element-with-id)))))
-(cl-defmethod scxml-add-child :before ((parent scxml-element) (initial scxml-initial))
-  "Ensure it's valid to add an scxml-initial to this state"
-  ;; <initial> elements are only allowed to be added if this state has
-  ;; child states. additionally if an <initial> element is added it must
-  ;; already have a valid target.
-  (when (not (object-of-class-p parent 'scxml-element-with-child-initial))
-    (error "<initial> elements are only valid as children of a <state>"))
+The starting assumption is that PARENT belongs to an scxml
+document that is already known to be valid."
+  ;; ensure there are no id collisions.
+  ;; ensure transition targets are valid state ids.
+  ;; ensure scxml-initial elements have exactly one child that is a transition
+  ;; - and that the child transition is a valid <initial> transition.
+  ;; - and that the target of the initial's transition is a sibling of the initial.
+  ;; ensure all elements which can have an <initial> child have 0 or 1 of them, not 2+
 
-  (cl-flet ((validate-and-retrieve-initial-target
-             (lambda (initial-element)
-               (let ((children (scxml-children initial-element)))
-                 (when (not (= (length children) 1))
-                   (error "<initial> elements must have exactly one child, a <transition>"))
-                 (let ((transition (first children)))
-                   (when (not (object-of-class-p transition 'scxml-transition))
-                     (error "<initial> elements must have exactly one child, a <transition>"))
-                   (let ((target-id (scxml-target-id transition)))
-                     (when (<= (length target-id) 0)
-                       (error "<initial> elements must have a child <transition> with a valid target"))
-                     target-id))))))
-    (let ((initial-target (validate-and-retrieve-initial-target initial))
-          (found-target-element))
-      (cl-loop for sibling in (scxml-children parent)
-               when (object-of-class-p sibling 'scxml-initial)
-                 do (error "An element may only have a single <initial> child")
-               when (and (object-of-class-p sibling 'scxml-element-with-id)
-                         (equal (scxml-element-id sibling) initial-target))
-                 do (setq found-target-element t))
-      (when (not found-target-element)
-        (error "<initial> elements must have a <transition> which targets a sibling")))))
+  ;; TODO - validate that an element does not have it's initial
+  ;; attribute set at the same time as having an initial child
+  ;; element.
 
+  ;; TODO - validate that children added to an element are on that
+  ;; elements valid-child-types-to-add list/function
+
+  ;; TODO - there is a lot of duplicated code here for checking if an
+  ;; element is an element which has an id and then if it is
+  ;; extracting the id and then if that id is non-nil returning that
+  ;; id.  Subfun that out
+  (cl-labels ((get-all-non-nil-ids
+               (starting-element)
+               (seq-filter #'identity
+                           (mapcar #'scxml-element-id
+                                   (scxml-collect-all starting-element
+                                                      #'scxml-element-with-id-classp))))
+              (get-all-transition-targets
+               (starting-element)
+               (seq-filter #'identity
+                           (mapcar #'scxml-target-id
+                                   (scxml-collect-all starting-element
+                                                      (lambda (element)
+                                                        (object-of-class-p element 'scxml-transition))))))
+              (validate-initial-element
+               (initial-element parent-element)
+               ;; make sure the initial has a single child
+               ;; make sure that single child is a transition
+               ;; make sure that transition does not contain a cond or event
+               ;; make sure that transition's target references a sibling of initial-element.
+               (let* ((initial-children (scxml-children initial-element))
+                      (initial-transition (first initial-children)))
+                 (unless (eq 1 (length initial-children))
+                   (error "An <initial> element must contain exactly 1 child, found %d children" (length initial-children)))
+                 (unless (object-of-class-p initial-transition 'scxml-transition)
+                   (error "An <initial> element must have a child of type <transition>, found %s" (eieio-object-class-name initial-transition)))
+                 (when (scxml-events initial-transition)
+                   (error "The <transition> in an <initial> element must not have any events, found events: %s" (scxml-events initial-transition)))
+                 (when (scxml-cond-expr initial-transition)
+                   (error "The <transition> in an <initial> element must not have a condition, found condition: %s" (scxml-cond-expr initial-transition)))
+                 (let* ((initial-target-id (scxml-target-id initial-transition))
+                        (siblings (seq-filter (lambda (sibling) (not (eq sibling initial-element)))
+                                              (scxml-children parent-element)))
+                        (sibling-ids (seq-filter #'identity
+                                                 (mapcar #'scxml-element-id
+                                                         (seq-filter #'scxml-element-with-id-classp siblings)))))
+                   (unless (some (lambda (sibling-id)
+                                   (equal sibling-id initial-target-id))
+                                 sibling-ids)
+                     (error "The <transition> child of an <initial> must target a sibling of the <initial> (stated target: %s, valid targets: (%s))"
+                            initial-target-id
+                            (mapconcat #'identity sibling-ids " "))))))
+              (validate-initial-attribute
+               (element-with-initial)
+               ;; one child must have the id indicated by element's initial attribute
+               (let ((initial-state-id (scxml-element-initial element-with-initial)))
+                 (when initial-state-id
+                   (let ((child-ids (seq-filter #'identity
+                                                (mapcar (lambda (child)
+                                                          (when (scxml-element-with-id-classp child)
+                                                            (scxml-element-id child)))
+                                                        (scxml-children element-with-initial)))))
+                     (unless (member initial-state-id child-ids)
+                       (error "Unsatisfied initial attribute of '%s'"
+                              initial-state-id)))))))
+    (let ((existing-ids (get-all-non-nil-ids parent))
+          (additional-ids (get-all-non-nil-ids child)))
+      (let ((intersection-ids (intersection existing-ids additional-ids :test 'equal)))
+        (when intersection-ids
+          (error "Unable to add due to colliding 'id' attributes: %s"
+                 (mapconcat #'identity intersection-ids ", "))))
+      (let ((all-ids (union existing-ids additional-ids :test 'equal))
+            (additional-transition-target-ids (get-all-transition-targets child)))
+        (mapc (lambda (target-id)
+                (unless (member target-id all-ids)
+                  (error "Unable to add transition with unknown target state id: %s"
+                         target-id)))
+              additional-transition-target-ids))
+      (scxml-visit-all child
+                       #'validate-initial-attribute
+                       (lambda (element)
+                         (object-of-class-p element 'scxml-element-with-initial)))
+      (scxml-visit-all child
+                       (lambda (initial-element)
+                         ;; If the initial element is the element to
+                         ;; be added you'll need to get the parent
+                         ;; from the existing document.  Otherwise you
+                         ;; can simply trust the element's parent.
+                         (if (eq initial-element child)
+                             (validate-initial-element initial-element parent)
+                           (validate-initial-element initial-element (scxml-parent initial-element))))
+                       (lambda (element)
+                         (object-of-class-p element 'scxml-initial)))
+      ))
+
+  ;; (let* ((new-idables (scxml-collect child
+  ;;                                    (lambda (e)
+  ;;                                      (object-of-class-p e 'scxml-element-with-id))))
+  ;;        (new-ids (seq-filter #'identity (mapcar 'scxml-element-id new-idables))))
+  ;;   (scxml-visit-all parent
+  ;;                    (lambda (idable-element)
+  ;;                      (let ((id (scxml-element-id idable-element)))
+  ;;                        (when (and id
+  ;;                                   (member id new-ids))
+  ;;                          (error "Added child (or decendent) has a conflicting id: \"%s\"" id))))
+  ;;                    (lambda (element)
+  ;;                      (object-of-class-p element 'scxml-element-with-id)))))
+;; (cl-defmethod scxml-add-child :before ((parent scxml-element) (initial scxml-initial))
+;;   "Ensure it's valid to add an scxml-initial to this state"
+;;   ;; <initial> elements are only allowed to be added if this state has
+;;   ;; child states. additionally if an <initial> element is added it must
+;;   ;; already have a valid target.
+;;   (when (not (object-of-class-p parent 'scxml-element-with-child-initial))
+;;     (error "<initial> elements are only valid as children of a <state>"))
+
+;;   (cl-flet ((validate-and-retrieve-initial-target
+;;              (lambda (initial-element)
+;;                (let ((children (scxml-children initial-element)))
+;;                  (when (not (= (length children) 1))
+;;                    (error "<initial> elements must have exactly one child, a <transition>"))
+;;                  (let ((transition (first children)))
+;;                    (when (not (object-of-class-p transition 'scxml-transition))
+;;                      (error "<initial> elements must have exactly one child, a <transition>"))
+;;                    (let ((target-id (scxml-target-id transition)))
+;;                      (when (<= (length target-id) 0)
+;;                        (error "<initial> elements must have a child <transition> with a valid target"))
+;;                      target-id))))))
+;;     (let ((initial-target (validate-and-retrieve-initial-target initial))
+;;           (found-target-element))
+;;       (cl-loop for sibling in (scxml-children parent)
+;;                when (object-of-class-p sibling 'scxml-initial)
+;;                  do (error "An element may only have a single <initial> child")
+;;                when (and (object-of-class-p sibling 'scxml-element-with-id)
+;;                          (equal (scxml-element-id sibling) initial-target))
+;;                  do (setq found-target-element t))
+;;       (when (not found-target-element)
+;;         (error "<initial> elements must have a <transition> which targets a sibling")))))
+)
 (defun scxml--element-factory (type attrib-alist &optional skip-slots)
   "Build a childless element by TYPE and their ATTRIB-ALIST.
 

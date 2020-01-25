@@ -154,5 +154,9 @@ but with some checks."
          (parent-drawing (and parent (scxml-element-drawing parent))))
     (and parent-drawing (scxml-get-inner-canvas parent-drawing))))
 
+(defclass scxml-synthetic-drawing (scxml-drawable-element)
+  ()
+  :documentation "This class signifies that the object which is drawn does not have a 1 to 1 correspondence with an scxml element.")
+
 (provide 'scxml-drawable-element)
 ;;; scxml-drawable-element.el ends here

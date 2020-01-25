@@ -965,9 +965,24 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
     ;; TODO - is there a better way to do this?
     (unless (object-of-class-p element 'scxml-element-with-initial)
       (error "This element does not have a settable initial attribute"))
+    ;; remove any existing initial synthetic drawings.
+    (mapc (lambda (child)
+            (when (object-of-class-p child 'scxml-initial)
+              (scxml-make-orphan child)))
+          (scxml-children element))
+    ;; set the initial attribute.
     (setf (scxml-element-initial element) new-initial)
-    ;; TODO - this should invalidate all of element's children/siblings too?
-    (scxml--set-drawing-invalid element t)
+    ;; create a synthetic drawing node for it.
+    (let ((new-transition (scxml-drawable-transition :target new-initial))
+          (new-initial (scxml-drawable-synthetic-initial)))
+      (scxml-add-child new-initial new-transition)
+      (scxml-add-child element new-initial)
+      (scxml-visit element
+                   (lambda (child)
+                     (scxml--set-hint child nil) ;TODO - fix this, I'm bumping every child to auto-plotting.
+                     (scxml--set-drawing-invalid child 't))
+                   (lambda (child)
+                     (object-of-class-p child 'scxml-drawable-element))))
     (scxml-diagram-mode--redraw)
     (scxml-diagram-mode--apply-edit element nil)))
 (defun scxml-diagram-mode--edit-events (new-events)
