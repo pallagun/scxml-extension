@@ -31,7 +31,7 @@
     (dotimes (i length (apply #' string chars))
       (push (+ offset (random range)) chars))))
 
-(defclass scxml-interp-state (scxml-state-type scxml-element-with-child-initial)
+(defclass scxml-interp-state (scxml-state-type)
   ())
 (cl-defmethod scxml-print ((interp scxml-interp-state))
   (format "%s(id:%s, children: %d)"

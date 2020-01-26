@@ -8,15 +8,78 @@
 (require 'seq)
 (require 'scxml-element)
 
-(defclass scxml-element-with-child-initial ()
+;; Marker classes - never apply more than one to an object.
+(defclass scxml--core ()
+  ;; TODO - I'm unable to specify the slot here and make it stricter for the child classes.  I think this is a bug in eieio maybe?  It appears CLOS allows this? check on that.
   ()
-  :documentation "Indcates that this element may have a child element of type <initial>.")
+  :abstract t
+  :documentation "Indicates how this object relates to an scxml element.")
+(defun scxml--core-type (anything)
+  "Return the scxml core type of ANYTHING."
+  (if (object-of-class-p anything 'scxml--core)
+      (oref any -core-type)
+    nil))
+(defclass scxml--core-scxml (scxml--core)
+  ((-core-type :initform 'scxml
+               :allocation :class
+               :type (and symbol (member scxml))))
+  :abstract t
+  :documentation "Indicates that this object represents a top level scxml document entity.")
+(defclass scxml--core-state (scxml--core)
+  ((-core-type :initform 'state
+               :allocation :class
+               :type (and symbol (member state))))
+  :abstract t
+  :documentation "Indicates that this object represents an scxml state.")
+(defclass scxml--core-final (scxml--core)
+  ((-core-type :initform 'final
+               :allocation :class
+               :type (and symbol (member final))))
+  :abstract t
+  :documentation "Indicates that this object represents an scxml final state.")
+(defclass scxml--core-parallel (scxml--core)
+  ((-core-type :initform 'parallel
+               :allocation :class
+               :type (and symbol (member parallel))))
+  :abstract t
+  :documentation "Indicates that this object represents an scxml parallel state.")
+(defclass scxml--core-initial (scxml--core)
+  ((-core-type :initform 'initial
+               :allocation :class
+               :type (and symbol (member initial))))
+  :abstract t
+  :documentation "Indicates that this object represents an scxml initial configuration.")
+(defclass scxml--core-transition (scxml--core)
+  ((-core-type :initform 'transition
+               :allocation :class
+               :type (and symbol (member transition))))
+  :abstract t
+  :documentation "Indicates that this object represents an scxml transition.")
+(defclass scxml--core-nil (scxml--core)
+  ((-core-type :initform 'nil
+               :allocation :class
+               :type (and symbol
+                          (satisfies 'not))))
+  :abstract t
+  :documentation "Indicates that this object is not related to a defined scxml element.")
 
-;; may not need a scxml-base-scxml?
-(defclass scxml-base-scxml (scxml-element)
-  ()
-  :abstract t)
-(defclass scxml-scxml (scxml-base-scxml scxml-element-with-initial)
+(defconst scxml--valid-child-types
+  '((scxml . (state parallel final datamodel script))
+    (state . (onentry onexit transition initial state parallel final history datamodel invoke))
+    (parallel . (onentry onexit transition state parallel history datamodel invoke))
+    (transition . nil)
+    (initial . (transition))
+    (final . (onentry onexit donedata))
+    (onentry . nil)
+    (onexit . nil)
+    (history . transition))
+  "Mapping of what child element types are valid for what parent
+element types.  Constructed as an association list per parent
+element type."
+  ;; TODO - add counts?  e.g. there can be at most one <initial> as a child of a <state>
+  )
+
+(defclass scxml-scxml (scxml--core-scxml scxml-element scxml-element-with-initial)
   ((name :initarg :name
          :accessor scxml-element-name
          :initform nil
@@ -53,10 +116,11 @@ Only doing xmlnns and version here."
   ()
   :abstract t
   :documentation "Abstract parent class for <state> and <final>, both of which are state-ish")
-(defclass scxml-state (scxml-state-type scxml-element-with-initial scxml-element-with-child-initial)
+(defclass scxml-state (scxml--core-state scxml-state-type scxml-element-with-initial)
   ()
   :documentation "Scxml <state> element.
 Recognized attributes: id, initial")
+
 (cl-defmethod scxml-print ((state scxml-state))
   "Spit out a string representing ELEMENT for human eyeballs"
   (format "state(id: %s, %s)"
@@ -69,7 +133,7 @@ Recognized attributes: id, initial")
          (cons 'initial (scxml-element-initial element)))
    (cl-call-next-method)))
 
-(defclass scxml-final (scxml-state-type)
+(defclass scxml-final (scxml--core-final scxml-state-type)
   ()
   :documentation "Scxml <final> element.
 Recognized attributes: id
@@ -82,7 +146,7 @@ Children:
    (list (cons 'id (scxml-element-id element)))
    (cl-call-next-method)))
 
-(defclass scxml-initial (scxml-element)
+(defclass scxml-initial (scxml--core-initial scxml-element)
   ()
   :documentation "Scxml <initial> element.
 No attributes required.
@@ -92,16 +156,8 @@ Child <transition> element may not have 'cond' or 'event' attributes and must be
 (cl-defmethod scxml-print ((initial scxml-initial))
   "Spit out a string representing ELEMENT for human eyeballs"
   (format "initial(%s)" (cl-call-next-method initial)))
-(cl-defmethod scxml-add-child :before ((initial scxml-initial) (any-child scxml-element))
-  "Ensure this child is valid"
-  (when (not (object-of-class-p any-child 'scxml-transition))
-    (error "The child of an <initial> element must be a transition"))
-  (when (null (scxml-target-id any-child))
-    (error "The child on an <initial> element must be a <transition> with the id set"))
-  (when (> (scxml-num-children initial) 0)
-    (error "An <initial> element may only have a single child element")))
 
-(defclass scxml-parallel (scxml-element scxml-element-with-id)
+(defclass scxml-parallel (scxml--core-parallel scxml-element scxml-element-with-id)
   ()
   ;; TODO - should this inherit from scxml-state-type - yes, probably.
   :documentation "Scxml <parallel> element.
@@ -118,7 +174,7 @@ Children:
    (list (cons 'id (scxml-element-id element)))
    (cl-call-next-method)))
 
-(defclass scxml-transition (scxml-element)
+(defclass scxml-transition (scxml--core-transition scxml-element)
   ((target :initarg :target
            :accessor scxml-target-id
            :type (or null string)
@@ -203,12 +259,24 @@ Attributes recognized: id, type['shallow' or 'deep', default: 'shallow']
 Children: must contain exactly one unconditional <transition>
 indicating default history.")
 
-;; interactions
+;; validation functions
 (cl-defmethod scxml--validate-add-child ((parent scxml-element) (child scxml-element))
-  "Return non-nil if CHILD is a valid child of PARENT.
+  "Validate addition of CHILD to PARENT throwing an error when invalid.
 
 The starting assumption is that PARENT belongs to an scxml
 document that is already known to be valid."
+  (scxml--validate-child-given-parent parent child))
+(cl-defmethod scxml--validate ((element scxml-element))
+  "Validate the structure of ELEMENT and all child elements throwing an error when invalid."
+  (scxml--validate-child-given-parent nil element))
+(defun scxml--validate-child-given-parent (parent child)
+  "Return non-nil if CHILD is a valid child of PARENT.
+
+PARENT can be nil and child will be validated as the full
+document.
+
+When PARNET is non-nil the starting assumption is that PARENT
+belongs to an scxml document that is already known to be valid."
   ;; ensure there are no id collisions.
   ;; ensure transition targets are valid state ids.
   ;; ensure scxml-initial elements have exactly one child that is a transition
@@ -219,9 +287,6 @@ document that is already known to be valid."
   ;; TODO - validate that an element does not have it's initial
   ;; attribute set at the same time as having an initial child
   ;; element.
-
-  ;; TODO - validate that children added to an element are on that
-  ;; elements valid-child-types-to-add list/function
 
   ;; TODO - there is a lot of duplicated code here for checking if an
   ;; element is an element which has an id and then if it is
@@ -280,8 +345,21 @@ document that is already known to be valid."
                                                         (scxml-children element-with-initial)))))
                      (unless (member initial-state-id child-ids)
                        (error "Unsatisfied initial attribute of '%s'"
-                              initial-state-id)))))))
-    (let ((existing-ids (get-all-non-nil-ids parent))
+                              initial-state-id))))))
+              (validate-types
+               (parent child)
+               (let ((parent-core-type (scxml--core-type parent))
+                     (child-core-type (scxml--core-type child)))
+                 (unless (memq child-core-type
+                               (alist-get parent-core-type
+                                          scxml--valid-child-types
+                                          nil))
+                   (error "Invalid child of type <%s> for parent of type <%s>"
+                          child-core-type
+                          parent-core-type)))))
+    (let ((existing-ids (if parent
+                            (get-all-non-nil-ids parent)
+                          nil))
           (additional-ids (get-all-non-nil-ids child)))
       (let ((intersection-ids (intersection existing-ids additional-ids :test 'equal)))
         (when intersection-ids
@@ -309,7 +387,13 @@ document that is already known to be valid."
                            (validate-initial-element initial-element (scxml-parent initial-element))))
                        (lambda (element)
                          (object-of-class-p element 'scxml-initial)))
-      ))
+      (when parent
+        (validate-types parent child))
+      (scxml-visit child
+                   (lambda (sub-parent)
+                     (mapc (lambda (sub-child)
+                             (validate-types sub-parent sub-child))
+                           (scxml-children sub-parent))))))
 
   ;; (let* ((new-idables (scxml-collect child
   ;;                                    (lambda (e)
@@ -354,6 +438,7 @@ document that is already known to be valid."
 ;;       (when (not found-target-element)
 ;;         (error "<initial> elements must have a <transition> which targets a sibling")))))
 )
+
 (defun scxml--element-factory (type attrib-alist &optional skip-slots)
   "Build a childless element by TYPE and their ATTRIB-ALIST.
 
