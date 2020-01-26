@@ -12,6 +12,38 @@
 For an <scxml> element this simply return a null drawing that
 consumes the entire canvas."
   (scxml-build-drawing-null root canvas))
+(cl-defmethod scxml--serialize-drawing-hint ((element scxml-drawable-scxml))
+  "it's initialable, so pack that stuff in."
+  (let ((initial (find-if 'scxml-drawable-synthetic-initial-p
+                          (scxml-children element))))
+    (if initial
+        (let* ((initial-hint (scxml-get-attrib initial scxml---hint-symbol nil))
+               (transition (first (scxml-children initial)))
+               (transition-hint (if transition
+                                    (scxml-get-attrib transition scxml---hint-symbol nil)
+                                  nil))
+               (synth-hint-list))
+          (when initial-hint
+            (push (cons 'initial initial-hint) synth-hint-list))
+          (when transition-hint
+            (push (cons 'transition initial-hint) synth-hint-list))
+          (nconc (cl-call-next-method)
+                synth-hint-list))
+      (cl-call-next-method))))
+(cl-defmethod scxml--build-synthetic-children ((element scxml-drawable-element) (attrib-alist list))
+  "Build additional synthethc elements if needed from the attrib-alist"
+  nil)
+(cl-defmethod scxml--build-synthetic-children ((element scxml-drawable-scxml) (attrib-alist list))
+  (let ((initial-attrib-id (scxml-element-initial element)))
+    (when initial-attrib-id
+      (let ((initial (scxml-drawable-synthetic-initial))
+            (transition (scxml-drawable-synthetic-transition :target initial-attrib-id)))
+        (scxml-add-child initial transition)
+        (scxml-add-child element initial)
+        ;; if there are drawing hints set, use them.
+        ))))
+
+
 
 (require 'scxml-drawing-rect)           ;for state/final
 (require 'scxml-drawing-noshell-rect)   ;for state/final in parallels
@@ -87,7 +119,7 @@ consumes the entire canvas."
 (defclass scxml-drawable-initial (scxml-initial scxml-drawable-element)
   ()
   :documentation "A drawable <initial> element")
-(defclass scxml-drawable-synthetic-initial (scxml-drawable-initial scxml-synthetic-drawing)
+(defclass scxml-drawable-synthetic-initial (scxml-synthetic-drawing scxml-drawable-initial)
   ()
   :documentation "A drawable representation of an element's
   'initial=\"...\"' attribute.")
@@ -200,7 +232,12 @@ Note: there should only be one child and it should be a transition."
   :documentation "Note there is no scxml-build-drawing function
   for a transition as they are all build as a collection, not
   individually.")
-(cl-defmethod scxml--set-drawing-invalid ((transition scxml-drawable-transition) is-invalid &optional dont-cascade)
+(defclass scxml-drawable-synthetic-transition (scxml-synthetic-drawing scxml-transition)
+  ()
+  :documentation "Note there is no scxml-build-drawing function
+  for a transition as they are all build as a collection, not
+  individually.")
+(cl-defmethod scxml--set-drawing-invalid ((transition scxml-drawable-transition) is-invalid)
   "Note that when a transition goes from hinted to unhinted it cause other transitions to become Invalid.
 
 If there are two transitions touching a single state and one of
@@ -211,18 +248,32 @@ transition to shuffle connector points."
   (when (and is-invalid (not dont-cascade))
     (let ((touched-states (list (scxml-source transition)
                                 (scxml-target transition))))
-      (scxml-visit-all transition
-                       (lambda (other-transition)
-                         (scxml--set-drawing-invalid other-transition 't 't))
-                       (lambda (element)
-                         (and (object-of-class-p element 'scxml-transition)
-                              (or (member (scxml-source element)
-                                          touched-states)
-                                  (member (scxml-target element)
-                                          touched-states))))))))
+      ;; (scxml-visit-all transition
+      ;;                  (lambda (other-transition)
+      ;;                    (scxml--set-drawing-invalid other-transition t))
+      ;;                  (lambda (element)
+      ;;                    (and (object-of-class-p element 'scxml-transition)
+      ;;                         (or (member (scxml-source element)
+      ;;                                     touched-states)
+      ;;                             (member (scxml-target element)
+      ;;                                     touched-states)))))
+      )))
 (cl-defmethod scxml-build-drawing ((transition scxml-drawable-transition) (canvas scxml-canvas))
   "Warning method: transitions/arrows are not build individually, they're built as a group."
   (error "Invalid operation for an scxml-transition type element"))
+
+(cl-defmethod scxml--build-synthetic-children ((element scxml-drawable-element) (attributes list))
+  "Build any sythetic children that are needed for ELEMENT based off ATTRIBUTES."
+  nil)
+(cl-defmethod scxml--build-synthetic-children ((element scxml-drawable-scxml) (attributen list))
+  "Reconstruct synthetic initial (and transition) elements if needed."
+  (let ((initial-target-id (scxml-element-initial element)))
+    (when initial-target-id
+      ;; has an initial target, build synthetic drawings
+      (let ((synth-initial (scxml-drawable-synthetic-initial))
+            (synth-transition (scxml-drawable-synthetic-transition :target initial-target-id)))
+        (scxml-add-child synth-initial synth-transition)
+        (scxml-add-child element synth-initial)))))
 
 (defun scxml--drawable-element-factory (type attrib-alist)
   "Build a drawable element of TYPE and having ATTRIB-ALIST properties."
@@ -241,8 +292,12 @@ transition to shuffle connector points."
             (when (not (memq slot-sym base-slot-symbols))
               (push slot-sym skip-slots)))
           drawable-slot-symbols)
-    (scxml--element-factory (intern (format "drawable-%s" base-xml-element-name))
-                            attrib-alist
-                            skip-slots)))
+    (let ((element (scxml--element-factory (intern (format "drawable-%s" base-xml-element-name))
+                                           attrib-alist
+                                           skip-slots)))
+      (scxml--set-hint-from-attrib-list element attrib-alist)
+      (scxml--build-synthetic-children element attrib-alist)
+      element)))
+
 
 (provide 'scxml-drawable-elements)

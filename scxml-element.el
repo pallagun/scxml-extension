@@ -9,7 +9,15 @@
 (require 'seq)
 (require 'cl-macs)
 
-(defclass scxml-element ()
+;; Marker class -
+(defclass scxml--core ()
+  ;; TODO - I'm unable to specify the slot here and make it stricter for the child classes.  I think this is a bug in eieio maybe?  It appears CLOS allows this? check on that.
+  ;; TODO - the rest of these are in scxml-elements.el - maybe break them out into their own file.
+  ()
+  :abstract t
+  :documentation "Indicates how this object relates to an scxml element.")
+
+(defclass scxml-element (scxml--core)
   ((_attributes :initarg :attributes
                 ;; TODO - remove the initarg for this?
                 ;; :accessor scxml-element-attributes
@@ -33,16 +41,6 @@
 (cl-defmethod cl-print-object ((object scxml-element) stream)
   "Pretty print the OBJECT to STREAM."
   (princ (scxml-print object) stream))
-(cl-defgeneric scxml-xml-element-name ((element scxml-element))
-  "Return what the xml element name would be for this ELEMENT.")
-(cl-defmethod scxml-xml-element-name ((element scxml-element))
-  "return what the xml element name would be for this ELEMENT.
-
-Doesn't check to ensure the ELEMENT is actually valid for rendering to xml.
-Assumes everyone follows a nice naming scheme."
-  (substring
-   (symbol-name (eieio-object-class element))
-   (length "scxml-")))
 (cl-defmethod scxml-xml-attributes ((element scxml-element))
   "Return an alist of ELEMENT's attributes for XML rendering."
   (let ((attribs nil))
@@ -65,26 +63,28 @@ Generally filters out symbols that start with 'scxml---'."
 Normally all child elements will be rendered to xml and output as
 well.  When EXCLUDE-CHILDREN is true then no child elements will
 be included in the output."
-  (let ((xml-name (scxml-xml-element-name element))
-        (children (and (not exclude-children) (scxml-children element)))
-        (attribute-list (mapcar (lambda (name-value)
-                                  (format "%s=\"%s\"" (car name-value) (cdr name-value)))
-                                (seq-filter 'cdr
-                                        (scxml-xml-attributes element)))))
-    (let ((start-tag (format "<%s" xml-name))
-          (attribute-string (if attribute-list
-                                (format " %s" (mapconcat 'identity attribute-list " "))
-                              ""))
-          (start-tag-ending (if children ">" " />"))
-          (children-xml (mapconcat 'scxml-xml-string children ""))
-          (end-tag (when children (format "</%s>" xml-name))))
-      (mapconcat 'identity
-                 (list start-tag
-                       attribute-string
-                       start-tag-ending
-                       children-xml
-                       end-tag)
-                 ""))))
+  (let ((xml-name (scxml-xml-element-name element)))
+    (if (null xml-name)
+        ""
+      (let ((children (and (not exclude-children) (scxml-children element)))
+            (attribute-list (mapcar (lambda (name-value)
+                                      (format "%s=\"%s\"" (car name-value) (cdr name-value)))
+                                    (seq-filter 'cdr
+                                                (scxml-xml-attributes element)))))
+        (let ((start-tag (format "<%s" xml-name))
+              (attribute-string (if attribute-list
+                                    (format " %s" (mapconcat 'identity attribute-list " "))
+                                  ""))
+              (start-tag-ending (if children ">" " />"))
+              (children-xml (mapconcat 'scxml-xml-string children ""))
+              (end-tag (when children (format "</%s>" xml-name))))
+          (mapconcat 'identity
+                     (list start-tag
+                           attribute-string
+                           start-tag-ending
+                           children-xml
+                           end-tag)
+                     ""))))))
 (cl-defgeneric scxml-children ((element scxml-element))
   "Return the children of ELEMENT.")
 (cl-defmethod scxml-children ((element scxml-element))
@@ -290,7 +290,7 @@ return value is nil."
                            (when (eq looking-upward element)
                              (cl-return-from find-upward t))))
     nil))
-(cl-defgeneric scxml-xml-document-coordinate ((element scxml-element))
+(cl-defgeneric scxml-xml-document-coordinate ((element scxml-element) &optional (relative-to scxml-element))
   "Return the xml document coordinate of ELEMENT.
 
 Xml Document Coordinate is defined as a list of Xml Document
@@ -311,19 +311,28 @@ Given:
 
 the coordinate of element <child-a> would be '(1 0).
 
+When RELATIVE-TO is set the coordinate returned will be the
+coordinate of ELEMENT relative to RELATIVE-TO as opposed to the
+root of the scxml document.
+
 Note: a root element would have a coordinate of nil."
-  (let ((ordinates)
-        (current-element element)
-        (current-parent (scxml-parent element)))
-    (while current-parent
-      (let* ((siblings (scxml-children current-parent))
-             (ordinate (position current-element siblings)))
-        (unless ordinate
-          (error "Invalid element tree"))
-        (push ordinate ordinates)
-        (setq current-element current-parent)
-        (setq current-parent (scxml-parent current-element))))
-    ordinates))
+  (if (eq element relative-to)
+      ;; short-circut: coordinate relative to yourself is nil
+      nil
+    (let ((ordinates)
+          (current-element element)
+          (current-parent (scxml-parent element)))
+      (while current-parent
+        (let* ((siblings (scxml-children current-parent))
+               (ordinate (position current-element siblings)))
+          (unless ordinate
+            (error "Invalid element tree"))
+          (push ordinate ordinates)
+          (if (and relative-to (eq relative-to current-parent))
+              (setq current-parent nil)
+            (setq current-element current-parent)
+            (setq current-parent (scxml-parent current-element)))))
+      ordinates)))
 (defun scxml-xml-document-order-predicate (a b)
   "Return non-nil if A comes before B in document order."
   (let ((a-coordinates (scxml-xml-document-coordinate a))

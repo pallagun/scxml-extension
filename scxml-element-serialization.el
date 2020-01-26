@@ -36,6 +36,7 @@
                 (scxml-add-child element
                                  (scxml--factory child)))
               ;; possibly I can do this without the reverse?
+              ;; TODO - this should probabl be an nreverse at least.
               (reverse (scxml--trim-xml children)))
         element)))
 (defun scxml-read-buffer (&optional buffer-to-read)

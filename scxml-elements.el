@@ -9,15 +9,10 @@
 (require 'scxml-element)
 
 ;; Marker classes - never apply more than one to an object.
-(defclass scxml--core ()
-  ;; TODO - I'm unable to specify the slot here and make it stricter for the child classes.  I think this is a bug in eieio maybe?  It appears CLOS allows this? check on that.
-  ()
-  :abstract t
-  :documentation "Indicates how this object relates to an scxml element.")
 (defun scxml--core-type (anything)
   "Return the scxml core type of ANYTHING."
   (if (object-of-class-p anything 'scxml--core)
-      (oref any -core-type)
+      (oref anything -core-type)        ;this will throw if it's an actual scxml--core
     nil))
 (defclass scxml--core-scxml (scxml--core)
   ((-core-type :initform 'scxml
@@ -78,6 +73,18 @@ element types.  Constructed as an association list per parent
 element type."
   ;; TODO - add counts?  e.g. there can be at most one <initial> as a child of a <state>
   )
+
+(cl-defgeneric scxml-xml-element-name ((element scxml--core))
+  "Return what the xml element name would be for this ELEMENT.")
+(cl-defmethod scxml-xml-element-name ((element scxml--core))
+  "return what the xml element name would be for this ELEMENT.
+
+Doesn't check to ensure the ELEMENT is actually valid for rendering to xml.
+Assumes everyone follows a nice naming scheme."
+  (let ((core-type (scxml--core-type element)))
+    (if core-type
+        (symbol-name core-type)
+      nil)))
 
 (defclass scxml-scxml (scxml--core-scxml scxml-element scxml-element-with-initial)
   ((name :initarg :name
@@ -483,9 +490,6 @@ Does not build recursively."
         (mapc (lambda (cell)
                 (scxml-put-attrib element (car cell) (cdr cell)))
               attribute-params)
-        ;; TODO - THIS PART IS A HACK!
-        (when (object-of-class-p element 'scxml-drawable-element)
-          (scxml--set-hint-from-attrib-list element attrib-alist))
         element))))
 
 (provide 'scxml-elements)

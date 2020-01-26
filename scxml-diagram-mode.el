@@ -973,7 +973,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
     ;; set the initial attribute.
     (setf (scxml-element-initial element) new-initial)
     ;; create a synthetic drawing node for it.
-    (let ((new-transition (scxml-drawable-transition :target new-initial))
+    (let ((new-transition (scxml-drawable-synthetic-transition :target new-initial))
           (new-initial (scxml-drawable-synthetic-initial)))
       (scxml-add-child new-initial new-transition)
       (scxml-add-child element new-initial)
@@ -1027,7 +1027,6 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
     (scxml-diagram-mode--redraw)
     (scxml-diagram-mode--apply-edit element nil)))
 
-
 (defun scxml-diagram-mode--delete-marked ()
   "Delete the marked element, mark the parent."
   (interactive)
@@ -1064,6 +1063,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
 (defun scxml-diagram-mode--apply-edit (element &optional include-children)
   "Check ELEMENT in linked XML buffer and apply changes from the diagram."
   ;; TODO - debounce this, it gets bad when your doing mouse dragging.
+
   (scxml-xml-update-element scxml-draw--diagram element include-children))
 (defun scxml-diagram-mode--sync-linked-xml ()
   "Sync the entire diagram to the xml buffer if it exists."
