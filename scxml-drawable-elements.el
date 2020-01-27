@@ -14,6 +14,7 @@ consumes the entire canvas."
   (scxml-build-drawing-null root canvas))
 (cl-defmethod scxml--serialize-drawing-hint ((element scxml-drawable-scxml))
   "it's initialable, so pack that stuff in."
+  (error "don't call this, get hint with full flag set")
   (let ((initial (find-if 'scxml-drawable-synthetic-initial-p
                           (scxml-children element))))
     (if initial
@@ -30,20 +31,14 @@ consumes the entire canvas."
           (nconc (cl-call-next-method)
                 synth-hint-list))
       (cl-call-next-method))))
-(cl-defmethod scxml--build-synthetic-children ((element scxml-drawable-element) (attrib-alist list))
-  "Build additional synthethc elements if needed from the attrib-alist"
-  nil)
+
 (cl-defmethod scxml--build-synthetic-children ((element scxml-drawable-scxml) (attrib-alist list))
   (let ((initial-attrib-id (scxml-element-initial element)))
     (when initial-attrib-id
       (let ((initial (scxml-drawable-synthetic-initial))
             (transition (scxml-drawable-synthetic-transition :target initial-attrib-id)))
         (scxml-add-child initial transition)
-        (scxml-add-child element initial)
-        ;; if there are drawing hints set, use them.
-        ))))
-
-
+        (scxml-add-child element initial)))))
 
 (require 'scxml-drawing-rect)           ;for state/final
 (require 'scxml-drawing-noshell-rect)   ;for state/final in parallels
@@ -120,7 +115,9 @@ consumes the entire canvas."
   ()
   :documentation "A drawable <initial> element")
 (defclass scxml-drawable-synthetic-initial (scxml-synthetic-drawing scxml-drawable-initial)
-  ()
+  ((_hint-key :allocation :class
+              :type (member synth-initial)
+              :initform synth-initial))
   :documentation "A drawable representation of an element's
   'initial=\"...\"' attribute.")
 (cl-defmethod scxml--set-drawing-invalid ((initial scxml-drawable-initial) is-invalid)
@@ -162,6 +159,25 @@ Note: there should only be one child and it should be a transition."
                                :highlight highlight
                                :edit-idx nil
                                :parent initial))))))
+
+(cl-defmethod scxml--hint ((synth-initial scxml-drawable-synthetic-initial))
+  "Get the hint for this drawable ELEMENT."
+  (let ((hint-key (oref synth-initial _hint-key))
+        (hinted-element (scxml--find-first-non-synthetic-ancestor synth-initial)))
+    (unless hinted-element
+      (error "Unable to find where this hint should be stored"))
+    (let ((all-hints (scxml-get-attrib hinted-element scxml---hint-symbol nil)))
+      (alist-get hint-key all-hints nil))))
+(cl-defmethod scxml--set-hint ((synth-initial scxml-drawable-synthetic-initial) hint)
+  "Set the hint for this drawable ELEMENT as HINT"
+  ;; todo - this shares a lot with the hint getter scxml--hint
+  (let ((hint-key (oref synth-initial _hint-key))
+        (hinted-element (scxml--find-first-non-synthetic-ancestor synth-initial)))
+    (unless hinted-element
+      (error "Unable to find where this hint should be stored"))
+    (let ((all-hints (scxml-get-attrib hinted-element scxml---hint-symbol nil)))
+      (setf (alist-get hint-key all-hints) hint)
+      (scxml-put-attrib hinted-element scxml---hint-symbol all-hints))))
 
 (require 'scxml-drawing-divided-rect)      ;for parallels
 (defclass scxml-drawable-parallel (scxml-parallel scxml-drawable-element)

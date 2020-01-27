@@ -1063,8 +1063,11 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
 (defun scxml-diagram-mode--apply-edit (element &optional include-children)
   "Check ELEMENT in linked XML buffer and apply changes from the diagram."
   ;; TODO - debounce this, it gets bad when your doing mouse dragging.
-  (error "if this element is synthetic, update the first non-synthetic ancestor")
-  (scxml-xml-update-element scxml-draw--diagram element include-children))
+  (scxml-xml-update-element scxml-draw--diagram
+                            (if (object-of-class-p element 'scxml-synthetic-drawing)
+                                (scxml--find-first-non-synthetic-ancestor element)
+                              element)
+                            include-children))
 (defun scxml-diagram-mode--sync-linked-xml ()
   "Sync the entire diagram to the xml buffer if it exists."
   (interactive)

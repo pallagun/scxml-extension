@@ -267,6 +267,16 @@ Visitor should be of the form (lambda (parent-element) ...)."
     (while parent
       (funcall visitor parent)
       (setq parent (scxml-parent parent)))))
+(cl-defgeneric scxml-find-ancestor-if ((element scxml-element) predicate)
+  "Return ELEMENT's first ancestor satisfying PREDICATE.")
+(cl-defmethod scxml-find-ancestor-if ((element scxml-element) predicate)
+  "Return ELEMENT's first ancestor satisfying PREDICATE."
+  (cl-block find-parent-if
+    (scxml-visit-parents element
+                         (lambda (ancestor)
+                           (when (funcall predicate ancestor)
+                             (cl-return-from find-parent-if ancestor))))
+    nil))
 (cl-defgeneric scxml-is-descendant ((element scxml-element) (possible-descendant scxml-element))
   "Return non-nil if POSSIBLE-DESCENDANT is a descendant of ELEMENT.
 

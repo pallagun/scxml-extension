@@ -27,6 +27,11 @@
   :documentation "This class signifies that the object which is
   drawn does not have a 1 to 1 correspondence with an scxml
   element.")
+(cl-defmethod scxml--find-first-non-synthetic-ancestor ((element scxml-synthetic-drawing))
+  "Find first ancestor that is not synthetic."
+  (scxml-find-ancestor-if element
+                          (lambda (e)
+                            (not (object-of-class-p e 'scxml-synthetic-drawing)))))
 
 (cl-defmethod scxml-print ((element scxml-drawable-element))
   "Pretty print ELEMENT for human eyeballs."
@@ -37,41 +42,12 @@
   "Return an xml attribute alist for ELEMENT.
 
 Push in the drawing hint attribute."
-  (let ((hint-string (scxml--serialize-drawing-hint element)))
-    (if hint-string
+  (let ((hint (scxml--hint element t)))
+    (if hint
         (append (list
-                 (cons scxml---hint-symbol hint-string))
+                 (cons scxml---hint-symbol hint))
                 (cl-call-next-method))
       (cl-call-next-method))))
-
-ok, so there should be a new thing.
-Thing 1 - get/set hint
-- this should only change the hint of the actual element.
-- this should only return the hint of the actual element.
-Thing 2 - get/set hint-attribute (maybe a better name?)
-- this should return the entire hint (including synth children) as a string.
-- this should set all elements from the hint (including synth children) from a string.
-
-This should mean that the originial hint scheme can still work without packing everything into an alist.
-The function names are already here for this, just need to get them wired up.
-
-(cl-defmethod scxml--serialize-drawing-hint ((element scxml-drawable-element))
-  "Return an association list describing the drawing hint of ELEMENT.
-
-Convention is that the drawing hint specific to ELEMENT will be
-in the association list with key 'self."
-  (let ((hint (scxml-get-attrib element scxml---hint-symbol nil)))
-    (if hint
-        (list (cons 'self hint))
-      nil)))
-(cl-defmethod scxml--unserialize-drawing-hint ((hint-string string))
-  "Return the drawing hint alist in HINT-STRING.
-
-Convention is that the drawing hint specific to ELEMENT will be
-in the association list with key 'self."
-  (let* ((reader-cons (read-from-string hint-string))
-         (all-hints (car reader-cons)))
-    all-hints))
 
 (cl-defgeneric scxml--drawing-invalid? ((element scxml-drawable-element))
   "Could the drawing for this ELEMENT be invalid? (i.e. needs to be replotted)"
@@ -80,25 +56,40 @@ in the association list with key 'self."
   "Note that the drawing for this ELEMENT might not be valid."
   (scxml-put-attrib element 'scxml---drawing-invalid is-invalid))
 
-(cl-defmethod scxml--hint ((element scxml-drawable-element) &optional include-sythetic-children)
-  "Get the hint for this drawable ELEMENT."
-  (error "write this to handle include synthetic children or not")
-  (scxml-get-attrib element scxml---hint-symbol))
+
+(cl-defmethod scxml--unserialize-drawing-hint (hint-string)
+  "Return the drawing hint alist in HINT-STRING.
+
+Convention is that the drawing hint specific to ELEMENT will be
+in the association list with key 'self."
+  (if hint-string
+      (let* ((reader-cons (read-from-string hint-string))
+             (all-hints (car reader-cons)))
+        all-hints)
+    nil))
+
+(cl-defmethod scxml--hint ((element scxml-drawable-element) &optional full-hint)
+  "Get the hint for this drawable ELEMENT.
+
+When FULL-HINT is true the entire hint will be returned which may
+be an association list containing other drawing information
+pertaining to synthetic children."
+  (let ((all-hints (scxml-get-attrib element scxml---hint-symbol nil)))
+    (if full-hint
+        all-hints
+      (alist-get 'self all-hints nil))))
 (cl-defmethod scxml--set-hint ((element scxml-drawable-element) hint)
   "Set the hint for this drawable ELEMENT as HINT"
-  (scxml-put-attrib element scxml---hint-symbol hint))
+  (let ((all-hints (scxml-get-attrib element scxml---hint-symbol nil)))
+    (setf (alist-get 'self all-hints) hint)
+    (scxml-put-attrib element scxml---hint-symbol all-hints)))
 (cl-defmethod scxml--set-hint-from-attrib-list ((element scxml-drawable-element) (attributes list))
   "Set the hint for ELEMENT if a valid hint is found in ATTRIBUTES.
 
-Will also create child synthetic elements if they exist.
-
 Used for parsing hints out of xml attributes."
-  (let ((hint-string (alist-get scxml---hint-symbol attributes nil)))
-    (when hint-string
-      (let* ((all-hints (scxml--unserialize-drawing-hint hint-string))
-             (drawing-hint (alist-get 'self all-hints nil)))
-        (when drawing-hint
-          (scxml--set-hint element drawing-hint))))))
+  (let* ((hint-string (alist-get scxml---hint-symbol attributes nil))
+         (all-hints (scxml--unserialize-drawing-hint hint-string)))
+    (scxml-put-attrib element scxml---hint-symbol all-hints)))
 
 (cl-defmethod scxml--highlight ((element scxml-drawable-element))
   "Return non-nil if this element should be highlighted."
@@ -193,6 +184,9 @@ but with some checks."
          (parent-drawing (and parent (scxml-element-drawing parent))))
     (and parent-drawing (scxml-get-inner-canvas parent-drawing))))
 
+(cl-defmethod scxml--build-synthetic-children ((element scxml-drawable-element) (attrib-alist list))
+  "Build additional synthethc elements if needed from the attrib-alist"
+  nil)
 
 (provide 'scxml-drawable-element)
 ;;; scxml-drawable-element.el ends here

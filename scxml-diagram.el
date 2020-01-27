@@ -261,43 +261,47 @@ nil."
 
 (cl-defmethod scxml-xml-update-element ((diagram scxml-diagram) (changed-element scxml-element) &optional include-children start-at-point)
   "Update the xml document if it exists"
-  (let ((buffer (scxml-xml-buffer diagram)))
-    (when buffer
-      (with-current-buffer buffer
-        (unless (eq scxml--diagram diagram)
-          (error "It appears the link between diagram and XML is bad"))
-        (let ((xml-tag (scxml---xmltok-find-element changed-element)))
-          (if xml-tag
-              (progn
-                (scxml-update-xml-attributes xml-tag changed-element)
-                ;; have to update the tag as I may have modified it.
-                (setq xml-tag (scxml--refresh xml-tag)))
-            ;; unable to find element, must add it.
-            (let ((parent-range (scxml---xmltok-find-element
-                                 (scxml-parent changed-element))))
-              ;; Insert just this parent tag, I'll recurse to add children.
-              (setq xml-tag
-                    (scxml-insert-new-child parent-range changed-element t))))
+  ;; must have a core type that is non-nil or the element shouldn't make it to the document.
+  (when (scxml--core-type changed-element)
+    (when (eq (scxml--core-type changed-element) 'compound)
+      (error "Currently unable to update xml from compound elements"))
+    (let ((buffer (scxml-xml-buffer diagram)))
+      (when buffer
+        (with-current-buffer buffer
+          (unless (eq scxml--diagram diagram)
+            (error "It appears the link between diagram and XML is bad"))
+          (let ((xml-tag (scxml---xmltok-find-element changed-element)))
+            (if xml-tag
+                (progn
+                  (scxml-update-xml-attributes xml-tag changed-element)
+                  ;; have to update the tag as I may have modified it.
+                  (setq xml-tag (scxml--refresh xml-tag)))
+              ;; unable to find element, must add it.
+              (let ((parent-range (scxml---xmltok-find-element
+                                   (scxml-parent changed-element))))
+                ;; Insert just this parent tag, I'll recurse to add children.
+                (setq xml-tag
+                      (scxml-insert-new-child parent-range changed-element t))))
 
-          ;; xml-tag can now be trusted - handle children
-          (when include-children
-            ;; scan for all child xml-tags and delete any that are missing.
-            (let ((child-tags (scxml-children xml-tag))
-                  (child-elements (scxml-children changed-element))
-                  (tags-to-prune nil))
-              (cl-loop for child in child-tags
-                       for linked-element = (scxml-get-text-prop child)
-                       when (not (memq linked-element child-elements))
-                       do (push child tags-to-prune))
-              (when tags-to-prune
-                (sort tags-to-prune (lambda (a b)
-                                      (> (scxml-start a) (scxml-start b))))
-                (mapc 'scxml---xmltok-prune tags-to-prune))
+            ;; xml-tag can now be trusted - handle children
+            (when include-children
+              ;; scan for all child xml-tags and delete any that are missing.
+              (let ((child-tags (scxml-children xml-tag))
+                    (child-elements (scxml-children changed-element))
+                    (tags-to-prune nil))
+                (cl-loop for child in child-tags
+                         for linked-element = (scxml-get-text-prop child)
+                         when (not (memq linked-element child-elements))
+                         do (push child tags-to-prune))
+                (when tags-to-prune
+                  (sort tags-to-prune (lambda (a b)
+                                        (> (scxml-start a) (scxml-start b))))
+                  (mapc 'scxml---xmltok-prune tags-to-prune))
 
-              ;; update all the children or create them if they're new.
-              (cl-loop for child in child-elements
-                       do (scxml-xml-update-element diagram child t t))))
-          )))))
+                ;; update all the children or create them if they're new.
+                (cl-loop for child in child-elements
+                         do (scxml-xml-update-element diagram child t t))))
+            ))))))
 
 (defun scxml-update-drawing ()
   "Update the diagram from what is in xml."

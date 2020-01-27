@@ -33,11 +33,13 @@
         (children (cddr element)))
       (let ((element (scxml--drawable-element-factory type attributes)))
         (mapc (lambda (child)
+                ;; TODO - this is a lot of appending, possibly there is a better way to do this.
+                ;; the appending is needed because the synthetic children are built by
+                ;; the factory function and are alredy set on the parent.
                 (scxml-add-child element
-                                 (scxml--factory child)))
-              ;; possibly I can do this without the reverse?
-              ;; TODO - this should probabl be an nreverse at least.
-              (reverse (scxml--trim-xml children)))
+                                 (scxml--factory child)
+                                 t))
+              (scxml--trim-xml children))
         element)))
 (defun scxml-read-buffer (&optional buffer-to-read)
   "Return the scxml-element tree of 'current-buffer' or BUFFER-TO-READ."
