@@ -81,7 +81,9 @@ pertaining to synthetic children."
 (cl-defmethod scxml--set-hint ((element scxml-drawable-element) hint)
   "Set the hint for this drawable ELEMENT as HINT"
   (let ((all-hints (scxml-get-attrib element scxml---hint-symbol nil)))
-    (setf (alist-get 'self all-hints) hint)
+    (if hint
+        (setf (alist-get 'self all-hints) hint)
+      (assoc-delete-all 'self all-hints))
     (scxml-put-attrib element scxml---hint-symbol all-hints)))
 (cl-defmethod scxml--set-hint-from-attrib-list ((element scxml-drawable-element) (attributes list))
   "Set the hint for ELEMENT if a valid hint is found in ATTRIBUTES.

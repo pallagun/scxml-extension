@@ -160,8 +160,10 @@ Note: there should only be one child and it should be a transition."
                                :edit-idx nil
                                :parent initial))))))
 
-(cl-defmethod scxml--hint ((synth-initial scxml-drawable-synthetic-initial))
+(cl-defmethod scxml--hint ((synth-initial scxml-drawable-synthetic-initial) &optional full-hint)
   "Get the hint for this drawable ELEMENT."
+  (when full-hint
+    (error "Full hint is not a valid request for a synthetic drawing"))
   (let ((hint-key (oref synth-initial _hint-key))
         (hinted-element (scxml--find-first-non-synthetic-ancestor synth-initial)))
     (unless hinted-element
