@@ -8,14 +8,7 @@
 (require 'eieio)
 (require 'seq)
 (require 'cl-macs)
-
-;; Marker class -
-(defclass scxml--core ()
-  ;; TODO - I'm unable to specify the slot here and make it stricter for the child classes.  I think this is a bug in eieio maybe?  It appears CLOS allows this? check on that.
-  ;; TODO - the rest of these are in scxml-elements.el - maybe break them out into their own file.
-  ()
-  :abstract t
-  :documentation "Indicates how this object relates to an scxml element.")
+(require 'scxml-element-core)
 
 (defclass scxml-element (scxml--core)
   ((_attributes :initarg :attributes
@@ -177,6 +170,8 @@ Return is unspecified."
     (if _attributes
         (gethash key _attributes default)
       default)))
+(cl-defgeneric scxml-root-element ((element scxml-element))
+  "Given any ELEMENT in an scxml-element tree, find the root of the tree.")
 (cl-defmethod scxml-root-element ((element scxml-element))
   "Given any ELEMENT in an scxml-element tree, find the root of the tree."
   (let ((last element)

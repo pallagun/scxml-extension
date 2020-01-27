@@ -33,11 +33,6 @@
   (format "hasDrawing:%s, %s"
           (and (scxml-element-drawing element) t)
           (cl-call-next-method)))
-;; (cl-defmethod scxml-xml-element-name ((element scxml-drawable-element))
-;;   "Return the equivalent non-drawable name."
-;;   (substring
-;;    (symbol-name (eieio-object-class element))
-;;    (length "scxml-drawable-")))
 (cl-defmethod scxml-xml-attributes ((element scxml-drawable-element))
   "Return an xml attribute alist for ELEMENT.
 
@@ -49,56 +44,31 @@ Push in the drawing hint attribute."
                 (cl-call-next-method))
       (cl-call-next-method))))
 
+ok, so there should be a new thing.
+Thing 1 - get/set hint
+- this should only change the hint of the actual element.
+- this should only return the hint of the actual element.
+Thing 2 - get/set hint-attribute (maybe a better name?)
+- this should return the entire hint (including synth children) as a string.
+- this should set all elements from the hint (including synth children) from a string.
+
+This should mean that the originial hint scheme can still work without packing everything into an alist.
+The function names are already here for this, just need to get them wired up.
+
 (cl-defmethod scxml--serialize-drawing-hint ((element scxml-drawable-element))
-  "Turn all ELEMENT hints into an alist of hints by coordinate relative to element prefixed with 'self... probably should redo this."
+  "Return an association list describing the drawing hint of ELEMENT.
+
+Convention is that the drawing hint specific to ELEMENT will be
+in the association list with key 'self."
   (let ((hint (scxml-get-attrib element scxml---hint-symbol nil)))
     (if hint
         (list (cons 'self hint))
       nil)))
-;; (cl-defmethod scxml--serialize-drawing-hint ((element scxml-drawable-element))
-;;   "turn all ELEMENT hints into an alist of hints by coordinate relative to element prefixed with 'self... probably should redo this."
-;;   (cl-labels ((relative-coordinate
-;;                (elt)
-;;                (cons 'self (scxml-xml-document-coordinate elt element)))
-;;               (coordinate-and-hint
-;;                (elt)
-;;                (let ((hint (scxml-get-attrib elt scxml---hint-symbol nil)))
-;;                  (if hint
-;;                      (cons (relative-coordinate elt) hint)
-;;                    nil)))
-;;               (descend-collect
-;;                (elt)
-;;                (descend-collect-any elt nil))
-;;               (descend-collect-start
-;;                (elt)
-;;                (descend-collect-any elt t))
-;;               (descend-collect-any
-;;                (elt force-include)
-;;                (if (or force-include (object-of-class-p elt 'scxml-synthetic-drawing))
-;;                    (let ((hint (coordinate-and-hint elt))
-;;                          (child-hint-list))
-;;                      (dolist (child (scxml-children elt))
-;;                        (let ((child-hint (descend-collect child)))
-;;                          (when child-hint
-;;                            (setq child-hint-list
-;;                                  (nconc child-hint child-hint-list)))))
-;;                      (if hint
-;;                          (cons hint child-hint-list)
-;;                        child-hint-list))
-;;                  nil)))
-
-;;     (let ((hints))
-;;       ;; starting with element, descend downwards to children.  If the
-;;       ;; child is a synthetic-drawing then collect that child's hint as
-;;       ;; well and continue to it's children.  When the child (or the
-;;       ;; child of a child, etc.) is a non-synthetic drawing stop and
-;;       ;; exclude that child.  Collect all synthetic drawings for which
-;;       ;; ELEMENT is the first non-synthetic ancestor.
-;;       (let ((hint (descend-collect-start element)))
-;;         (if hint
-;;             (prin1-to-string hint)
-;;           nil)))))
 (cl-defmethod scxml--unserialize-drawing-hint ((hint-string string))
+  "Return the drawing hint alist in HINT-STRING.
+
+Convention is that the drawing hint specific to ELEMENT will be
+in the association list with key 'self."
   (let* ((reader-cons (read-from-string hint-string))
          (all-hints (car reader-cons)))
     all-hints))
@@ -110,8 +80,9 @@ Push in the drawing hint attribute."
   "Note that the drawing for this ELEMENT might not be valid."
   (scxml-put-attrib element 'scxml---drawing-invalid is-invalid))
 
-(cl-defmethod scxml--hint ((element scxml-drawable-element))
-  "Get the hint for this drawable ELEMENT"
+(cl-defmethod scxml--hint ((element scxml-drawable-element) &optional include-sythetic-children)
+  "Get the hint for this drawable ELEMENT."
+  (error "write this to handle include synthetic children or not")
   (scxml-get-attrib element scxml---hint-symbol))
 (cl-defmethod scxml--set-hint ((element scxml-drawable-element) hint)
   "Set the hint for this drawable ELEMENT as HINT"
