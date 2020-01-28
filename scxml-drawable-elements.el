@@ -113,12 +113,6 @@ consumes the entire canvas."
 (defclass scxml-drawable-initial (scxml-initial scxml-drawable-element)
   ()
   :documentation "A drawable <initial> element")
-(defclass scxml-drawable-synthetic-initial (scxml-synthetic-drawing scxml-drawable-initial)
-  ((_hint-key :allocation :class
-              ;; TODO- this should have a type to restrict it to being specifically 'synth-initial
-              :initform synth-initial))
-  :documentation "A drawable representation of an element's
-  'initial=\"...\"' attribute.")
 (cl-defmethod scxml--set-drawing-invalid ((initial scxml-drawable-initial) is-invalid)
   "Mark INITIAL's drawing as invalid as well as all children.
 
@@ -158,6 +152,18 @@ Note: there should only be one child and it should be a transition."
                                :highlight highlight
                                :edit-idx nil
                                :parent initial))))))
+(defclass scxml-drawable-synthetic-initial (scxml-synthetic-drawing scxml-drawable-initial)
+  ((_hint-key :allocation :class
+              ;; TODO- this should have a type to restrict it to being specifically 'synth-initial
+              :initform synth-initial))
+  :documentation "A drawable representation of an element's
+  'initial=\"...\"' attribute.")
+(cl-defmethod scxml-make-orphan ((synth-initial scxml-drawable-synthetic-initial))
+  "Remove the synthetic initial attribute drawings from the parent state/scxml."
+  (let ((parent (scxml-parent synth-initial)))
+    (when parent
+      (setf (scxml-element-initial parent) nil))
+    (cl-call-next-method)))
 
 (defclass scxml-drawable-parallel (scxml-parallel scxml-drawable-element)
   ())
@@ -226,13 +232,6 @@ Note: there should only be one child and it should be a transition."
   :documentation "Note there is no scxml-build-drawing function
   for a transition as they are all build as a collection, not
   individually.")
-(defclass scxml-drawable-synthetic-transition (scxml-synthetic-drawing scxml-transition)
-  ((_hint-key :allocation :class
-              ;; TODO- this sholud have a type ot restrict it to being specificiall 'synth-transition.
-              :initform synth-transition))
-  :documentation "Note there is no scxml-build-drawing function
-  for a transition as they are all build as a collection, not
-  individually.")
 (cl-defmethod scxml--set-drawing-invalid ((transition scxml-drawable-transition) is-invalid)
   "Note that when a transition goes from hinted to unhinted it cause other transitions to become Invalid.
 
@@ -259,6 +258,21 @@ transition to shuffle connector points."
 (cl-defmethod scxml-build-drawing ((transition scxml-drawable-transition) (canvas scxml-canvas))
   "Warning method: transitions/arrows are not build individually, they're built as a group."
   (error "Invalid operation for an scxml-transition type element"))
+(defclass scxml-drawable-synthetic-transition (scxml-synthetic-drawing scxml-transition)
+  ((_hint-key :allocation :class
+              ;; TODO- this sholud have a type ot restrict it to being specificiall 'synth-transition.
+              :initform synth-transition))
+  :documentation "Note there is no scxml-build-drawing function
+  for a transition as they are all build as a collection, not
+  individually.")
+(cl-defmethod scxml-make-orphan ((synth-transition scxml-drawable-synthetic-transition))
+  "Remove the synthetic initial attribute drawings from the grand parent state/scxml."
+  (let ((parent (scxml-parent synth-transition)))
+    (when parent
+      (scxml-make-orphan parent))
+    (cl-call-next-method)))
+
+
 
 (defun scxml--drawable-element-factory (type attrib-alist)
   "Build a drawable element of TYPE and having ATTRIB-ALIST properties."

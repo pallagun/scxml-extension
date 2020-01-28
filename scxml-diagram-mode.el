@@ -1031,16 +1031,17 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
   "Delete the marked element, mark the parent."
   (interactive)
   (scxml-record 'scxml-diagram-mode--delete-marked)
-  (let ((parent (scxml-parent scxml-diagram-mode--marked-element)))
+  (let* ((element scxml-diagram-mode--marked-element)
+         (parent (scxml--find-first-non-synthetic-ancestor element)))
     (scxml-diagram-mode--delete scxml-diagram-mode--marked-element)
     (when parent
       (scxml-diagram-mode--mark-element parent))))
 (defun scxml-diagram-mode--delete (element)
   "Delete ELEMENT from the document."
   ;; TODO - should this be a cl-defmethod?
-  (let ((parent (scxml-parent element)))
+  (let ((parent (scxml--find-first-non-synthetic-ancestor element)))
     (when (null parent)
-      (error "Unable to find parent of %s" (scxml-print element)))
+      (error "Unable to find non-synthetic parent of %s" (scxml-print element)))
     ;; This is a hack to handle invalidation.
     (mapc (lambda (sibling)
             (scxml--set-drawing-invalid sibling 't))

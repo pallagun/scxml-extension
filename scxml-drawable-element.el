@@ -34,6 +34,10 @@
   drawn does not have a 1 to 1 correspondence with an scxml
   element.")
 
+(cl-defmethod scxml--find-first-non-synthetic-ancestor ((element scxml-element))
+  "Find first ancestor that is not synthetic."
+  (scxml-parent element))
+
 (cl-defmethod scxml--find-first-non-synthetic-ancestor ((element scxml-synthetic-drawing))
   "Find first ancestor that is not synthetic."
   (scxml-find-ancestor-if element

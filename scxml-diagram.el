@@ -171,7 +171,10 @@ nil."
                                         (lambda (a b) ;this seems risky
                                           (equal (symbol-name a)
                                                  b)))
-             do (if proper-keyval
+             for proper-val = (if proper-keyval
+                                  (cdr proper-keyval)
+                                nil)
+             do (if (and proper-keyval proper-val)
                     ;; this marker matches up to a proper attribute
                     ;; TODO: for now assume the attribute is wrong and clobber it
                     ;; in the future, do a real check.
