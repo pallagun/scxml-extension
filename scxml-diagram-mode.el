@@ -409,9 +409,10 @@ Currently only able to zoom out when in viewport mode."
                                  (scxml-diagram-mode--pan (* -1 (scxml-x delta))
                                                           (* -1 (scxml-y delta))))
                                 ((eq event-type 'down-mouse-3)
-                                 (scxml-diagram-mode--zoom (if (> (scxml-y delta) 0)
-                                                               0.95
-                                                             1.05)))
+                                 (when (>= (abs (scxml-y delta)) (abs (scxml-x delta)))
+                                   (scxml-diagram-mode--zoom (if (> (scxml-y delta) 0)
+                                                                 0.95
+                                                               1.05))))
                                 (t
                                  (error "Unknown mouse event type: %s" event-type)))
                         ;; default mouse mode can only modify.
@@ -994,7 +995,9 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
                    (list (read-string "Events: " (mapconcat #'identity events " "))))))
   (scxml-record 'scxml-diagram-mode--edit-events new-events)
   (let ((element scxml-diagram-mode--marked-element)
-        (events-list (split-string new-events nil t nil)))
+        (events-list (if (seq-empty-p new-events)
+                         nil
+                       (split-string new-events nil t nil))))
 
     ;; Might not have been called interactively, validate again.
     ;; TODO - is there a better way to do this?

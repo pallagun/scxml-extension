@@ -103,7 +103,7 @@ pertaining to synthetic children."
   (let ((all-hints (scxml-get-attrib element scxml---hint-symbol nil)))
     (if hint
         (setf (alist-get 'self all-hints) hint)
-      (assoc-delete-all 'self all-hints))
+      (setf all-hints (assq-delete-all 'self all-hints)))
     (scxml-put-attrib element scxml---hint-symbol all-hints)))
 (cl-defmethod scxml--set-hint ((synth scxml-synthetic-drawing) hint)
   "Set the hint for this drawable ELEMENT as HINT"
@@ -115,7 +115,7 @@ pertaining to synthetic children."
     (let ((all-hints (scxml-get-attrib hinted-element scxml---hint-symbol nil)))
       (if hint
           (setf (alist-get hint-key all-hints) hint)
-        (assoc-delete-all hint-key all-hints))
+        (setf all-hints (assq-delete-all hint-key all-hints)))
       (scxml-put-attrib hinted-element scxml---hint-symbol all-hints))))
 
 (cl-defmethod scxml--set-hint-from-attrib-list ((element scxml-drawable-element) (attributes list))

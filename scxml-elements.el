@@ -155,11 +155,16 @@ Children must be executable content.")
             (cl-call-next-method))))
 (cl-defmethod scxml-xml-attributes ((element scxml-transition))
   "attributes: target"
-  (append (seq-filter (lambda (key-value) (cdr key-value))
-                      (list (cons 'target (scxml-target-id element))
-                            (cons 'event (mapconcat #'identity (scxml-events element) " "))
-                            (cons 'cond-expr (scxml-cond-expr element))))
-          (cl-call-next-method)))
+  (with-slots (target events cond-expr type) element
+    (let ((stringified-events (if events
+                                  (mapconcat #'identity events " ")
+                                nil)))
+    (append (seq-filter #'cdr
+                        `((target . ,target)
+                          (event . ,stringified-events)
+                          (cond . ,cond-expr)
+                          (type . ,type)))
+          (cl-call-next-method)))))
 (cl-defmethod scxml-get-all-transitions-to ((element scxml-element-with-id))
   "Collect all transition elements which target STATE"
   (let ((target-id (scxml-element-id element)))

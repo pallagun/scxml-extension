@@ -3,3 +3,6 @@
 ** get arrow disconntion/reconnection working
 * link
 ** update drawing from xml
+* general
+** DONE make the 'event' in a transition go away when there are no events, not be event=""
+** TODO make sure the scxml---* attributes are always last in the element's attributes
