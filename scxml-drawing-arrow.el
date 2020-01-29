@@ -68,11 +68,11 @@
   (scxml-drawing-connector-dangling :point (scxml-connector-hint-point hint)))
 (cl-defmethod scxml-build-connector-hint ((connector scxml-drawing-connector-rect))
   "Build a connector hint for this connector"
-  (scxml-arrow-connector-rect-hint :edge (scxml-node-edge connector)
+  (scxml-arrow-connector-rect-hint :edge (scxml-from-node-direction connector)
                                    :parametric (scxml-edge-parametric connector)))
 (cl-defmethod scxml-build-connector-hint ((connector scxml-drawing-connector-point))
   "Build a connector hint for this connector"
-  (scxml-arrow-connector-point-hint :exit-direction (scxml-exit-direction connector)))
+  (scxml-arrow-connector-point-hint :exit-direction (scxml-from-node-direction connector)))
 (cl-defmethod scxml-build-connector-hint ((connector scxml-drawing-connector-dangling))
   (scxml-arrow-connector-dangling-hint :point (scxml-connection-point connector)))
 
@@ -217,13 +217,13 @@ path (target-point))."))
 
       (cond ((and is-endpoint-move any-end-point-moved)
              ;; this is an end point move and one of the end points has moved.
-             (when (not (eq (scxml-node-edge current-source)
-                            (scxml-node-edge new-source)))
+             (when (not (eq (scxml-from-node-direction current-source)
+                            (scxml-from-node-direction new-source)))
                ;; this is an end poind move and the source jumped edges.
                ;; Source connect has jumped edges, ensure there is a perpendicular start.
                (let ((first-segment (scxml-segment :start (first new-pts)
                                                    :end (second new-pts)))
-                     (required-vector (scxml-vector-from-direction (scxml-node-edge new-source))))
+                     (required-vector (scxml-vector-from-direction (scxml-from-node-direction new-source))))
                  (when (or (scxml-almost-zero (scxml-length first-segment))
                            (<= (scxml-dot-prod
                                 (scxml-characteristic-vector first-segment)
@@ -233,14 +233,14 @@ path (target-point))."))
                                          (scxml-scaled required-vector
                                                        connector-offset))
                          new-pts))))
-             (when (not (eq (scxml-node-edge current-target)
-                            (scxml-node-edge new-target)))
+             (when (not (eq (scxml-from-node-direction current-target)
+                            (scxml-from-node-direction new-target)))
                ;; this is an end point move and the target jumped edges
                ;; target connect has jumped edges, ensure there is a perpendicular end.
                (let ((last-segment (scxml-segment :start (car last-path-links)
                                                   :end last-path-point))
                      (required-vector (scxml-vector-from-direction
-                                       (scxml-node-edge new-target))))
+                                       (scxml-from-node-direction new-target))))
                  (when (or (scxml-almost-zero (scxml-length last-segment))
                            (<=  (scxml-dot-prod
                                  (scxml-characteristic-vector last-segment)
@@ -264,10 +264,10 @@ path (target-point))."))
              ;; this is specifically and end point move but neither end point moved.
              nil)
             ;; at this point there are no specific end point moves made.
-            ((not (and (eq (scxml-node-edge current-source)
-                           (scxml-node-edge new-source))
-                       (eq (scxml-node-edge current-target)
-                           (scxml-node-edge new-target))))
+            ((not (and (eq (scxml-from-node-direction current-source)
+                           (scxml-from-node-direction new-source))
+                       (eq (scxml-from-node-direction current-target)
+                           (scxml-from-node-direction new-target))))
              ;; this is not an end point move, but an end point edge changed, invalid.
              nil)
             ((and source-point-match target-point-match)
@@ -446,8 +446,8 @@ points."
            (target (scxml-arrow-target arrow))
            (full-path (scxml-build-path-cardinal (scxml-connection-point source)
                                                  (scxml-connection-point target)
-                                                 (scxml-vector-from-direction (scxml-exit-direction source))
-                                                 (scxml-vector-from-direction (scxml-reverse (scxml-exit-direction target)))
+                                                 (scxml-vector-from-direction (scxml-from-node-direction source))
+                                                 (scxml-vector-from-direction (scxml-reverse (scxml-from-node-direction target)))
                                                  ;; TODO: this shouldn't be 1.0 - it should be a defconst
                                                  (or offset scxml-arrow-connector-offset)))
            (middle-path (if (> (scxml-num-points full-path) 2)
@@ -536,7 +536,7 @@ been correctly set."
                     (if correct-target-connector
                         ;; you can make the connector handle this change.
                         (with-slots (edge parametric) correct-target-connector
-                          (setf (scxml-node-edge target-connector) edge
+                          (setf (scxml-from-node-direction target-connector) edge
                                 (scxml-edge-parametric target-connector) parametric))
                       ;; you _can't_ make the connector handle this change
                       ;; you must insert a jog.
@@ -553,7 +553,7 @@ been correctly set."
                   (if correct-source-connector
                       ;; you can make the connector handle thisp change.
                       (with-slots (edge parametric) correct-source-connector
-                        (setf (scxml-node-edge source-connector) edge
+                        (setf (scxml-from-node-direction source-connector) edge
                               (scxml-edge-parametric source-connector) parametric))
                     ;; you _can't_ make the connector handle this change
                     ;; you must insert a jog.
@@ -582,7 +582,7 @@ been correctly set."
         (idx-pt neighbor-connector move-vec)
         (let ((should-move (scxml-dot-prod
                             move-vec
-                            (scxml-cardinal-exit-vector (scxml-node-edge neighbor-connector)))))
+                            (scxml-cardinal-exit-vector (scxml-from-node-direction neighbor-connector)))))
           (if (not should-move)
               neighbor-connector        ; no movement desired
             ;; must move, but _can_ you move on this edge?
@@ -606,9 +606,9 @@ been correctly set."
 (cl-defmethod scxml--generate-hint-less-old ((arrow scxml-arrow) (parent-canvas scxml-inner-canvas))
   ;; TODO - is this still used?
   (with-slots (source target path) arrow
-    (scxml-arrow-hint :source-edge (scxml-node-edge source)
+    (scxml-arrow-hint :source-edge (scxml-from-node-direction source)
                       :source-parametric (scxml-edge-parametric source)
-                      :target-edge (scxml-node-edge target)
+                      :target-edge (scxml-from-node-direction target)
                       :target-parametric (scxml-edge-parametric target)
                       :relative-points (scxml--full-path arrow))))
 (cl-defmethod scxml--generate-hint-old ((arrow scxml-arrow) (parent-canvas scxml-inner-canvas))
@@ -617,9 +617,9 @@ been correctly set."
   (with-slots (source target path) arrow
     (let* ((relative-rect (scxml--generate-hint-rect (scxml-node source)
                                                      (scxml-node target))))
-      (scxml-arrow-hint :source-edge (scxml-node-edge source)
+      (scxml-arrow-hint :source-edge (scxml-from-node-direction source)
                         :source-parametric (scxml-edge-parametric source)
-                        :target-edge (scxml-node-edge target)
+                        :target-edge (scxml-from-node-direction target)
                         :target-parametric (scxml-edge-parametric target)
                         :relative-points
                         (mapcar (lambda (pt)

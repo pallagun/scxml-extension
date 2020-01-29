@@ -10,7 +10,7 @@
 
 (defclass scxml-drawing-connector-point (scxml-drawing-connector-connected)
   ((exit-direction :initarg :exit-direction
-                   :accessor scxml-exit-direction
+                   :accessor scxml-exit-direction ;TODO - this shouldn't have an accessor.
                    :type symbol
                    :documentation "May be one of the normal direction integers for up, down, left or right"))
    :documentation "Where something (arrow? \"vertex\"?) connects to a point drawing")
@@ -21,9 +21,12 @@
             exit-direction
             (scxml-print (scxml-connection-point connector)))))
 
-(cl-defgeneric scxml-terminal-direction ((connector scxml-drawing-connector-point))
+(cl-defgeneric scxml-to-node-direction ((connector scxml-drawing-connector-point))
   "Terminal-direction as a symbol"
   (scxml-reverse (scxml-exit-direction connector)))
+(cl-defgeneric scxml-from-node-direction ((connector scxml-drawing-connector-point))
+  (scxml-exit-direction connector))
+
 
 (cl-defmethod scxml-build-connector ((connector scxml-drawing-connector-point) (target-point scxml-point))
   "Build a brand new connector based off nudging CONNECTOR over to TARGET-POINT.

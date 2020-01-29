@@ -26,17 +26,15 @@
 ;; Methods that are valid for any connector.
 (cl-defgeneric scxml-connection-point ((connector scxml-drawing-connector) &optional offset)
   "Get the point of this CONNECTOR.  Optionally offset by OFFSET to render for human eyes.")
-;; TODO - need to rename 'terminal-direction' and 'exit-direction' functions.
-;; they mean completely different things but they have synonymous names.
-(cl-defgeneric scxml-terminal-direction ((connector scxml-drawing-connector))
-  "Get the terminal direction of this connector as a symbol.
+(cl-defgeneric scxml-to-node-direction ((connector scxml-drawing-connector))
+  "Get the direction from the CONNECTOR to the connected drawing.
 
 If it's a source connector it'll be the opposite direction of the arrow.
 If it's a target connector it'll be the direction of the ending arrowhead.")
-(cl-defgeneric scxml-exit-direction ((connector scxml-drawing-connector))
+(cl-defgeneric scxml-from-node-direction ((connector scxml-drawing-connector))
   "Get the direction this connector exits the drawing as a symbol.
 
-This should be the exact opposite of scxml-terminal-direction.")
+This should be the exact opposite of scxml-to-node-direction.")
 ;; TODO - there should be a generic for the drawing that the connector connects to.
 
 ;; TODO - break out the dangling connector to a separate file.
@@ -45,7 +43,7 @@ This should be the exact opposite of scxml-terminal-direction.")
                    :accessor scxml-dangling-point
                    :type (or null scxml-point))
    (terminal-direction :initarg :terminal-direction
-                       :accessor scxml-terminal-direction
+                       :accessor scxml-to-node-direction
                        :initform 'up
                        :type symbol))
   :documentation "Describes a floating end point for an arrow")
@@ -55,13 +53,13 @@ This should be the exact opposite of scxml-terminal-direction.")
           (and (slot-boundp connector 'dangling-point)
                (scxml-print (scxml-dangling-point connector)))
           (and (slot-boundp connector 'terminal-direction)
-               (scxml-terminal-direction connector))))
+               (scxml-to-node-direction connector))))
 (cl-defmethod scxml-connection-point ((connector scxml-drawing-connector-dangling) &optional offset)
   (scxml-dangling-point connector))
-(cl-defmethod scxml-terminal-direction ((connector scxml-drawing-connector-unconnected))
+(cl-defmethod scxml-to-node-direction ((connector scxml-drawing-connector-unconnected))
   "Returns a symbol"
   'up)
-(cl-defmethod scxml-exit-direction ((connector scxml-drawing-connector-unconnected))
+(cl-defmethod scxml-from-node-direction ((connector scxml-drawing-connector-unconnected))
   "Return an int :(, but is otherwise opposite of terminal-direction."
   'down)
 (cl-defmethod scxml-set-point ((connector scxml-drawing-connector-dangling) (point scxml-point))
@@ -77,7 +75,7 @@ This should be the exact opposite of scxml-terminal-direction.")
 
 Will return 'nil if the connector can't be built."
     (scxml-drawing-connector-dangling :point target-point
-                                      :terminal-direction (scxml-terminal-direction connector)))
+                                      :terminal-direction (scxml-to-node-direction connector)))
 
 
 (provide 'scxml-drawing-connector)

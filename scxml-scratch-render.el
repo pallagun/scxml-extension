@@ -298,7 +298,7 @@ Right now this only properly works with single character labels."
                       (setf last-pt-x pt-x
                             last-pt-y pt-y)))
         ;; now do the arrow.
-        (let ((terminal-direction (scxml-terminal-direction
+        (let ((terminal-direction (scxml-to-node-direction
                                    (scxml-arrow-target arrow))))
           (when (scxml---scratch-coord-valid-p scratch last-pt-x last-pt-y)
             (scxml---scratch-set scratch

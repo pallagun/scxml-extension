@@ -261,7 +261,7 @@ Will throw if it can't move it. will not render!!"
              (let ((target-connector (scxml-arrow-target arrow-drawing)))
                (when (object-of-class-p target-connector 'scxml-drawing-connector-unconnected)
                  (let* ((source-connector (scxml-arrow-source arrow-drawing))
-                        (exit-direction (scxml-exit-direction source-connector)))
+                        (exit-direction (scxml-from-node-direction source-connector)))
                    ;; always set the direction.
                    (scxml-set-terminal-direction target-connector exit-direction)
                    (when (null (scxml-dangling-point target-connector))
@@ -315,7 +315,7 @@ Will throw if it can't move it. will not render!!"
                          ;; for later assignment.  I'm collecting them by state(element)
                          ;; and edge
                          (when (scxml-drawing-connector-rect-p connector)
-                           (let* ((edge (scxml-node-edge connector))
+                           (let* ((edge (scxml-from-node-direction connector))
                                   (key (cons element edge))
                                   (cell (assoc key by-state-and-edge)))
                              (if cell

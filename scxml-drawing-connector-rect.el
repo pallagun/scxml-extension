@@ -10,7 +10,7 @@
 
 (defclass scxml-drawing-connector-rect (scxml-drawing-connector-connected)
   ((edge :initarg :edge
-         :accessor scxml-node-edge
+         :accessor scxml-node-edge      ;TODO - remove this accessor
          :type symbol
          :documentation "TODO : bad name, rename this accessor")
    (parametric :initarg :parametric
@@ -21,10 +21,12 @@
   (with-slots (edge parametric) connector
     (format "ConR(%s@%f/%s)" edge parametric (scxml-print (scxml-connection-point connector)))))
 
-(cl-defgeneric scxml-terminal-direction ((connector scxml-drawing-connector-rect))
+(cl-defgeneric scxml-to-node-direction ((connector scxml-drawing-connector-rect))
   "terminal-direction"
   (scxml-reverse (scxml-node-edge connector)))
-(cl-defmethod scxml-exit-direction ((connector scxml-drawing-connector-rect))
+
+(cl-defmethod scxml-from-node-direction ((connector scxml-drawing-connector-rect))
+  "Formerly 'scxml-node-edge'"
   (scxml-node-edge connector))
 
 (cl-defmethod scxml-connection-point ((connector scxml-drawing-connector-rect) &optional offset)
