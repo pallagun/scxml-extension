@@ -10,9 +10,7 @@
 
 (defclass scxml-drawing-connector-rect (scxml-drawing-connector-connected)
   ((edge :initarg :edge
-         :accessor scxml-node-edge      ;TODO - remove this accessor
-         :type symbol
-         :documentation "TODO : bad name, rename this accessor")
+         :type symbol)                  ;todo - validation here sould be chaneg to (member up down left right)
    (parametric :initarg :parametric
                :accessor scxml-edge-parametric)))
 
@@ -23,11 +21,11 @@
 
 (cl-defgeneric scxml-to-node-direction ((connector scxml-drawing-connector-rect))
   "terminal-direction"
-  (scxml-reverse (scxml-node-edge connector)))
+  (scxml-reverse (oref connector edge)))
 
 (cl-defmethod scxml-from-node-direction ((connector scxml-drawing-connector-rect))
   "Formerly 'scxml-node-edge'"
-  (scxml-node-edge connector))
+  (oref connector edge))
 
 (cl-defmethod scxml-connection-point ((connector scxml-drawing-connector-rect) &optional offset)
   "Get the point of this connector."
@@ -51,11 +49,11 @@ Might return the connector right back to you if alreay snapped."
       (progn
         (let ((parametric (scxml---connector-parametric connector
                                                         snapped-point
-                                                        (scxml-node-edge connector)
+                                                        (oref connector edge)
                                                         (when allow-partial-snap 1.01))))
           (if parametric
               (scxml-drawing-connector-rect :node (scxml-node connector)
-                               :edge (scxml-node-edge connector)
+                               :edge (oref connector edge)
                                :parametric parametric)
             (error "Unable to snap connector - is this something that can be ignored? probably not")))))))
 
