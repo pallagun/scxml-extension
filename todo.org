@@ -6,3 +6,5 @@
 * general
 ** DONE make the 'event' in a transition go away when there are no events, not be event=""
 ** TODO make sure the scxml---* attributes are always last in the element's attributes
+** TODO unable to move transitions around when they're synthetic?
+** TODO setting a transition back to auto when hinted won't update the xml when linking?
