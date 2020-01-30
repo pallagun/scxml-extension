@@ -423,8 +423,8 @@ Currently only able to zoom out when in viewport mode."
                 ;; drag-mouse-1 is complete which means you must have let go of the
                 ;; mouse button.
                 (unwind-protect
-                    (funcall scxml-diagram-mode--up-mouse-1-catch last-pixel)
-                  (setq scxml-diagram-mode--up-mouse-1-catch last-pixel)))
+                    (funcall #'scxml-diagram-mode--up-mouse-1-catch last-pixel)
+                  (setq scxml-diagram-mode--up-mouse-1-catch nil)))
 
               ;; (message "Exit mouse event: %s" event)
               )

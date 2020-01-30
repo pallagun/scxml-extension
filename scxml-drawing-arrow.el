@@ -204,96 +204,100 @@ path (target-point))."))
            (last-path-links (last new-pts 2))
            (last-path-point (cadr last-path-links))
            (new-source (scxml-build-connector current-source first-path-point))
-           (new-target (scxml-build-connector current-target last-path-point))
-           ;; TODO - note that the 2.0 below here is a 'looks-nice-fudge-factor'
-           (connector-offset (scxml-scaled connector-offset 2.0))
-           (new-source-point (scxml-connection-point new-source))
-           (new-target-point (scxml-connection-point new-target))
-           (source-point-moved (not (scxml-almost-equal current-source-point new-source-point)))
-           (target-point-moved (not (scxml-almost-equal current-target-point new-target-point)))
-           (any-end-point-moved (or source-point-moved target-point-moved))
-           (source-point-match (scxml-almost-equal new-source-point first-path-point))
-           (target-point-match (scxml-almost-equal new-target-point last-path-point)))
+           (new-target (scxml-build-connector current-target last-path-point)))
+      ;; Both the source and target connectors must exist or this is not possible.
+      (if (and new-source new-target)
+          (let* (;; TODO - note that the 2.0 below here is a 'looks-nice-fudge-factor'
+                 (connector-offset (scxml-scaled connector-offset 2.0))
+                 (new-source-point (scxml-connection-point new-source))
+                 (new-target-point (scxml-connection-point new-target))
+                 (source-point-moved (not (scxml-almost-equal current-source-point new-source-point)))
+                 (target-point-moved (not (scxml-almost-equal current-target-point new-target-point)))
+                 (any-end-point-moved (or source-point-moved target-point-moved))
+                 (source-point-match (scxml-almost-equal new-source-point first-path-point))
+                 (target-point-match (scxml-almost-equal new-target-point last-path-point)))
 
-      (cond ((and is-endpoint-move any-end-point-moved)
-             ;; this is an end point move and one of the end points has moved.
-             (when (not (eq (scxml-from-node-direction current-source)
-                            (scxml-from-node-direction new-source)))
-               ;; this is an end poind move and the source jumped edges.
-               ;; Source connect has jumped edges, ensure there is a perpendicular start.
-               (let ((first-segment (scxml-segment :start (first new-pts)
-                                                   :end (second new-pts)))
-                     (required-vector (scxml-vector-from-direction (scxml-from-node-direction new-source))))
-                 (when (or (scxml-almost-zero (scxml-length first-segment))
-                           (<= (scxml-dot-prod
-                                (scxml-characteristic-vector first-segment)
-                                required-vector)
-                               scxml--almost-zero))
-                   (push (scxml-subtract first-path-point
-                                         (scxml-scaled required-vector
-                                                       connector-offset))
-                         new-pts))))
-             (when (not (eq (scxml-from-node-direction current-target)
-                            (scxml-from-node-direction new-target)))
-               ;; this is an end point move and the target jumped edges
-               ;; target connect has jumped edges, ensure there is a perpendicular end.
-               (let ((last-segment (scxml-segment :start (car last-path-links)
-                                                  :end last-path-point))
-                     (required-vector (scxml-vector-from-direction
-                                       (scxml-from-node-direction new-target))))
-                 (when (or (scxml-almost-zero (scxml-length last-segment))
-                           (<=  (scxml-dot-prod
-                                 (scxml-characteristic-vector last-segment)
-                                 required-vector)
-                                scxml--almost-zero))
-                   (setq new-pts (append
-                                  new-pts
-                                  (list (scxml-subtract last-path-point
-                                                   (scxml-scaled required-vector
-                                                                 connector-offset))))))))
-             ;; Build the path by stretching.
-             (let* ((full-path (scxml---path-stretch new-pts
-                                                     new-source-point
-                                                     new-target-point)))
-               (scxml-arrow :source new-source
-                            :target new-target
+            (cond ((and is-endpoint-move any-end-point-moved)
+                   ;; this is an end point move and one of the end points has moved.
+                   (when (not (eq (scxml-from-node-direction current-source)
+                                  (scxml-from-node-direction new-source)))
+                     ;; this is an end poind move and the source jumped edges.
+                     ;; Source connect has jumped edges, ensure there is a perpendicular start.
+                     (let ((first-segment (scxml-segment :start (first new-pts)
+                                                         :end (second new-pts)))
+                           (required-vector (scxml-vector-from-direction (scxml-from-node-direction new-source))))
+                       (when (or (scxml-almost-zero (scxml-length first-segment))
+                                 (<= (scxml-dot-prod
+                                      (scxml-characteristic-vector first-segment)
+                                      required-vector)
+                                     scxml--almost-zero))
+                         (push (scxml-subtract first-path-point
+                                               (scxml-scaled required-vector
+                                                             connector-offset))
+                               new-pts))))
+                   (when (not (eq (scxml-from-node-direction current-target)
+                                  (scxml-from-node-direction new-target)))
+                     ;; this is an end point move and the target jumped edges
+                     ;; target connect has jumped edges, ensure there is a perpendicular end.
+                     (let ((last-segment (scxml-segment :start (car last-path-links)
+                                                        :end last-path-point))
+                           (required-vector (scxml-vector-from-direction
+                                             (scxml-from-node-direction new-target))))
+                       (when (or (scxml-almost-zero (scxml-length last-segment))
+                                 (<=  (scxml-dot-prod
+                                       (scxml-characteristic-vector last-segment)
+                                       required-vector)
+                                      scxml--almost-zero))
+                         (setq new-pts (append
+                                        new-pts
+                                        (list (scxml-subtract last-path-point
+                                                              (scxml-scaled required-vector
+                                                                            connector-offset))))))))
+                   ;; Build the path by stretching.
+                   (let* ((full-path (scxml---path-stretch new-pts
+                                                           new-source-point
+                                                           new-target-point)))
+                     (scxml-arrow :source new-source
+                                  :target new-target
+                                  :parent (scxml-parent arrow)
+                                  :path (scxml-cardinal-path :points
+                                                             (nbutlast (cdr full-path))))))
+                  ((and is-endpoint-move (not any-end-point-moved))
+                   ;; this is specifically and end point move but neither end point moved.
+                   nil)
+                  ;; at this point there are no specific end point moves made.
+                  ((not (and (eq (scxml-from-node-direction current-source)
+                                 (scxml-from-node-direction new-source))
+                             (eq (scxml-from-node-direction current-target)
+                                 (scxml-from-node-direction new-target))))
+                   ;; this is not an end point move, but an end point edge changed, invalid.
+                   nil)
+                  ((and source-point-match target-point-match)
+                   ;; Whatever happened the source and target connectors were able to comply
+                   ;; so this path is entirely valid.
+                   (scxml-arrow :source new-source
+                                :target new-target
+                                :parent (scxml-parent arrow)
+                                :path (scxml-cardinal-path :points
+                                                           (nbutlast (cdr new-pts)))))
+                  ((or (and (not source-point-moved) (not source-point-match))
+                       (and (not target-point-moved) (not target-point-match)))
+                   ;; at least one of the end point connectors was supposed to move
+                   ;; but did not move at all, this is invalid.
+                   nil)
+                  (t
+                   ;; At least one of your end points moved, but not enough.  neither
+                   ;; end point changed edges.
+                   (let* ((full-path (scxml---path-stretch new-pts
+                                                           new-source-point
+                                                           new-target-point)))
+                     (scxml-arrow :source new-source
+                                  :target new-target
                             :parent (scxml-parent arrow)
                             :path (scxml-cardinal-path :points
-                                                       (nbutlast (cdr full-path))))))
-            ((and is-endpoint-move (not any-end-point-moved))
-             ;; this is specifically and end point move but neither end point moved.
-             nil)
-            ;; at this point there are no specific end point moves made.
-            ((not (and (eq (scxml-from-node-direction current-source)
-                           (scxml-from-node-direction new-source))
-                       (eq (scxml-from-node-direction current-target)
-                           (scxml-from-node-direction new-target))))
-             ;; this is not an end point move, but an end point edge changed, invalid.
-             nil)
-            ((and source-point-match target-point-match)
-             ;; Whatever happened the source and target connectors were able to comply
-             ;; so this path is entirely valid.
-             (scxml-arrow :source new-source
-                          :target new-target
-                          :parent (scxml-parent arrow)
-                          :path (scxml-cardinal-path :points
-                                                     (nbutlast (cdr new-pts)))))
-            ((or (and (not source-point-moved) (not source-point-match))
-                 (and (not target-point-moved) (not target-point-match)))
-             ;; at least one of the end point connectors was supposed to move
-             ;; but did not move at all, this is invalid.
-             nil)
-            (t
-             ;; At least one of your end points moved, but not enough.  neither
-             ;; end point changed edges.
-             (let* ((full-path (scxml---path-stretch new-pts
-                                                     new-source-point
-                                                     new-target-point)))
-               (scxml-arrow :source new-source
-                            :target new-target
-                            :parent (scxml-parent arrow)
-                            :path (scxml-cardinal-path :points
-                                                       (nbutlast (cdr full-path))))))))))
+                                                       (nbutlast (cdr full-path))))))))
+        ;; Unable to get new-source or new-target, fail.
+        nil))))
 ;; (defun scxml---build-path-if-valid (arrow new-pts &optional iterations)
 ;;   "If ARROW is valid to represend by new-pts, return a new scxml-arrow with those points"
 ;;   ;; TODO - rename this 'build-arrow-if-valid', it's making an arrow, not a path.
@@ -351,16 +355,21 @@ cases this function may return nil."
 This may not be possible due to constraint violation and in those
 cases this function may return nil."
   (let* ((full-pts (scxml--full-path arrow))
+         ;; Sometimes the source connector is locked entirely.  In those
+         ;; cases the edit idx 0 is locked so the drawing layer considers
+         ;; edit idx "0" to be what is normally edit idx 1.
+         ;; ... this does not seem like a great way to handle that but...
+         (unbiased-edit-idx (+ (if (scxml--arrow-source-locked arrow) 1 0)
+                                       edit-idx))
          (new-pts (scxml-nudge-path full-pts
-                                    (+ (if (scxml--arrow-source-locked arrow) 1 0)
-                                       edit-idx)
+                                    unbiased-edit-idx
                                     move-vector)))
     ;; (scxml---build-path-if-valid arrow new-pts)
     (scxml--build-closest-path arrow
                                new-pts
                                (scxml-get-point-scaling viewport)
-                               (or (eq edit-idx 0) (eq edit-idx (1- (length full-pts)))))
-    ))
+                               (or (eq unbiased-edit-idx 0)
+                                   (eq unbiased-edit-idx (1- (length full-pts)))))))
 
 (cl-defmethod scxml-has-intersection ((rect scxml-rect) (arrow scxml-arrow) &optional evaluation-mode)
   "Return non-nil if RECT intersect with ARROW's path at any point."
