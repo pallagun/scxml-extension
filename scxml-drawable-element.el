@@ -22,7 +22,7 @@
   :documentation "This is an element that can be drawn and which
   has a 1 to 1 relationship with an element in a valid scxml
   document.")
-(defclass scxml-synthetic-drawing (scxml--core-nil scxml-drawable-element)
+(defclass scxml-synthetic-drawing (scxml--core-nil)
   ((_hint-key :allocation :class
               :documentation "Drawing hints for synthetic
               drawings are stored on the first non-synthetic
