@@ -711,7 +711,9 @@ The arrow factory when building from a hint is smart enough to sort it all out."
             (cl-loop for reverse-path on compacted-pts
                      for start-pt = (first reverse-path)
                      for end-pt = (second reverse-path)
-                     when (and end-pt)
+                     ;; if you got to the end point and you're still trying
+                     ;; to correct things then this algorithm failed.
+                     unless (and end-pt)
                      do (progn (setq failure t)
                                (cl-return))
                      for segment-char-vec = (scxml-subtract end-pt start-pt)
@@ -724,9 +726,9 @@ The arrow factory when building from a hint is smart enough to sort it all out."
                      ;; in the required direction.
                      do (unless (scxml-almost-zero (scxml-dot-prod required-unit-vec segment-unit-vec))
                           (cl-return)))
-            (if failure
-                full-path-pts
-              (nreverse compacted-pts)))
+            (scxml-simplified (if failure
+                                full-path-pts
+                              (nreverse compacted-pts))))
         ;; Only 2 points or less in the path. do not attepmt correction
         ;; just give up
         full-path-pts))))
