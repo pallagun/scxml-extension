@@ -20,5 +20,10 @@
    (scxml---resolve-recording "0003-building-two-states-with-initial-attribs")
    t))
 
+(ert-deftest scxml-replay-0004-editing-synthetic-drawings ()
+  (scxml-replay-test
+   (scxml---resolve-recording "0004-editing-synthetic-drawings")
+   t))
+
 
 (provide 'scxml-run-test-recordings)
