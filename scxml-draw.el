@@ -58,7 +58,8 @@ drawing will be moved/displaced.
 
 Will throw if it can't move it."
   (unless (scxml---is-renderable-as-node element)
-    (error "Scxml--modify-drawing-hint not tested for this type yet, only state+parallel+final"))
+    (error "Scxml--modify-drawing-hint not tested for this type(%s) yet, only state+parallel+final"
+           (eieio-object-class-name element)))
   (let ((rect (scxml-element-drawing element)))
     (when (not (scxml-drawing-noshell-rect-p rect)) ;noshell rects are hintless, they strictly obey their parent.
       (let* ((edit-idx (scxml--edit-idx element))
