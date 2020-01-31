@@ -145,6 +145,10 @@ No attributes are required.
 Recognized attributes: event, cond, target, type
   (note: one of 'event', 'cond' or 'target' must be present)
 Children must be executable content.")
+(defun scxml-transition-class-p (any)
+  "Equivalent of (object-of-class-p ANY-OBJECT 'scxml-transition)"
+  ;; todo - make this a defsubst
+  (object-of-class-p any 'scxml-transition))
 (cl-defmethod scxml-print ((transition scxml-transition))
   "Spit out a string representing ELEMENT for human eyeballs"
   (with-slots (target events cond-expr) transition

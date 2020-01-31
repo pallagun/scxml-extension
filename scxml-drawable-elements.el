@@ -238,27 +238,38 @@ Note: there should only be one child and it should be a transition."
 If there are two transitions touching a single state and one of
 them goes from automatic to hinted, it could cause the other
 transition to shuffle connector points."
-  ;; TODO - this needs to invalidate properly.  It'll have to invalidate all transitions
-  ;; which touch any states which are touched by any transitions which touch any states
-  ;; which .... possibly all transitions?
+
+  ;; This doesn't quite work perfectly.  It's invalidating based on
+  ;; the edge that the arrow is leaving.  But when going to auto
+  ;; drawing mode the arrow could go from one edge to another.
+  ;; Really, I want to invalidate both of those edges.  Or one of
+  ;; them?  This is a bit strange.  Possibly automatic routing mode is
+  ;; asking for trouble in this case
+
+  ;; TODO - this currently doesn't take into account the edges.  I had
+  ;; to take that out as it's possible for a transition to not yet
+  ;; have a drawing.  In that case you can't even tell what edge is
+  ;; going to be involved.
+
   (cl-call-next-method transition is-invalid)
-  (when (and is-invalid)
-    (let ((touched-states (list (scxml-source transition)
-                                (scxml-target transition))))
-      ;; (scxml-visit-all transition
-      ;;                  (lambda (other-transition)
-      ;;                    (scxml--set-drawing-invalid other-transition t))
-      ;;                  (lambda (element)
-      ;;                    (and (object-of-class-p element 'scxml-transition)
-      ;;                         (or (member (scxml-source element)
-      ;;                                     touched-states)
-      ;;                             (member (scxml-target element)
-      ;;                                     touched-states)))))
-      )))
+  (cl-flet ((build-node-list
+             (transition)
+             (let ((source-node (scxml-source transition))
+                   (target-node (scxml-target transition)))
+               (list source-node target-node))))
+    (when (and is-invalid)
+      (let ((node-edges (build-node-list transition)))
+        (scxml-visit-all transition
+                         (lambda (other-transition)
+                           (when (intersection node-edges
+                                               (build-node-list other-transition)
+                                               :test 'equal)
+                             (scxml--set-drawing-invalid-raw other-transition t)))
+                         #'scxml-transition-class-p)))))
 (cl-defmethod scxml-build-drawing ((transition scxml-drawable-transition) (canvas scxml-canvas))
   "Warning method: transitions/arrows are not build individually, they're built as a group."
   (error "Invalid operation for an scxml-transition type element"))
-(defclass scxml-drawable-synthetic-transition (scxml-synthetic-drawing scxml-transition)
+(defclass scxml-drawable-synthetic-transition (scxml-synthetic-drawing scxml-drawable-transition)
   ((_hint-key :allocation :class
               ;; TODO- this sholud have a type ot restrict it to being specificiall 'synth-transition.
               :initform synth-transition))

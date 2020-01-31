@@ -65,6 +65,11 @@ Push in the drawing hint attribute."
   (scxml-get-attrib element 'scxml---drawing-invalid 't))
 (cl-defgeneric scxml--set-drawing-invalid ((element scxml-drawable-element) is-invalid)
   "Note that the drawing for this ELEMENT might not be valid."
+  (scxml--set-drawing-invalid-raw element is-invalid))
+(defsubst scxml--set-drawing-invalid-raw (element is-invalid)
+  "Modify ELEMENT (as a scxml-drawable-element) to have drawing valid flag IS-VALID.
+
+This is the base method with no additional functionality."
   (scxml-put-attrib element 'scxml---drawing-invalid is-invalid))
 
 (cl-defmethod scxml--unserialize-drawing-hint (hint-string)

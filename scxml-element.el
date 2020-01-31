@@ -359,6 +359,7 @@ Note: a root element would have a coordinate of nil."
   :abstract t
   :documentation "Apply to an scxml element if it has an 'id'
   attribute that's significant.")
+;; TODO: rename to class-p
 (defun scxml-element-with-id-classp (any-object)
   "Equivalent of (object-of-class-p ANY-OBJECT 'scxml-element-with-id)"
   (object-of-class-p any-object 'scxml-element-with-id))
@@ -400,6 +401,7 @@ below SEARCH-ROOT")
   :abstract t
   :documentation "Apply to an scxml element if it has an
   'initial' attribute that's significant.")
+;; TODO: rename to class-p
 (defun scxml-element-with-initial-classp (any-object)
   "Equivalent of (object-of-class-p ANY-OBJECT 'scxml-element-with-initial)"
   (object-of-class-p any-object 'scxml-element-with-initial))

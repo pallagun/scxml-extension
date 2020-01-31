@@ -15,5 +15,10 @@
    (scxml---resolve-recording "0002-zooming-and-panning.scxml-recording")
    t))
 
+(ert-deftest scxml-replay-0003-building-two-states-with-initial-attribs ()
+  (scxml-replay-test
+   (scxml---resolve-recording "0003-building-two-states-with-initial-attribs")
+   t))
+
 
 (provide 'scxml-run-test-recordings)

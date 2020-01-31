@@ -1,3 +1,5 @@
+;;; -*- mode: lisp; lexical-binding: t; -*-
+
 (require 'cl-lib)
 
 ;; runwith
