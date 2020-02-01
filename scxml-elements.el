@@ -134,8 +134,8 @@ Children:
               :documentation "Attribute: \"cond\". Condition for the transition which must evaluate to a boolean.")
    (type :initarg :type
          :accessor scxml-type
-         :initform 'external
-         :type symbol
+         :initform "external"
+         :type (or null string)
          :documentation "Attribute: \"type\".  Transition type to determine if the parent state is exited when transitioning to a child state.  Must be one of 'external or 'internal"
          ;; todo - setf for this slot to protect against incorrect value.
          ))

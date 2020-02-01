@@ -8,7 +8,8 @@
 ** TODO make sure the scxml---* attributes are always last in the element's attributes
 ** DONE unable to move transitions around when they're synthetic?
 ** DONE setting any drawing back to auto when hinted won't update the xml when linking?
-** TODO Unable to build a drawing from an <scxml> document if it's got 'type="external"' in a transition attribute?
-** You should be able to pull a transition off of the state it's hooked to.
+** DONE Unable to build a drawing from an <scxml> document if it's got 'type="external"' in a transition attribute?
 * questions
 ** TODO how do you 'downcast' an object and tell it to invoke generic functions based off that casting?
+* too much work to do now
+** You should be able to pull a transition off of the state it's hooked to.
