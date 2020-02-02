@@ -459,7 +459,7 @@ Currently only able to zoom out when in viewport mode."
            (command (car selection))
            (argument (cdr selection)))
       (cond ((eq command 'new)
-             (scxml-diagram-mode--begin-add-child-box-element-with-mouse argument))
+             (scxml-diagram-mode--begin-add-child-element-with-mouse argument))
             (t
              ;; handle no selection?
              nil)))))
@@ -847,12 +847,13 @@ the user is attempting to mark an edit idx."
         ;; enable the next catch.
         (setq scxml-diagram-mode--up-mouse-1-catch
               (lambda (pixel) (scxml-diagram-mode--disable-edit-mode)))))))
-(defun scxml-diagram-mode--begin-add-child-box-element-with-mouse (box-constructor)
+(defun scxml-diagram-mode--begin-add-child-element-with-mouse (constructor-fn)
   "Begin box-add-and-resize work"
   (interactive)
+  ;; if constructor-fn is for an initial attribute/element route that properly.
   (setq scxml-diagram-mode--down-mouse-1-catch
         (lambda (pixel)
-          (scxml-diagram-mode--add-child-box-and-begin-resize pixel box-constructor))))
+          (scxml-diagram-mode--add-child-box-and-begin-resize pixel constructor-fn))))
 
 (defun scxml-diagram-mode--add-child-element (parent child &optional prepend-child)
   "Add the child to parent and update the diagram.
