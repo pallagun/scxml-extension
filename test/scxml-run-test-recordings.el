@@ -30,5 +30,10 @@
    (scxml---resolve-recording "0005-parallel-add-children-simple")
    t))
 
+(ert-deftest scxml-replay-0006-add-initial-to-hinted-state ()
+  (scxml-replay-test
+   (scxml---resolve-recording "0006-add-initial-to-hinted-state")
+   t))
+
 
 (provide 'scxml-run-test-recordings)

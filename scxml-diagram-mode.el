@@ -863,7 +863,7 @@ This will also invalidate any drawing hints for siblings."
                  (scxml--set-hint child nil)
                  (scxml--set-drawing-invalid child 't))
                (lambda (child)
-                 (and (object-of-class-p child 'scxml-drawable-element)
+                 (and (scxml-drawable-element-class-p child)
                       (not (eq child parent)))))
   (scxml-add-child parent child (not prepend-child))
   (scxml-diagram-mode--apply-edit parent t)
@@ -928,8 +928,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
     (scxml-visit parent
                  (lambda (child)
                    (scxml--set-drawing-invalid child 't))
-                 (lambda (child)
-                   (object-of-class-p child 'scxml-drawable-element)))
+                 scxml-drawable-element-class-p)
     (scxml-diagram-mode--redraw)
     (scxml-diagram-mode--apply-edit parent t)))
 

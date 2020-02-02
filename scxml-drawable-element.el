@@ -22,6 +22,9 @@
   :documentation "This is an element that can be drawn and which
   has a 1 to 1 relationship with an element in a valid scxml
   document.")
+(defun scxml-drawable-element-class-p (any)
+  "Equivalent of (object-of-class-p ANY 'scxml-drawable-element)."
+  (object-of-class-p any 'scxml-drawable-element))
 (defclass scxml-synthetic-drawing (scxml--core-nil)
   ((_hint-key :allocation :class
               :documentation "Drawing hints for synthetic
