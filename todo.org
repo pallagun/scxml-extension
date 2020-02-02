@@ -12,7 +12,8 @@
 ** TODO click-drag creation for any box (state, parallel, final)
 ** TODO get rid of the constant sized portions of boxes, move labels above/below.
 * bugs
-** can't make a child state in a parallel??
+** DONE can't make a child state in a parallel??
+** DONE adding an Initial element with the I key will put the initial drawing inside a relocated drawing.
 * questions
 ** TODO how do you 'downcast' an object and tell it to invoke generic functions based off that casting?
 * too much work to do now

@@ -854,7 +854,7 @@ the user is attempting to mark an edit idx."
         (lambda (pixel)
           (scxml-diagram-mode--add-child-box-and-begin-resize pixel box-constructor))))
 
-(defun scxml-diagram-mode--add-child-element (parent child)
+(defun scxml-diagram-mode--add-child-element (parent child &optional prepend-child)
   "Add the child to parent and update the diagram.
 
 This will also invalidate any drawing hints for siblings."
@@ -865,7 +865,7 @@ This will also invalidate any drawing hints for siblings."
                (lambda (child)
                  (and (object-of-class-p child 'scxml-drawable-element)
                       (not (eq child parent)))))
-  (scxml-add-child parent child t)
+  (scxml-add-child parent child (not prepend-child))
   (scxml-diagram-mode--apply-edit parent t)
   (scxml-diagram-mode--redraw))
 (defun scxml-diagram-mode--add-child-state (id)
@@ -904,14 +904,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
          (new-transition (scxml-drawable-transition :target (scxml-element-id target)))
          (new-initial (scxml-drawable-initial)))
     (scxml-add-child new-initial new-transition)
-    (scxml-add-child parent new-initial)
-    (scxml-visit parent
-                 (lambda (child)
-                   (scxml--set-drawing-invalid child 't))
-                 (lambda (child)
-                   (object-of-class-p child 'scxml-drawable-element)))
-    (scxml-diagram-mode--redraw)
-    (scxml-diagram-mode--apply-edit parent t)))
+    (scxml-diagram-mode--add-child-element parent new-initial t)))
 (defun scxml-diagram-mode--add-child-transition ()
   "Begin a <transition> adding mouse saga where the transition parent is the currently marked element."
   (interactive)
