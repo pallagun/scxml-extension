@@ -177,7 +177,9 @@ for all the children.
 When APPEND is non-nil NEW-CHILD will become the last child.
 When APPEND is nil NEW-CHILD will become the first child."
   (cl-call-next-method)
-  ;; (scxml--set-hint child nil)
+  (when-let ((hint (scxml--hint parent)))
+    ;; invalidate only the inner division portions of the hint.
+    (setf (scxml-stripe-invalid hint) t))
   (scxml--set-drawing-invalid parent 't))
 
 (cl-defmethod scxml-build-drawing ((parallel scxml-drawable-parallel) (canvas scxml-canvas))
@@ -218,6 +220,8 @@ When APPEND is nil NEW-CHILD will become the first child."
           (let ((absolute-rect (scxml-absolute-coordinates parent-drawing-canvas
                                                            (scxml-relative-rect hint)))
                 (guide-stripe (scxml-stripe hint)))
+            (when (scxml-stripe-invalid hint)
+              (scxml--set-layout guide-stripe num-rows num-columns))
             (with-slots (x-min x-max y-min y-max) absolute-rect
               (scxml---set-dividers
                (scxml-drawing-nest-rect :x-min x-min

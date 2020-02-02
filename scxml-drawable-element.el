@@ -82,6 +82,12 @@ in the association list with key 'self."
         all-hints)
     nil))
 
+(cl-defgeneric scxml--hint ((element scxml-drawable-element) &optional full-hint)
+  "Get the hint for this drawable ELEMENT.
+
+When FULL-HINT is true the entire hint will be returned which may
+be an association list containing other drawing information
+pertaining to synthetic children.")
 (cl-defmethod scxml--hint ((element scxml-drawable-element) &optional full-hint)
   "Get the hint for this drawable ELEMENT.
 

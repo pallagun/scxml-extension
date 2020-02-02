@@ -250,6 +250,10 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
   ((relative-rect :initarg :relative-rect
                   :accessor scxml-relative-rect
                   :type scxml-rect)
+   (stripe-invalid :accessor scxml-stripe-invalid
+                   :type (member t nil)
+                   :initarg nil
+                   :documentation "It's possible for only the stripe to be invalid (e.g. a child was added or removed.")
    (stripe :initarg :stripe
            :accessor scxml-stripe
            :type scxml---nest-stripe)))
