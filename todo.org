@@ -3,12 +3,16 @@
 ** TODO get arrow disconntion/reconnection working
 * link
 ** TODO update drawing from xml
-* general
+* features
 ** DONE make the 'event' in a transition go away when there are no events, not be event=""
 ** TODO make sure the scxml---* attributes are always last in the element's attributes
 ** DONE unable to move transitions around when they're synthetic?
 ** DONE setting any drawing back to auto when hinted won't update the xml when linking?
 ** DONE Unable to build a drawing from an <scxml> document if it's got 'type="external"' in a transition attribute?
+** TODO click-drag creation for any box (state, parallel, final)
+** TODO get rid of the constant sized portions of boxes, move labels above/below.
+* bugs
+** can't make a child state in a parallel??
 * questions
 ** TODO how do you 'downcast' an object and tell it to invoke generic functions based off that casting?
 * too much work to do now

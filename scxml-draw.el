@@ -198,6 +198,7 @@ Will throw if it can't move it. will not render!!"
                          4.0)))
 (cl-defmethod scxml---get-canvas-divisions ((rectangle scxml-drawing-divided-rect) (num-child-nodes integer))
   ;; TODO - this should be moved out into the drawing file.
+
   (mapcar (lambda (division)
             (let ((sub-rect (cdr division)))
               (with-slots (x-min x-max y-min y-max) sub-rect
@@ -223,6 +224,8 @@ Will throw if it can't move it. will not render!!"
     (when child-nodes
       (let ((divided-canvases (scxml---get-canvas-divisions node
                                                             (length child-nodes))))
+        (unless divided-canvases
+          (error "why is this null????"))
         ;; (cond ((scxml-parallel-p element)
         ;;        (error "Error????"))
         ;;       ('t                         ; scxml-state and scxml-scxml
@@ -423,7 +426,7 @@ Will throw if it can't move it. will not render!!"
                                                  (when e (scxml-print e))
                                                  (when drawing (scxml-print drawing)))
                          (progn
-                           (when (object-of-class-p drawing 'scxml-drawing-divided-rect)
+                           (when (scxml-drawing-divided-rect-class-p drawing);; (object-of-class-p drawing 'scxml-drawing-divided-rect)
                              (scxml--scratch-dividers scratch
                                                       viewport
                                                       (scxml-dividers drawing)))

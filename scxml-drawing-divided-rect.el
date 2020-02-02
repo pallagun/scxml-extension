@@ -18,6 +18,9 @@
              :documentation "A list of all dividers in this rect as scxml-segments.  This is really only used for rendering."))
   :abstract 't
   :documentation "Represents a rectangle which can be drawn with divisions")
+(defun scxml-drawing-divided-rect-class-p (any)
+  "Equivalent of (object-of-class-p ANY 'scxml-drawing-divided-rect)."
+  (object-of-class-p any 'scxml-drawing-divided-rect))
 (cl-defmethod scxml-get-inner-canvas ((rect scxml-drawing-divided-rect))
   "Given a rectangle, pull an inner canvas"
   (with-slots (x-min y-min x-max y-max) rect
@@ -105,6 +108,8 @@
   "Get out all the divisons in a list of (coordinate . rect) entries."
   (cl-loop for cell in (scxml-cells stripe)
            while cell
+           do (when (eq cell nil)
+                (error "Someone made a bad cell"))
            with sub-divisions = 'nil
            with cell-idx = 0
            for sub-rect = (scxml---get-sub-rect stripe (list cell-idx) rect)
@@ -184,10 +189,14 @@ The coordinate returned is for the cell right before the division."
            do (push 'undivided cells)
            finally return cells))
 (defun scxml---stripe-build (num-cells &optional axis)
+  (unless (and (integerp num-cells) (> num-cells 0))
+    (error "Unable to build a stripe with 0 cells"))
   (scxml---nest-stripe :axis (or axis 'scxml--horizontal)
                        :cells (scxml---stripe-build-cells num-cells)
                        :divisions (scxml---stripe-build-division-offsets num-cells)))
 (defun scxml---stripe-initialize (container num-cells &optional axis)
+  (unless (and (integerp num-cells) (> num-cells 0))
+    (error "Unable to build a stripe with 0 cells"))
   (oset container axis (or axis 'scxml--horizontal))
   (oset container cells (scxml---stripe-build-cells num-cells))
   (oset container divisions (scxml---stripe-build-division-offsets num-cells))
@@ -244,6 +253,11 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
    (stripe :initarg :stripe
            :accessor scxml-stripe
            :type scxml---nest-stripe)))
+
+(cl-defmethod scxml--build-empty-nest-rect-hint ((relative-rect scxml-rect))
+  "Build an empty parallel hint from only a rectangle."
+  (scxml---drawing-nest-rect-hint :relative-rect relative-rect
+                                  :stripe (scxml---stripe-build 1)))
 
 (cl-defmethod scxml-get-divisions ((divided-rect scxml-drawing-nest-rect))
   (scxml---get-divisions divided-rect (scxml-get-inner-canvas divided-rect)))

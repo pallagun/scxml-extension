@@ -423,7 +423,7 @@ Currently only able to zoom out when in viewport mode."
                 ;; drag-mouse-1 is complete which means you must have let go of the
                 ;; mouse button.
                 (unwind-protect
-                    (funcall #'scxml-diagram-mode--up-mouse-1-catch last-pixel)
+                    (funcall scxml-diagram-mode--up-mouse-1-catch last-pixel)
                   (setq scxml-diagram-mode--up-mouse-1-catch nil)))
 
               ;; (message "Exit mouse event: %s" event)
@@ -446,7 +446,23 @@ Currently only able to zoom out when in viewport mode."
              ((eq event-type 'double-mouse-1)
               (scxml-record 'goto-char (point))
               (scxml-record 'scxml-diagram-mode--mark-at-point t)
-              (scxml-diagram-mode--mark-at-point t)))))))))
+              (scxml-diagram-mode--mark-at-point t))
+             ((eq event-type 'mouse-3)
+              (scxml-diagram-mode--show-mouse-menu)))))))))
+(defun scxml-diagram-mode--show-mouse-menu ()
+  "Show a menu at mouse location dependent on what is under the pointer."
+  (let ((add-box-menu '(""
+                        ("New State" . (new . scxml-drawable-state))
+                        ("New Parallel" . (new . scxml-drawable-parallel))
+                        ("New Final" . (new . scxml-drawable-final)))))
+    (let* ((selection (x-popup-menu t (list "" add-box-menu)))
+           (command (car selection))
+           (argument (cdr selection)))
+      (cond ((eq command 'new)
+             (scxml-diagram-mode--begin-add-child-box-element-with-mouse argument))
+            (t
+             ;; handle no selection?
+             nil)))))
 (defun scxml-diagram-mode--toggle-mouse-mode ()
   (interactive)
   (scxml-record 'scxml-diagram-mode--toggle-mouse-mode)
@@ -793,7 +809,7 @@ the user is attempting to mark an edit idx."
    (scxml--increment-edit-idx scxml-diagram-mode--marked-element increment)
    (scxml-diagram-mode--redraw)))
 
-(defun scxml-diagram-mode--add-box-and-begin-resize (pixel)
+(defun scxml-diagram-mode--add-child-box-and-begin-resize (pixel box-constructor)
   "add a state at point and jump to edit-idx mode"
   ;; resolve wherever point is.
   ;; add a child state to it @ that point with size zero.
@@ -814,11 +830,14 @@ the user is attempting to mark an edit idx."
       ;; to be very smart resolving of collisions.
       ;; e.g. it would be possible to start a drawing rect in an inner canvas
       ;;      and that inner-canvas in entirely consumed by children.
-      (unless (scxml-contains valid-area drawing-coord)
 
+
+      (unless (scxml-contains valid-area drawing-coord)
         (error "Must select a pixel entirely inside a valid inner canvas"))
+
+
       ;; check valid area.
-      (let ((new-element (scxml-drawable-state)))
+      (let ((new-element (funcall box-constructor)))
         (scxml--set-hint new-element (scxml-build-hint drawing-coord valid-area))
         (scxml-add-child parent-element new-element)
         (scxml--set-drawing-invalid new-element t)
@@ -828,18 +847,17 @@ the user is attempting to mark an edit idx."
         ;; enable the next catch.
         (setq scxml-diagram-mode--up-mouse-1-catch
               (lambda (pixel) (scxml-diagram-mode--disable-edit-mode)))))))
-(defun scxml-diagram-mode--test-add-box ()
+(defun scxml-diagram-mode--begin-add-child-box-element-with-mouse (box-constructor)
   "Begin box-add-and-resize work"
   (interactive)
-  (scxml-record 'scxml-diagram-mode--test-add-box)
   (setq scxml-diagram-mode--down-mouse-1-catch
-        'scxml-diagram-mode--add-box-and-begin-resize))
+        (lambda (pixel)
+          (scxml-diagram-mode--add-child-box-and-begin-resize pixel box-constructor))))
 
 (defun scxml-diagram-mode--add-child-element (parent child)
   "Add the child to parent and update the diagram.
 
 This will also invalidate any drawing hints for siblings."
-  (scxml-add-child parent child t)
   (scxml-visit parent
                (lambda (child)
                  (scxml--set-hint child nil)
@@ -847,6 +865,7 @@ This will also invalidate any drawing hints for siblings."
                (lambda (child)
                  (and (object-of-class-p child 'scxml-drawable-element)
                       (not (eq child parent)))))
+  (scxml-add-child parent child t)
   (scxml-diagram-mode--apply-edit parent t)
   (scxml-diagram-mode--redraw))
 (defun scxml-diagram-mode--add-child-state (id)
@@ -904,8 +923,10 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
   "Add transition from currently marked element to TARGET.
 
 If you're a human you probably want to call the interactive scxml-diagram-mode--add-child-transition."
-  (when (not (object-of-class-p target 'scxml-element))
+  (unless (object-of-class-p target 'scxml-element-with-id)
     (error "Invalid target for transition."))
+  (when (seq-empty-p (scxml-element-id target))
+    (error "Transition targets must have a valid id"))
   (let ((parent scxml-diagram-mode--marked-element))
     ;; TODO - this seems unsafe, validate that the target can be the
     ;; the target of a transition

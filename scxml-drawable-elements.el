@@ -167,6 +167,19 @@ Note: there should only be one child and it should be a transition."
 
 (defclass scxml-drawable-parallel (scxml-parallel scxml-drawable-element)
   ())
+(cl-defmethod scxml-add-child ((parent scxml-drawable-parallel) (new-child scxml-element) &optional append)
+  "Modify PARENT adding NEW-CHILD as a child returning PARENT.
+
+In the case of a parallel PARENT element, the parent's drawing
+must be invalidated to ensure it replots with enough containers
+for all the children.
+
+When APPEND is non-nil NEW-CHILD will become the last child.
+When APPEND is nil NEW-CHILD will become the first child."
+  (cl-call-next-method)
+  ;; (scxml--set-hint child nil)
+  (scxml--set-drawing-invalid parent 't))
+
 (cl-defmethod scxml-build-drawing ((parallel scxml-drawable-parallel) (canvas scxml-canvas))
   "Build drawing helper"
   ;; TODO - this needs clean up.
@@ -180,7 +193,7 @@ Note: there should only be one child and it should be a transition."
         (edit-idx (scxml--edit-idx parallel)))
     (let* ((num-children (length (scxml-children parallel)))
            (num-rows (max 1 (floor (sqrt num-children))))
-           (num-columns (ceiling (/ num-children num-rows))))
+           (num-columns (max 1 (ceiling (/ num-children num-rows)))))
       (if (null hint)
           ;; Generate the drawing (not based on a hint)
           (scxml---set-dividers
@@ -195,7 +208,10 @@ Note: there should only be one child and it should be a transition."
                                      :parent parallel)
             num-rows
             num-columns))
-
+        ;; If the hint is just a simple rectangle hint, fine.  Upcast it.
+        (when (and (not (scxml---drawing-nest-rect-hint-p hint))
+                   (object-of-class-p hint 'scxml-rect))
+          (setq hint (scxml--build-empty-nest-rect-hint hint)))
         (let ((parent-drawing-canvas (scxml-get-parent-drawing-inner-canvas parallel)))
           (unless parent-drawing-canvas
             (error "Unable to build drawing without an already drawn parent."))
