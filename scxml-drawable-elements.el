@@ -4,6 +4,8 @@
 ;; Drawable versions of what can be found in scxml-elements.el
 
 ;;; Code:
+(eval-when-compile (require 'subr-x))
+
 (require 'scxml-drawable-element)
 
 (require 'scxml-drawing-null)           ;for scxml
