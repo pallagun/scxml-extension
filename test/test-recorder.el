@@ -1,4 +1,5 @@
-;; TODO - clean this up a bit.  It's a test recorder and replayer with
+;; TODO - clean this up a bit.  It's a test recorder and replayer with  -*- lexical-binding: t; -*-
+
 ;; asserts on what the screen looks like.
 
 ;; TODO - rename this scxml-test-recorder?  I'm not sure if it's important if it's only used in tests.

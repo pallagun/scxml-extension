@@ -1,4 +1,4 @@
-(open-with-canvas-size "/home/gator/github/pallagun/scxml-extension/test/test-documents/test_document_003.xml" 100 40)
+(open-with-canvas-size "./test/test-documents/test_document_003.xml" 100 40)
 (scxml-diagram-mode--add-child-state "left")
 (scxml-diagram-mode--add-child-state "right")
 (goto-char 1477)

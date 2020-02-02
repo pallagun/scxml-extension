@@ -25,5 +25,10 @@
    (scxml---resolve-recording "0004-editing-synthetic-drawings")
    t))
 
+(ert-deftest scxml-replay-0005-parallel-add-children-simple ()
+  (scxml-replay-test
+   (scxml---resolve-recording "0005-parallel-add-children-simple")
+   t))
+
 
 (provide 'scxml-run-test-recordings)
