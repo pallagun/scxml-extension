@@ -111,6 +111,8 @@ pertaining to synthetic children."
       (error "Unable to find where this hint should be stored"))
     (let ((all-hints (scxml-get-attrib hinted-element scxml---hint-symbol nil)))
       (alist-get hint-key all-hints nil))))
+(cl-defgeneric scxml--set-hint ((element scxml-drawable-element) hint)
+  "Set the hint for this drawable ELEMENT as HINT")
 (cl-defmethod scxml--set-hint ((element scxml-drawable-element) hint)
   "Set the hint for this drawable ELEMENT as HINT"
   (let ((all-hints (scxml-get-attrib element scxml---hint-symbol nil)))

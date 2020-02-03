@@ -116,6 +116,7 @@ If this is set it will be called with no arguments.")
     (define-key map (kbd "e I") 'scxml-diagram-mode--edit-initial)
     (define-key map (kbd "e e") 'scxml-diagram-mode--edit-events)
     (define-key map (kbd "e c") 'scxml-diagram-mode--edit-cond-expr)
+    (define-key map (kbd "e t") 'scxml-diagram-mode--edit-target)
 
     map)
   "Keymap for scxml-diagram major mode")
@@ -972,6 +973,20 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
     (scxml--set-drawing-invalid element t)
     (scxml-diagram-mode--redraw)
     (scxml-diagram-mode--apply-edit element nil)))
+(defun scxml-diagram-mode--edit-target (new-target-id)
+  "Edit the xml 'target' attribute of the currently marked element."
+  (interactive (let* ((element scxml-diagram-mode--marked-element))
+                 (unless (scxml-transition-class-p element)
+                   (error "This element does not have a settable name attribute"))
+                 (list (read-string "Target: " (scxml-target-id element)))))
+  (scxml-record 'scxml-diagram-mode--edit-target new-target-id)
+  (let ((element scxml-diagram-mode--marked-element))
+    (setf (scxml-target-id element) new-target-id)
+    (scxml--set-drawing-invalid element t)
+    (scxml--set-hint element nil)
+    (scxml-diagram-mode--redraw)
+    (scxml-diagram-mode--apply-edit element nil)))
+
 (defun scxml-diagram-mode--edit-initial (new-initial)
   "Edit the xml 'initial' attribute of the currently marked element."
   (interactive (let* ((element scxml-diagram-mode--marked-element))

@@ -3,6 +3,11 @@
 ** TODO get arrow disconntion/reconnection working
 * link
 ** TODO update drawing from xml
+* bugs - ordered
+** TODO when dragging a transition's edit points and the edge snaps to another edge it needs to be stick for first/last edit idx.
+** DONE can't make a child state in a parallel??
+** DONE adding an Initial element with the I key will put the initial drawing inside a relocated drawing.
+
 * features - ordered
 ** TODO be able to disconnect a transition and reconnect it graphically (with mouse?)
 
@@ -16,9 +21,6 @@
 ** DONE setting any drawing back to auto when hinted won't update the xml when linking?
 ** DONE Unable to build a drawing from an <scxml> document if it's got 'type="external"' in a transition attribute?
 ** DONE click-drag creation for any box (state, parallel, final)
-* bugs
-** DONE can't make a child state in a parallel??
-** DONE adding an Initial element with the I key will put the initial drawing inside a relocated drawing.
 * questions
 ** TODO how do you 'downcast' an object and tell it to invoke generic functions based off that casting?
 * too much work to do now
