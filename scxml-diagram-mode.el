@@ -455,7 +455,8 @@ Currently only able to zoom out when in viewport mode."
   (let ((add-box-menu '(""
                         ("New State" . (new . scxml-drawable-state))
                         ("New Parallel" . (new . scxml-drawable-parallel))
-                        ("New Final" . (new . scxml-drawable-final)))))
+                        ("New Final" . (new . scxml-drawable-final))
+                        ("New Initial" . (new . scxml-drawable-initial)))))
     (let* ((selection (x-popup-menu t (list "" add-box-menu)))
            (command (car selection))
            (argument (cdr selection)))
@@ -810,8 +811,11 @@ the user is attempting to mark an edit idx."
    (scxml--increment-edit-idx scxml-diagram-mode--marked-element increment)
    (scxml-diagram-mode--redraw)))
 
-(defun scxml-diagram-mode--add-child-box-and-begin-resize (pixel box-constructor)
-  "add a state at point and jump to edit-idx mode"
+(defun scxml-diagram-mode--add-child-element-with-mouse (pixel constructor-fn)
+  "Add element specified by CONSTRUCTOR-FN to drawing at PIXEL and begin editng.
+
+For elements represented as a box this function will terminate
+with the drawing being resized."
   ;; resolve wherever point is.
   ;; add a child state to it @ that point with size zero.
   ;; turn on edit mode.
@@ -838,23 +842,29 @@ the user is attempting to mark an edit idx."
 
 
       ;; check valid area.
-      (let ((new-element (funcall box-constructor)))
-        (scxml--set-hint new-element (scxml-build-hint drawing-coord valid-area))
+      (let ((new-element (funcall constructor-fn)))
         (scxml-add-child parent-element new-element)
         (scxml--set-drawing-invalid new-element t)
         (scxml-diagram-mode--mark-element new-element t)
-        (scxml--set-edit-idx new-element 2)
-        (scxml-diagram-mode--redraw)
-        ;; enable the next catch.
-        (setq scxml-diagram-mode--up-mouse-1-catch
-              (lambda (pixel) (scxml-diagram-mode--disable-edit-mode)))))))
+        (if (scxml-initial-class-p new-element)
+            ;; when initial, add an unconnected transition and exit.
+            (progn
+              (scxml-add-child new-element (scxml-drawable-transition))
+              (scxml--set-hint new-element (scxml-build-hint (scxml-centroid drawing-coord) valid-area)))
+          ;; When non-initial (state, parallel or final) immediately
+          ;; go to drawing resize mode and select the 2nd edit idx.
+          ;; when the mouse button is release exit resizing mode.
+          (scxml--set-hint new-element (scxml-build-hint drawing-coord valid-area))
+          (scxml--set-edit-idx new-element 2)
+          (setq scxml-diagram-mode--up-mouse-1-catch
+                (lambda (pixel) (scxml-diagram-mode--disable-edit-mode))))
+        (scxml-diagram-mode--redraw)))))
 (defun scxml-diagram-mode--begin-add-child-element-with-mouse (constructor-fn)
   "Begin box-add-and-resize work"
   (interactive)
-  ;; if constructor-fn is for an initial attribute/element route that properly.
   (setq scxml-diagram-mode--down-mouse-1-catch
         (lambda (pixel)
-          (scxml-diagram-mode--add-child-box-and-begin-resize pixel constructor-fn))))
+          (scxml-diagram-mode--add-child-element-with-mouse pixel constructor-fn))))
 
 (defun scxml-diagram-mode--add-child-element (parent child &optional prepend-child)
   "Add the child to parent and update the diagram.

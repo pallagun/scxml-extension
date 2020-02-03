@@ -95,6 +95,10 @@ No attributes required.
 No attributes recognized.
 Must contain a single child <transition> element indicating initial state.
 Child <transition> element may not have 'cond' or 'event' attributes and must be a valid state.")
+(defun scxml-initial-class-p (any)
+  "Equivalent of (object-of-class-p ANY-OBJECT 'scxml-initial)"
+  ;; todo - make this a defsubst
+  (object-of-class-p any 'scxml-initial))
 (cl-defmethod scxml-print ((initial scxml-initial))
   "Spit out a string representing ELEMENT for human eyeballs"
   (format "initial(%s)" (cl-call-next-method initial)))
@@ -178,8 +182,11 @@ Children must be executable content.")
                           (equal target-id (scxml-target-id other)))))))
 (cl-defmethod scxml-target ((transition scxml-transition))
   "Return the target element for TRANSITIONs target."
-  (scxml-element-find-by-id (scxml-root-element transition)
-                            (scxml-target-id transition)))
+  ;; TODO - should this null coalescing be done here? it's null ?? ""
+  (with-slots ((target-id target)) transition
+    (if target-id
+        (scxml-element-find-by-id (scxml-root-element transition) target-id)
+      nil)))
 (cl-defmethod scxml-source ((transition scxml-transition))
   "Return the source element for TRANSITION."
   (scxml-parent transition))

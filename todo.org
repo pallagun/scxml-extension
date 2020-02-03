@@ -9,13 +9,15 @@
 ** DONE adding an Initial element with the I key will put the initial drawing inside a relocated drawing.
 
 * features - ordered
-** TODO be able to disconnect a transition and reconnect it graphically (with mouse?)
-
 ** TODO need to be able to draw initial elements (or attributes) with the right click menu.
+*** DONE Be able to drop an <initial> with the mouse
+*** TODO Be able to go between <inital> and initial="" format with mouse
+*** TODO Be able to drag/drop the end point of a disconnected transition that's a child of an Initial.  can't move it?
 ** TODO graphical feature to show differences between State, Final and Parallel elements.
 ** TODO get rid of the constant sized portions of boxes, move labels above/below.
 
 ** DONE make the 'event' in a transition go away when there are no events, not be event=""
+** TODO be able to disconnect a transition and reconnect it graphically (with mouse?)
 ** TODO make sure the scxml---* attributes are always last in the element's attributes
 ** DONE unable to move transitions around when they're synthetic?
 ** DONE setting any drawing back to auto when hinted won't update the xml when linking?
@@ -23,5 +25,6 @@
 ** DONE click-drag creation for any box (state, parallel, final)
 * questions
 ** TODO how do you 'downcast' an object and tell it to invoke generic functions based off that casting?
+** TODO should the drawing-elements be doing more of diagram-mode.el's work?
 * too much work to do now
 ** You should be able to pull a transition off of the state it's hooked to.
