@@ -940,7 +940,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
     (scxml-visit parent
                  (lambda (child)
                    (scxml--set-drawing-invalid child 't))
-                 scxml-drawable-element-class-p)
+                 #'scxml-drawable-element-class-p)
     (scxml-diagram-mode--redraw)
     (scxml-diagram-mode--apply-edit parent t)))
 
