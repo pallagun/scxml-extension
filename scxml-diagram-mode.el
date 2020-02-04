@@ -994,6 +994,9 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
     (setf (scxml-target-id element) new-target-id)
     (scxml--set-drawing-invalid element t)
     (scxml--set-hint element nil)
+    (when (scxml-diagram-mode--edit-idx)
+      ;; If there is an edit index set, clear it.  The target jump could cause you to lose edit idxs.
+      (scxml--set-edit-idx scxml-diagram-mode--marked-element 'nil))
     (scxml-diagram-mode--redraw)
     (scxml-diagram-mode--apply-edit element nil)))
 
