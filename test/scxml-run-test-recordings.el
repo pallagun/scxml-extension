@@ -35,5 +35,10 @@
    (scxml---resolve-recording "0006-add-initial-to-hinted-state")
    t))
 
+(ert-deftest scxml-replay-0007-setting-transition-targets-blank ()
+  (scxml-replay-test
+   (scxml---resolve-recording "0007-setting-transition-targets-blank")
+   t))
+
 
 (provide 'scxml-run-test-recordings)
