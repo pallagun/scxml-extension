@@ -4,7 +4,7 @@
 * link
 ** TODO update drawing from xml
 * bugs - ordered
-** TODO when dragging a transition's edit points and the edge snaps to another edge it needs to be stick for first/last edit idx.
+** DONE when dragging a transition's edit points and the edge snaps to another edge it needs to be stick for first/last edit idx.
 ** DONE can't make a child state in a parallel??
 ** DONE adding an Initial element with the I key will put the initial drawing inside a relocated drawing.
 
@@ -15,7 +15,6 @@
 *** TODO Be able to drag/drop the end point of a disconnected transition that's a child of an Initial.  can't move it?
 ** TODO graphical feature to show differences between State, Final and Parallel elements.
 ** TODO get rid of the constant sized portions of boxes, move labels above/below.
-
 ** DONE make the 'event' in a transition go away when there are no events, not be event=""
 ** TODO be able to disconnect a transition and reconnect it graphically (with mouse?)
 ** TODO make sure the scxml---* attributes are always last in the element's attributes

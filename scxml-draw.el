@@ -99,6 +99,13 @@ Will throw if it can't move it."
 
 Will throw if it can't move it. will not render!!"
   (let* ((arrow (scxml-element-drawing transition))
+         ;; TODO - this num-edit-idxs local variable should be down in
+         ;; the (if edited-arrow block but for some reason the
+         ;; (scxml-build-edited-drawing call is modifying the arrow.
+         ;; It should not be, determine why that's happening.  Example
+         ;; case is when the arrow has an increase in edit-idxs
+         ;; because of an edge jump
+         (num-edit-idxs (scxml-num-edit-idxs arrow))
          (edit-idx (scxml--edit-idx transition))
          (edited-arrow (scxml-build-edited-drawing arrow
                                                    edit-idx
@@ -116,11 +123,17 @@ Will throw if it can't move it. will not render!!"
                 (scxml-arrow-path arrow) path)
           ;; In some situations the number of edit idxs may change.
           ;; In these situations the edit-idx must be kept valid.
-          (let ((num-edit-idxs (scxml-num-edit-idxs edited-arrow))
-                (current-idx (scxml--edit-idx transition)))
-            (when (and current-idx
-                       (>= current-idx num-edit-idxs))
-              (scxml--set-edit-idx transition (1- num-edit-idxs))))
+          (let ((current-idx (scxml--edit-idx transition)))
+            (when current-idx
+              (let ((curr-num-edit-idxs (scxml-num-edit-idxs edited-arrow)))
+                (cond
+                 ;; edit idx count was reduced and you're over the maximum, snap to maximum.
+                 ((>= current-idx curr-num-edit-idxs)
+                  (scxml--set-edit-idx transition (1- curr-num-edit-idxs)))
+                 ;; edit idx count increased and you were at the previous maximum idx, go to the current maximum idx
+                 ((and (> curr-num-edit-idxs num-edit-idxs)
+                       (eq current-idx (1- num-edit-idxs)))
+                  (scxml--set-edit-idx transition (1- curr-num-edit-idxs)))))))
           (scxml--set-hint transition
                            (scxml-build-hint arrow parent-drawing-canvas))
           (scxml--set-drawing-invalid transition 't)

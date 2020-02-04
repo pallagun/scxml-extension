@@ -354,6 +354,10 @@ cases this function may return nil."
 
 This may not be possible due to constraint violation and in those
 cases this function may return nil."
+  ;; TODO - this function appears to modify arrow, it should not.
+  ;;
+  ;; - example case, when you snap from one edge to another and get more
+  ;; edit points.
   (let* ((full-pts (scxml--full-path arrow))
          ;; Sometimes the source connector is locked entirely.  In those
          ;; cases the edit idx 0 is locked so the drawing layer considers
