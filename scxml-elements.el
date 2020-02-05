@@ -61,7 +61,9 @@ Only doing xmlnns and version here."
 (defclass scxml-state (scxml--core-state scxml-state-type scxml-element-with-initial)
   ()
   :documentation "Scxml <state> element.
-Recognized attributes: id, initial")
+Recognized attributes: id, initial
+Children:
+  <onentry>, <onexit>, <transition>, <initial>, <state>, <parallel>")
 
 (cl-defmethod scxml-print ((state scxml-state))
   "Spit out a string representing ELEMENT for human eyeballs"
@@ -227,6 +229,17 @@ document that is already known to be valid."
 (cl-defmethod scxml--validate ((element scxml-element))
   "Validate the structure of ELEMENT and all child elements throwing an error when invalid."
   (scxml--validate-child-given-parent nil element))
+(defun scxml--validate-parent-child-types (parent child)
+  "Throw an error if CHILD is not a valid element type for PARENT."
+  (let ((parent-core-type (scxml--core-type parent))
+        (child-core-type (scxml--core-type child)))
+    (unless (memq child-core-type
+                  (alist-get parent-core-type
+                             scxml--valid-child-types
+                             nil))
+      (error "Invalid child of type <%s> for parent of type <%s>"
+             child-core-type
+             parent-core-type))))
 (defun scxml--validate-child-given-parent (parent child)
   "Return non-nil if CHILD is a valid child of PARENT.
 
@@ -303,18 +316,7 @@ belongs to an scxml document that is already known to be valid."
                                                         (scxml-children element-with-initial)))))
                      (unless (member initial-state-id child-ids)
                        (error "Unsatisfied initial attribute of '%s'"
-                              initial-state-id))))))
-              (validate-types
-               (parent child)
-               (let ((parent-core-type (scxml--core-type parent))
-                     (child-core-type (scxml--core-type child)))
-                 (unless (memq child-core-type
-                               (alist-get parent-core-type
-                                          scxml--valid-child-types
-                                          nil))
-                   (error "Invalid child of type <%s> for parent of type <%s>"
-                          child-core-type
-                          parent-core-type)))))
+                              initial-state-id)))))))
     (let ((existing-ids (if parent
                             (get-all-non-nil-ids parent)
                           nil))
@@ -346,11 +348,11 @@ belongs to an scxml document that is already known to be valid."
                        (lambda (element)
                          (object-of-class-p element 'scxml-initial)))
       (when parent
-        (validate-types parent child))
+        (scxml--validate-parent-child-types parent child))
       (scxml-visit child
                    (lambda (sub-parent)
                      (mapc (lambda (sub-child)
-                             (validate-types sub-parent sub-child))
+                             (scxml--validate-parent-child-types sub-parent sub-child))
                            (scxml-children sub-parent))))))
 
   ;; (let* ((new-idables (scxml-collect child

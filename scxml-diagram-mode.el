@@ -117,6 +117,7 @@ If this is set it will be called with no arguments.")
     (define-key map (kbd "e e") 'scxml-diagram-mode--edit-events)
     (define-key map (kbd "e c") 'scxml-diagram-mode--edit-cond-expr)
     (define-key map (kbd "e t") 'scxml-diagram-mode--edit-target)
+    ;; (define-key map (kbd "e t") 'scxml-diagram-mode--edit-type)
 
     map)
   "Keymap for scxml-diagram major mode")
@@ -870,6 +871,7 @@ with the drawing being resized."
   "Add the child to parent and update the diagram.
 
 This will also invalidate any drawing hints for siblings."
+  (scxml--validate-parent-child-types parent child)
   (scxml-visit parent
                (lambda (child)
                  (scxml--set-hint child nil)

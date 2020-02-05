@@ -12,7 +12,7 @@
 * features - ordered
 ** TODO need to be able to draw initial elements (or attributes) with the right click menu.
 *** DONE Be able to drop an <initial> with the mouse
-*** TODO Be able to go between <inital> and initial="" format with mouse
+*** DONE Be able to go between <inital> and initial="" format with mouse - I don't think I need this yet.
 *** TODO Be able to drag/drop the end point of a disconnected transition that's a child of an Initial.  can't move it?
 ** TODO graphical feature to show differences between State, Final and Parallel elements.
 ** TODO get rid of the constant sized portions of boxes, move labels above/below.
