@@ -4,7 +4,7 @@
 * link
 ** TODO update drawing from xml
 * bugs - ordered
-** TODO need a unit test for changing the target of a hinted transition
+** DONE need a unit test for changing the target of a hinted transition
 ** DONE when dragging a transition's edit points and the edge snaps to another edge it needs to be stick for first/last edit idx.
 ** DONE can't make a child state in a parallel??
 ** DONE adding an Initial element with the I key will put the initial drawing inside a relocated drawing.

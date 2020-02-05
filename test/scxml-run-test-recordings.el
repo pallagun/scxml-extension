@@ -40,5 +40,11 @@
    (scxml---resolve-recording "0007-setting-transition-targets-blank")
    t))
 
+(ert-deftest scxml-replay-0008-retargeting-hinted-transition ()
+  (scxml-replay-test
+   (scxml---resolve-recording "0008-retargeting-hinted-transition")
+   t))
+
+
 
 (provide 'scxml-run-test-recordings)
