@@ -214,7 +214,7 @@ Returns the current ELEMENT drawing."
     (when simplified
       (scxml--set-hint element
                        (scxml-build-hint simplified
-                                         (scxml-get-parent-drawing-inner-canvas element)))
+                                         (scxml-get-parent-drawing-inner-canvas element t)))
       (scxml--set-drawing-invalid element t))))
 
 (cl-defgeneric scxml-parent-drawing ((element scxml-drawable-element))
@@ -225,14 +225,31 @@ Returns the current ELEMENT drawing."
     (and parent (scxml-element-drawing parent))))
 (cl-defgeneric scxml-get-parent-drawing-inner-canvas ((element scxml-drawable-element))
   "Return the ELEMENT's parent's inner canvas.")
-(cl-defmethod scxml-get-parent-drawing-inner-canvas ((element scxml-drawable-element))
-  "Return the ELEMENT's parent's inner canvas.
+(cl-defmethod scxml-get-parent-drawing-inner-canvas ((element scxml-drawable-element) &optional allow-any-ancestor)
+  "Return the ELEMENT's parent's inner canvas or ALLOW-ANY-ANCESTOR.
 
-Equivalent to (scxml-inner-canvas (scxml-parent-drawing ELEMENT))
-but with some checks."
-  (let* ((parent (scxml-parent element))
-         (parent-drawing (and parent (scxml-element-drawing parent))))
-    (and parent-drawing (scxml-get-inner-canvas parent-drawing))))
+When ALLOW-ANY-ANCESTOR is nil this is equivalent
+to (scxml-inner-canvas (scxml-parent-drawing ELEMENT)) but with
+some checks.
+
+When ALLOW-ANY-ANCESTOR is non-nil this will find the first
+ancestor that has a non-nil inner-canvas and recturn that
+canvas."
+  (if allow-any-ancestor
+      ;; Look upwards through ancestors for the first valid inner canvas.
+      (block find-parent-inner-canvas
+        (scxml-visit-parents element
+                             (lambda (parent)
+                               (let ((parent-drawing (scxml-element-drawing parent)))
+                                 (when parent-drawing
+                                   (let ((canvas (scxml-get-inner-canvas parent-drawing)))
+                                     (when canvas
+                                       (return-from find-parent-inner-canvas canvas)))))))
+        nil)
+    ;; strictly return the direct parent's inner canvas
+    (let* ((parent (scxml-parent element))
+           (parent-drawing (and parent (scxml-element-drawing parent))))
+      (and parent-drawing (scxml-get-inner-canvas parent-drawing)))))
 
 (cl-defmethod scxml--build-synthetic-children ((element scxml-drawable-element) (attrib-alist list))
   "Build additional synthethc elements if needed from the attrib-alist.

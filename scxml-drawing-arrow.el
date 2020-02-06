@@ -42,11 +42,15 @@
 (defclass scxml-arrow-connector-dangling-hint (scxml-arrow-connector-hint)
   ((point :initarg :point
           :accessor scxml-connector-hint-point
-          :type scxml-point)))
+          :type scxml-point)
+   (terminal-direction :initarg :terminal-direction
+                   :accessor scxml-connector-terminal-direction
+                   :type symbol)))
 (cl-defmethod scxml-print ((hint scxml-arrow-connector-dangling-hint))
   "Return a stringified version of POINT for human eyes."
-  (format "[P:%s]"
-          (scxml-print (scxml-connector-hint-point hint))))
+  (format "[P:%s,T:%s]"
+          (scxml-print (scxml-connector-hint-point hint))
+          (scxml-connector-terminal-direction hint)))
 
 (cl-defgeneric scxml-build-arrow-connector ((hint scxml-arrow-connector-hint) &optional (drawing scxml-drawing))
   ;; TODO - is this duplicated someplace??
@@ -65,7 +69,9 @@
                                     :parametric (scxml-parametric hint))
     (scxml-drawing-connector-dangling)))
 (cl-defmethod scxml-build-arrow-connector ((hint scxml-arrow-connector-dangling-hint) &optional (drawing scxml-drawing))
-  (scxml-drawing-connector-dangling :point (scxml-connector-hint-point hint)))
+  (scxml-drawing-connector-dangling
+   :point (scxml-connector-hint-point hint)
+   :terminal-direction (scxml-connector-terminal-direction hint)))
 (cl-defmethod scxml-build-connector-hint ((connector scxml-drawing-connector-rect))
   "Build a connector hint for this connector"
   (scxml-arrow-connector-rect-hint :edge (scxml-from-node-direction connector)
@@ -74,7 +80,8 @@
   "Build a connector hint for this connector"
   (scxml-arrow-connector-point-hint :exit-direction (scxml-from-node-direction connector)))
 (cl-defmethod scxml-build-connector-hint ((connector scxml-drawing-connector-dangling))
-  (scxml-arrow-connector-dangling-hint :point (scxml-connection-point connector)))
+  (scxml-arrow-connector-dangling-hint :point (scxml-connection-point connector)
+                                       :terminal-direction (scxml-to-node-direction connector)))
 
 (defclass scxml-arrow-hint ()
   ((source :initarg :source
@@ -191,10 +198,6 @@ path (target-point))."))
      (if (scxml--arrow-source-locked arrow) 0 1)
      (if (scxml--arrow-target-locked arrow) 0 1)))
 
-(cl-defmethod scxml-build-hint ((arrow scxml-arrow) (parent-canvas scxml-canvas))
-  "?"
-  ;; TODO - I'm not sure how this works, but this needs to be looked at.
-  (error "TODO: Implementation"))
 (defun scxml--build-closest-path (arrow new-pts connector-offset is-endpoint-move)
   "Given an ARROW and a desired set of NEW-PTS, get as close as you can."
   (with-slots ((current-source source) (current-target target)) arrow
@@ -215,8 +218,22 @@ path (target-point))."))
                  (target-point-moved (not (scxml-almost-equal current-target-point new-target-point)))
                  (any-end-point-moved (or source-point-moved target-point-moved))
                  (source-point-match (scxml-almost-equal new-source-point first-path-point))
-                 (target-point-match (scxml-almost-equal new-target-point last-path-point)))
-
+                 (target-point-match (scxml-almost-equal new-target-point last-path-point))
+                 (set-last-connector-direction (lambda (arrow)
+                                                 ;; Always returns arrow!
+                                                 ;;
+                                                 ;; Given an arrow, if the target connector is dangling
+                                                 ;; set the exit direction based off the last segment
+                                                 ;; (or second to last if that segment has zero length,
+                                                 ;; or third if that segment has zero length and so on)
+                                                 (let ((target-connector (scxml-arrow-target arrow)))
+                                                   (when (object-of-class-p target-connector 'scxml-drawing-connector-unconnected)
+                                                     ;; last connector is unconnected
+                                                     (let ((last-valid-segment (scxml--last-non-zero-length-segment arrow)))
+                                                       (when last-valid-segment
+                                                         (scxml-set-to-node-direction target-connector
+                                                                                      (scxml-coarse-direction last-valid-segment))))))
+                                                 arrow)))
             (cond ((and is-endpoint-move any-end-point-moved)
                    ;; this is an end point move and one of the end points has moved.
                    (when (not (eq (scxml-from-node-direction current-source)
@@ -257,11 +274,12 @@ path (target-point))."))
                    (let* ((full-path (scxml---path-stretch new-pts
                                                            new-source-point
                                                            new-target-point)))
-                     (scxml-arrow :source new-source
-                                  :target new-target
-                                  :parent (scxml-parent arrow)
-                                  :path (scxml-cardinal-path :points
-                                                             (nbutlast (cdr full-path))))))
+                     (funcall set-last-connector-direction
+                              (scxml-arrow :source new-source
+                                           :target new-target
+                                           :parent (scxml-parent arrow)
+                                           :path (scxml-cardinal-path :points
+                                                                      (nbutlast (cdr full-path)))))))
                   ((and is-endpoint-move (not any-end-point-moved))
                    ;; this is specifically and end point move but neither end point moved.
                    nil)
@@ -275,11 +293,12 @@ path (target-point))."))
                   ((and source-point-match target-point-match)
                    ;; Whatever happened the source and target connectors were able to comply
                    ;; so this path is entirely valid.
-                   (scxml-arrow :source new-source
-                                :target new-target
-                                :parent (scxml-parent arrow)
-                                :path (scxml-cardinal-path :points
-                                                           (nbutlast (cdr new-pts)))))
+                   (funcall set-last-connector-direction
+                            (scxml-arrow :source new-source
+                                         :target new-target
+                                         :parent (scxml-parent arrow)
+                                         :path (scxml-cardinal-path :points
+                                                                    (nbutlast (cdr new-pts))))))
                   ((or (and (not source-point-moved) (not source-point-match))
                        (and (not target-point-moved) (not target-point-match)))
                    ;; at least one of the end point connectors was supposed to move
@@ -291,11 +310,12 @@ path (target-point))."))
                    (let* ((full-path (scxml---path-stretch new-pts
                                                            new-source-point
                                                            new-target-point)))
-                     (scxml-arrow :source new-source
-                                  :target new-target
-                            :parent (scxml-parent arrow)
-                            :path (scxml-cardinal-path :points
-                                                       (nbutlast (cdr full-path))))))))
+                     (funcall set-last-connector-direction
+                              (scxml-arrow :source new-source
+                                           :target new-target
+                                           :parent (scxml-parent arrow)
+                                           :path (scxml-cardinal-path :points
+                                                                      (nbutlast (cdr full-path)))))))))
         ;; Unable to get new-source or new-target, fail.
         nil))))
 ;; (defun scxml---build-path-if-valid (arrow new-pts &optional iterations)
@@ -447,6 +467,22 @@ is always cardinal."
   "Return the ending point of ARROW, optionally OFFSET."
   (with-slots (target) arrow
     (scxml-connection-point target offset)))
+(cl-defmethod scxml--last-non-zero-length-segment ((arrow scxml-arrow))
+  "Given an ARROW find the non-zero length segment of the full path.
+
+This function may return null if the arrow has no non-zero length
+segments.
+
+TODO: BUG: this function will not, currently, consider the first
+start point of the arrow."
+  (with-slots ((target-connector target) (inner-path path)) arrow
+    (let* ((rev-points (reverse (scxml-points inner-path))))
+      (cl-loop with last-pt = (scxml-connection-point target-connector)
+               for pt in rev-points
+               unless (scxml-almost-equal pt last-pt)
+                 do (cl-return (scxml-segment :start pt :end last-pt))
+               do (setq last-pt pt)
+               finally return nil))))
 (cl-defmethod scxml--arrow-set-default-path ((arrow scxml-arrow) &optional offset)
   "Destructively modifies path! - Normal, not smart path routing.
 

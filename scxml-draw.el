@@ -280,11 +280,10 @@ Will throw if it can't move it. will not render!!"
                (when (object-of-class-p target-connector 'scxml-drawing-connector-unconnected)
                  (let* ((source-connector (scxml-arrow-source arrow-drawing))
                         (exit-direction (scxml-from-node-direction source-connector)))
-                   ;; always set the direction.
-                   (scxml-set-terminal-direction target-connector exit-direction)
                    (when (null (scxml-dangling-point target-connector))
                      ;; no point is set, must set it.
                      (let ((exit-vector (scxml-vector-from-direction exit-direction)))
+                       (scxml-set-to-node-direction target-connector exit-direction)
                        (scxml-set-point target-connector (scxml-add
                                                           (scxml-connection-point source-connector)
                                                           (scxml-scaled exit-vector 2.0))))))))))

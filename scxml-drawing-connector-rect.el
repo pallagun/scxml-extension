@@ -70,7 +70,16 @@ Might return the connector right back to you if alreay snapped."
 (cl-defmethod scxml-build-connector ((connector scxml-drawing-connector-rect) (target-point scxml-point))
   "Build a brand new connector based off nudging CONNECTOR over to TARGET-POINT.
 
-Will return nil if the connector can't be built."
+This function may return connectors which aren't exactly at
+TARGET-POINT.
+
+When told to build a connector at a point which is valid (on the
+edges of the rectangle) this function will do so.
+
+When told to build a connector at a point which is invalid (not
+on the edges of the rectangle) this function will return a valid
+connector which is as close as possible to the TARGET-POINT but
+is still valid."
   (with-slots ((rect node) edge) connector
     (cl-loop with best-connection-set = nil
              for edge-candidate in '(up down left right)

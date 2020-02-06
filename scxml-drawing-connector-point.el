@@ -31,10 +31,11 @@
 (cl-defmethod scxml-build-connector ((connector scxml-drawing-connector-point) (target-point scxml-point))
   "Build a brand new connector based off nudging CONNECTOR over to TARGET-POINT.
 
-Will return 'nil if the connector can't be built."
-  (when (scxml-almost-equal target-point (scxml-connection-point connector))
-    (scxml-drawing-connector-point :exit-direction (scxml-exit-direction connector)
-                                   :node (scxml-node connector))))
+This function will always return a valid connector.  Like the scxml-build-connector function for rectangles this one will 'try' to get as close as possible to the TARGET-POINT.  However, because the connector is constrained to a single point it will always return a connector at that point."
+  ;; (when (scxml-almost-equal target-point (scxml-connection-point connector))
+  (scxml-drawing-connector-point :exit-direction (scxml-exit-direction connector)
+                                 :node (scxml-node connector)))
+
 
 (cl-defmethod scxml-connection-point ((connector scxml-drawing-connector-point) &optional offset)
   "Get the point of this connector"

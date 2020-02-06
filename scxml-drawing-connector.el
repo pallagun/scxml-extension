@@ -37,13 +37,16 @@ If it's a target connector it'll be the direction of the ending arrowhead.")
 This should be the exact opposite of scxml-to-node-direction.")
 ;; TODO - there should be a generic for the drawing that the connector connects to.
 
+;; (cl-defmethod scxml-to-node-direction ((connector scxml-drawing-connector-unconnected))
+;;   "Returns a symbol"
+;;   'up)
+
 ;; TODO - break out the dangling connector to a separate file.
 (defclass scxml-drawing-connector-dangling (scxml-drawing-connector-unconnected)
   ((dangling-point :initarg :point
                    :accessor scxml-dangling-point
                    :type (or null scxml-point))
    (terminal-direction :initarg :terminal-direction
-                       :accessor scxml-to-node-direction
                        :initform 'up
                        :type symbol))
   :documentation "Describes a floating end point for an arrow")
@@ -56,16 +59,15 @@ This should be the exact opposite of scxml-to-node-direction.")
                (scxml-to-node-direction connector))))
 (cl-defmethod scxml-connection-point ((connector scxml-drawing-connector-dangling) &optional offset)
   (scxml-dangling-point connector))
-(cl-defmethod scxml-to-node-direction ((connector scxml-drawing-connector-unconnected))
-  "Returns a symbol"
-  'up)
+(cl-defmethod scxml-to-node-direction ((connector scxml-drawing-connector-dangling))
+  (oref connector terminal-direction))
 (cl-defmethod scxml-from-node-direction ((connector scxml-drawing-connector-unconnected))
   "Return an int :(, but is otherwise opposite of terminal-direction."
-  'down)
+  (scxml-reverse (oref connector terminal-direction)))
 (cl-defmethod scxml-set-point ((connector scxml-drawing-connector-dangling) (point scxml-point))
   "Set the connection point of this dangling connector."
   (oset connector dangling-point point))
-(cl-defmethod scxml-set-terminal-direction ((connector scxml-drawing-connector-dangling) (direction symbol))
+(cl-defmethod scxml-set-to-node-direction ((connector scxml-drawing-connector-dangling) (direction symbol))
   "Set the terminal-direction of CONNECTOR to be DIRECTION."
   (unless (memq direction '(up down left right))
     (error "Invalid direction for this connector"))
