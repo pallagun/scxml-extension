@@ -6,20 +6,8 @@
 ;;; Code:
 (require 'eieio)
 (require 'seq)
+(require 'scxml-element-core)
 (require 'scxml-element)
-
-
-(cl-defgeneric scxml-xml-element-name ((element scxml--core))
-  "Return what the xml element name would be for this ELEMENT.")
-(cl-defmethod scxml-xml-element-name ((element scxml--core))
-  "return what the xml element name would be for this ELEMENT.
-
-Doesn't check to ensure the ELEMENT is actually valid for rendering to xml.
-Assumes everyone follows a nice naming scheme."
-  (let ((core-type (scxml--core-type element)))
-    (if core-type
-        (symbol-name core-type)
-      nil)))
 
 (defclass scxml-scxml (scxml--core-scxml scxml-element scxml-element-with-initial)
   ((name :initarg :name
@@ -64,7 +52,6 @@ Only doing xmlnns and version here."
 Recognized attributes: id, initial
 Children:
   <onentry>, <onexit>, <transition>, <initial>, <state>, <parallel>")
-
 (cl-defmethod scxml-print ((state scxml-state))
   "Spit out a string representing ELEMENT for human eyeballs"
   (format "state(id: %s, %s)"

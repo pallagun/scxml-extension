@@ -93,5 +93,17 @@ element type."
   ;; TODO - add counts?  e.g. there can be at most one <initial> as a child of a <state>
   )
 
+(cl-defgeneric scxml-xml-element-name ((element scxml--core))
+  "Return what the xml element name would be for this ELEMENT.")
+(cl-defmethod scxml-xml-element-name ((element scxml--core))
+  "return what the xml element name would be for this ELEMENT.
+
+Doesn't check to ensure the ELEMENT is actually valid for rendering to xml.
+Assumes everyone follows a nice naming scheme."
+  (let ((core-type (scxml--core-type element)))
+    (if core-type
+        (symbol-name core-type)
+      nil)))
+
 (provide 'scxml-element-core)
 ;;; scxml-element-core.el ends here
