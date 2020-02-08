@@ -1,5 +1,5 @@
 (require 'ert)
-(require 'scxml-element)
+(require 'scxml-elements)
 
 (ert-deftest scxml-element-root-element-test ()
   (let* ((transition-to-b (scxml-transition :target "subB"))

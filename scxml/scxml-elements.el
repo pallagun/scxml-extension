@@ -269,6 +269,7 @@ belongs to an scxml document that is already known to be valid."
                ;; make sure that single child is a transition
                ;; make sure that transition does not contain a cond or event
                ;; make sure that transition's target references a sibling of initial-element.
+               ;; make sure that there is only one <initial> as a direct child of the parent
                (let* ((initial-children (scxml-children initial-element))
                       (initial-transition (first initial-children)))
                  (unless (eq 1 (length initial-children))
@@ -285,6 +286,8 @@ belongs to an scxml document that is already known to be valid."
                         (sibling-ids (seq-filter #'identity
                                                  (mapcar #'scxml-element-id
                                                          (seq-filter #'scxml-element-with-id-class-p siblings)))))
+                   (when (some #'scxml-initial-class-p siblings)
+                     (error "An element may only have one <initial> child element, found more than one."))
                    (unless (some (lambda (sibling-id)
                                    (equal sibling-id initial-target-id))
                                  sibling-ids)
