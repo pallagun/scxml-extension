@@ -5,6 +5,7 @@
 
 ;;; Code:
 (require 'scxml-element)
+(require 'scxml-elements)
 
 ;; XML reading/writing stuff
 (defun scxml--trim-xml (xml-list)
@@ -27,20 +28,35 @@
              do (unless (member prop-name exclude-list)
                   (scxml-put-attrib element prop-name (cdr prop-cell)))
              finally return element)))
-(defun scxml--factory (element)
-  (let ((type (first element))
-        (attributes (second element))
-        (children (cddr element)))
-      (let ((element (scxml--drawable-element-factory type attributes)))
+(defun scxml--factory (xml-element &optional element-factory)
+  "Build scxml elements based off parsed xml XML-ELEMENT data.
+
+Optionally use ELEMENT-FACTORY to build elements.
+ELEMENT-FACTORY is called with a type and attributes alist to
+build a childless element.  Children are then appended.  When
+element factory is not specified the default
+'scxml--element-factory is used."
+  (let ((element-factory (or element-factory 'scxml--element-factory))
+        (type (first xml-element))
+        (attributes (second xml-element))
+        (children (cddr xml-element)))
+      (let ((element (funcall element-factory type attributes)))
         (mapc (lambda (child)
                 ;; TODO - this is a lot of appending, possibly there is a better way to do this.
                 ;; the appending is needed because the synthetic children are built by
                 ;; the factory function and are alredy set on the parent.
                 (scxml-add-child element
-                                 (scxml--factory child)
+                                 (scxml--factory child element-factory)
                                  t))
               (scxml--trim-xml children))
         element)))
+(defun scxml-read-string (xml-string)
+  "Return the scxml-element tree of XML-STRING."
+  (interactive "sXml string:")
+  (with-temp-buffer
+    (insert xml-string)
+    (scxml-read-buffer)))
+
 (defun scxml-read-buffer (&optional buffer-to-read)
   "Return the scxml-element tree of 'current-buffer' or BUFFER-TO-READ."
   (interactive)
@@ -49,11 +65,11 @@
                                 (xml-parse-region))
                             (xml-parse-region))))
          (root-xml (first xml-data))
-         (root-element (first root-xml)))
-    (unless (and (eq root-element 'scxml)
+         (root-xml-element (first root-xml)))
+    (unless (and (eq root-xml-element 'scxml)
                  (eq (length xml-data) 1))
       (error "Unable to read non-<scxml> documents"))
-    (scxml--factory root-xml)))
+    (scxml--factory root-xml-element)))
 (defun scxml-write-buffer ()
   "fire out some XML to a random buffer"
   (interactive)
