@@ -231,7 +231,9 @@ FILTER."
   "Return a list of all elements passing FILTER which are parent, child or siblings of ELEMENT."
   (scxml-collect (scxml-root-element element) filter))
 (defalias 'scxml-lcca 'scxml-find-nearest-mutual-parent
-  "Return the scxml's LCCA (Least Common Compound Ancestor) of all elements.")
+  "Return the scxml's LCCA (Least Common Compound Ancestor) of all elements.
+
+Aliased to mesh up with the scxml example algorithm.")
 (cl-defmethod scxml-find-nearest-mutual-parent (&rest elements)
   "Given a series of elements return their closest mutual ancestor.
 
@@ -359,8 +361,7 @@ Note: a root element would have a coordinate of nil."
   :abstract t
   :documentation "Apply to an scxml element if it has an 'id'
   attribute that's significant.")
-;; TODO: rename to class-p
-(defun scxml-element-with-id-classp (any-object)
+(defun scxml-element-with-id-class-p (any-object)
   "Equivalent of (object-of-class-p ANY-OBJECT 'scxml-element-with-id)"
   (object-of-class-p any-object 'scxml-element-with-id))
 (cl-defmethod (setf scxml-element-id) :before (id (element scxml-element-with-id))
@@ -401,8 +402,7 @@ below SEARCH-ROOT")
   :abstract t
   :documentation "Apply to an scxml element if it has an
   'initial' attribute that's significant.")
-;; TODO: rename to class-p
-(defun scxml-element-with-initial-classp (any-object)
+(defun scxml-element-with-initial-class-p (any-object)
   "Equivalent of (object-of-class-p ANY-OBJECT 'scxml-element-with-initial)"
   (object-of-class-p any-object 'scxml-element-with-initial))
 (cl-defmethod scxml-print ((initialable-element scxml-element-with-initial))
@@ -430,8 +430,6 @@ but that does not appear to be working?"
       (when (not found)
         (error "Unable to find child element with id: %s" initial))))
   (oset element initial initial))
-
-
 
 (provide 'scxml-element)
 ;;; scxml-element.el ends here

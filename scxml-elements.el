@@ -268,7 +268,7 @@ belongs to an scxml document that is already known to be valid."
                (seq-filter #'identity
                            (mapcar #'scxml-element-id
                                    (scxml-collect-all starting-element
-                                                      #'scxml-element-with-id-classp))))
+                                                      #'scxml-element-with-id-class-p))))
               (get-all-transition-targets
                (starting-element)
                (seq-filter #'identity
@@ -297,7 +297,7 @@ belongs to an scxml document that is already known to be valid."
                                               (scxml-children parent-element)))
                         (sibling-ids (seq-filter #'identity
                                                  (mapcar #'scxml-element-id
-                                                         (seq-filter #'scxml-element-with-id-classp siblings)))))
+                                                         (seq-filter #'scxml-element-with-id-class-p siblings)))))
                    (unless (some (lambda (sibling-id)
                                    (equal sibling-id initial-target-id))
                                  sibling-ids)
@@ -311,7 +311,7 @@ belongs to an scxml document that is already known to be valid."
                  (when initial-state-id
                    (let ((child-ids (seq-filter #'identity
                                                 (mapcar (lambda (child)
-                                                          (when (scxml-element-with-id-classp child)
+                                                          (when (scxml-element-with-id-class-p child)
                                                             (scxml-element-id child)))
                                                         (scxml-children element-with-initial)))))
                      (unless (member initial-state-id child-ids)

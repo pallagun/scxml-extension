@@ -1,5 +1,12 @@
 ;;; scxml --- major mode for diagram interaction -*- lexical-binding: t -*-;
 
+;; You're trying to:
+;; get scxml-diagram-mode--edit-internal and scxml-diagram-mode--add-child-element
+;; and scxml-diagram-mode--add-child-element-with-mouse.
+;; to work correctly when adding an attribute for initial=""
+
+;; Maybe now is the time to move some validation to the drawing objects.
+
 ;;; Commentary:
 ;; This is the major mode for interacting with diagrams produced of scxml documents
 
@@ -335,19 +342,28 @@ Currently only able to zoom out when in viewport mode."
   (interactive)
   (scxml-record 'scxml-diagram-mode--redraw)
   (save-excursion
-    (let ((start (float-time)))
+    ;; (let ((start (float-time)))
       (scxml-draw scxml-draw--diagram)
-      (let ((duration-ms (- (float-time) start)))
-        (message "Render time: %s ms" duration-ms))
+      ;; (let ((duration-ms (- (float-time) start)))
+      ;;   (message "Render time: %s ms" duration-ms))
       (when scxml-diagram-mode--debug
-        (scxml-diagram-mode--debug-barf)))))
+        (scxml-diagram-mode--debug-barf))))
+
+(defvar scxml-test-counter 0)
+(defun scxml-diagram-mode--clear-mouse-hooks ()
+  "Clear out all mouse sequence hooks."
+  (setf scxml-diagram-mode--mark-element-catch nil
+        scxml-diagram-mode--down-mouse-1-catch nil
+        scxml-diagram-mode--up-mouse-1-catch nil))
 
 (defun scxml-diagram-mode--mouse-handler (event)
   "Handle any arbitrary non-movement mouse event"
   ;; TODO - Not sure if I'm approaching mouse handling properly.
   (interactive "e")
   ;; (message "Random mouse event: %s" event)
-  (let ((current-window (first (second event))))
+  (incf scxml-test-counter)
+  (let ((bubble-up-error)
+        (current-window (first (second event))))
     (cl-flet ((pixel-from-event
                (event)
                ;; If you're not in the current window (where the event was started), do not produce a pixel.
@@ -357,9 +373,11 @@ Currently only able to zoom out when in viewport mode."
                                 :y (cdr col-row-cell))))))
       (let ((event-type (car event)))
         ;; mouse down handlers
+        ;; (message "(%s event-type %s)" (gensym) event-type)
         (when (or (eq event-type 'down-mouse-1)
                   (eq event-type 'down-mouse-2)
                   (eq event-type 'down-mouse-3))
+          (message "%s down" scxml-test-counter)
           (mouse-set-point event)
           (let* ((start-pixel (pixel-from-event event))
                  (last-pixel start-pixel)
@@ -368,96 +386,144 @@ Currently only able to zoom out when in viewport mode."
 
             (when (and scxml-diagram-mode--down-mouse-1-catch
                        (eq event-type 'down-mouse-1))
-              (unwind-protect
+              ;; if a mouse-down event causes an error and aborts this
+              ;; function the error will be displayed.  At that point
+              ;; when the mouse is released another event will be
+              ;; generated (a mouse click event, which I'm starting to
+              ;; understand is a bit more of a mouse-up event).  That
+              ;; mouse-click(mouse-up) event is another event and will
+              ;; clear the error displayed in the minibuffer.
+              ;; However, I wish to show the error message from the
+              ;; mouse-down event in the minibuffer after the mouse is
+              ;; released.  Therefore I will catch any errors from the
+              ;; mouse-down event here, allow the (track-mouse) form
+              ;; below to catch all mouse movement and even the
+              ;; mouse-click (mouse-up) event later.  After all mouse
+              ;; interactions I will then display the error.
+              ;;
+              ;; So
+              ;; - mouse down
+              ;; -  error generated -> capture error
+              ;; - enter (track-mouse) form which takes no actions and simply absorbs mouse events
+              ;; -  when that (track-mouse) form detects a click (mouse-up) exit.
+              ;; - Execute no functionality but finally signal the error captured.
+              (condition-case caught-error
                   (progn
                     (funcall scxml-diagram-mode--down-mouse-1-catch start-pixel)
-                    ;; Skip the initial mouse down behavior.
-                    (setq event-count 1))
-                (setq scxml-diagram-mode--down-mouse-1-catch nil)))
+                    (setq scxml-diagram-mode--down-mouse-1-catch nil))
+                (error (progn
+                         (scxml-diagram-mode--clear-mouse-hooks)
+                         (setq bubble-up-error (second caught-error)))))
+              (setq event-count 1)
+
+              ;; (let ((hook scxml-diagram-mode--down-mouse-1-catch))
+              ;;   (setq scxml-diagram-mode--down-mouse-1-catch nil)
+              ;;   (message "%s prehook" scxml-test-counter)
+              ;;   (funcall hook start-pixel)
+              ;;   (setq event-count 1))
+
+              ;; (unwind-protect
+              ;;     (progn
+              ;;       (funcall scxml-diagram-mode--down-mouse-1-catch start-pixel)
+              ;;       ;; Skip the initial mouse down behavior.
+              ;;       (setq event-count 1))
+              ;;   (setq scxml-diagram-mode--down-mouse-1-catch nil))
+
+              )
             ;; (message "Mouse Down px: %s, %s"
             ;;          (scxml-print start-pixel)
             ;;          (scxml-print last-pixel))
-            (track-mouse
-              (while (and (setq event (read-event))
-                          (mouse-movement-p event))
-                ;; ok, you've started moving....
-                (when (and (not (eq scxml-diagram-mode--mouse-mode 'viewport))
-                           (eq 0 event-count))
-                  (scxml-diagram-mode--mark-at-point)) ;mark whatever was where you first clicked, get ready to try and move it.
-                (incf event-count)
-                ;; (message "event count: %s" event-count)
-                (let* ((current-pixel (pixel-from-event event)))
-                  ;; Only process when the 'pixel' changes.  That's the smallest unit of distance a user can change something by
-                  (when (and current-pixel ;pixel must be valid and exist (it won't exist if you leave the window)
-                             (not (equal current-pixel last-pixel)))
-                    (let* ((current-delta (scxml-subtract current-pixel last-pixel))
-                           (total-delta (scxml-subtract current-pixel start-pixel))
-                           (start (scxml-get-coord-centroid (scxml-diagram-mode--viewport) last-pixel))
-                           (end (scxml-get-coord-centroid (scxml-diagram-mode--viewport) current-pixel))
-                           (delta (scxml-subtract end start)))
+            (if bubble-up-error
+                (track-mouse
+                  ;; This is the do-nothing and absorb mouse events (mouse-track) form.
+                  (while (and (setq event (read-event))
+                              (mouse-movement-p event))
+                    (incf event-count)))
+              (track-mouse
+                ;; real mouse track-mouse form - no errors have yet happened.
+                (while (and (setq event (read-event))
+                            (mouse-movement-p event))
+                  ;; ok, you've started moving....
+                  (when (and (not (eq scxml-diagram-mode--mouse-mode 'viewport))
+                             (eq 0 event-count))
+                    (scxml-diagram-mode--mark-at-point)) ;mark whatever was where you first clicked, get ready to try and move it.
+                  (incf event-count)
+                  ;; (message "event count: %s" event-count)
+                  (let* ((current-pixel (pixel-from-event event)))
+                    ;; Only process when the 'pixel' changes.  That's the smallest unit of distance a user can change something by
+                    (when (and current-pixel ;pixel must be valid and exist (it won't exist if you leave the window)
+                               (not (equal current-pixel last-pixel)))
+                      (let* ((current-delta (scxml-subtract current-pixel last-pixel))
+                             (total-delta (scxml-subtract current-pixel start-pixel))
+                             (start (scxml-get-coord-centroid (scxml-diagram-mode--viewport) last-pixel))
+                             (end (scxml-get-coord-centroid (scxml-diagram-mode--viewport) current-pixel))
+                             (delta (scxml-subtract end start)))
 
-                      ;; (message "delta pixel raw: %s" (scxml-subtract end start))
-                      ;; (message "Mouse Event[%d]: start: %s, delta %s, t-delta %s, dir %s"
-                      ;;          event-count
-                      ;;          (scxml-print start-pixel)
-                      ;;          (scxml-print current-delta)
-                      ;;          (scxml-print total-delta)
-                      ;;          (scxml--direction-name  (scxml-coarse-direction current-delta)))
-                      ;; (message "delta: %s" (scxml-print delta))
-                      ;; (message "type: %s" event-type)
-                      (if (eq scxml-diagram-mode--mouse-mode 'viewport)
-                          ;; viewport mode can pan or zoom
-                          (cond ((eq event-type 'down-mouse-1)
-                                 (scxml-diagram-mode--pan (* -1 (scxml-x delta))
-                                                          (* -1 (scxml-y delta))))
-                                ((eq event-type 'down-mouse-3)
-                                 (when (>= (abs (scxml-y delta)) (abs (scxml-x delta)))
-                                   (scxml-diagram-mode--zoom (if (> (scxml-y delta) 0)
-                                                                 0.95
-                                                               1.05))))
-                                (t
-                                 (error "Unknown mouse event type: %s" event-type)))
-                        ;; default mouse mode can only modify.
-                        (scxml-diagram-mode--modify delta)))
-                    (setq last-pixel current-pixel))))
-              (when (and (eq (car event) 'drag-mouse-1)
-                         scxml-diagram-mode--up-mouse-1-catch)
-                ;; drag-mouse-1 is complete which means you must have let go of the
-                ;; mouse button.
-                (unwind-protect
-                    (funcall scxml-diagram-mode--up-mouse-1-catch last-pixel)
-                  (setq scxml-diagram-mode--up-mouse-1-catch nil)))
+                        ;; (message "delta pixel raw: %s" (scxml-subtract end start))
+                        ;; (message "Mouse Event[%d]: start: %s, delta %s, t-delta %s, dir %s"
+                        ;;          event-count
+                        ;;          (scxml-print start-pixel)
+                        ;;          (scxml-print current-delta)
+                        ;;          (scxml-print total-delta)
+                        ;;          (scxml--direction-name  (scxml-coarse-direction current-delta)))
+                        ;; (message "delta: %s" (scxml-print delta))
+                        ;; (message "type: %s" event-type)
+                        (if (eq scxml-diagram-mode--mouse-mode 'viewport)
+                            ;; viewport mode can pan or zoom
+                            (cond ((eq event-type 'down-mouse-1)
+                                   (scxml-diagram-mode--pan (* -1 (scxml-x delta))
+                                                            (* -1 (scxml-y delta))))
+                                  ((eq event-type 'down-mouse-3)
+                                   (when (>= (abs (scxml-y delta)) (abs (scxml-x delta)))
+                                     (scxml-diagram-mode--zoom (if (> (scxml-y delta) 0)
+                                                                   0.95
+                                                                 1.05))))
+                                  (t
+                                   (error "Unknown mouse event type: %s" event-type)))
+                          ;; default mouse mode can only modify.
+                          (scxml-diagram-mode--modify delta)))
+                      (setq last-pixel current-pixel))))
+                (when (and (eq (car event) 'drag-mouse-1)
+                           scxml-diagram-mode--up-mouse-1-catch)
+                  ;; drag-mouse-1 is complete which means you must have let go of the
+                  ;; mouse button.
+                  (unwind-protect
+                      (funcall scxml-diagram-mode--up-mouse-1-catch last-pixel)
+                    (setq scxml-diagram-mode--up-mouse-1-catch nil)))
 
-              ;; (message "Exit mouse event: %s" event)
-              )
+                ;; (message "Exit mouse event: %s" event)
+                ))
             (setq event-type (car event))))
 
         ;; handle a click event (not a drag or down event)
-        ;; (message "Handle Event: %s" event)
+        ;; (message "%s Handle Event: %s" scxml-test-counter event)
         (setq scxml-diagram-mode--last-click-pixel (pixel-from-event event))
-        (if (eq scxml-diagram-mode--mouse-mode 'viewport)
-            ;; viewport mode - currently don't do anything
-            nil
-          (progn
-            (mouse-set-point event)
-            (cond
-             ((eq event-type 'mouse-1)
-              (scxml-record 'goto-char (point))
-              (scxml-record 'scxml-diagram-mode--mark-at-point)
-              (scxml-diagram-mode--mark-at-point))
-             ((eq event-type 'double-mouse-1)
-              (scxml-record 'goto-char (point))
-              (scxml-record 'scxml-diagram-mode--mark-at-point t)
-              (scxml-diagram-mode--mark-at-point t))
-             ((eq event-type 'mouse-3)
-              (scxml-diagram-mode--show-mouse-menu)))))))))
+        (if bubble-up-error
+            (error bubble-up-error)
+          (if (eq scxml-diagram-mode--mouse-mode 'viewport)
+              ;; viewport mode - currently don't do anything
+              nil
+            (progn
+              (mouse-set-point event)
+              (cond
+               ((eq event-type 'mouse-1)
+                (scxml-record 'goto-char (point))
+                (scxml-record 'scxml-diagram-mode--mark-at-point)
+                (scxml-diagram-mode--mark-at-point))
+               ((eq event-type 'double-mouse-1)
+                (scxml-record 'goto-char (point))
+                (scxml-record 'scxml-diagram-mode--mark-at-point t)
+                (scxml-diagram-mode--mark-at-point t))
+               ((eq event-type 'mouse-3)
+                (scxml-diagram-mode--show-mouse-menu))))))))))
 (defun scxml-diagram-mode--show-mouse-menu ()
   "Show a menu at mouse location dependent on what is under the pointer."
   (let ((add-box-menu '(""
-                        ("New State" . (new . scxml-drawable-state))
-                        ("New Parallel" . (new . scxml-drawable-parallel))
-                        ("New Final" . (new . scxml-drawable-final))
-                        ("New Initial" . (new . scxml-drawable-initial)))))
+                        ("New <state>" . (new . scxml-drawable-state))
+                        ("New <parallel>" . (new . scxml-drawable-parallel))
+                        ("New <final>" . (new . scxml-drawable-final))
+                        ("New <initial>" . (new . scxml-drawable-initial))
+                        ("Set initial=\"\"" . (new . scxml-drawable-synthetic-initial)))))
     (let* ((selection (x-popup-menu t (list "" add-box-menu)))
            (command (car selection))
            (argument (cdr selection)))
@@ -844,13 +910,16 @@ with the drawing being resized."
 
       ;; check valid area.
       (let ((new-element (funcall constructor-fn)))
-        (scxml-add-child parent-element new-element)
+        ;; (scxml-add-child parent-element new-element)
+        (scxml-diagram-mode--add-child-element parent-element new-element nil t)
         (scxml--set-drawing-invalid new-element t)
         (scxml-diagram-mode--mark-element new-element t)
         (if (scxml-initial-class-p new-element)
             ;; when initial, add an unconnected transition and exit.
             (progn
-              (scxml-add-child new-element (scxml-drawable-transition))
+              (scxml-add-child new-element (if (object-of-class-p new-element 'scxml-synthetic-drawing)
+                                               (scxml-drawable-synthetic-transition)
+                                             (scxml-drawable-transition)))
               (scxml--set-hint new-element (scxml-build-hint (scxml-centroid drawing-coord) valid-area)))
           ;; When non-initial (state, parallel or final) immediately
           ;; go to drawing resize mode and select the 2nd edit idx.
@@ -867,21 +936,36 @@ with the drawing being resized."
         (lambda (pixel)
           (scxml-diagram-mode--add-child-element-with-mouse pixel constructor-fn))))
 
-(defun scxml-diagram-mode--add-child-element (parent child &optional prepend-child)
-  "Add the child to parent and update the diagram.
+(defun scxml-diagram-mode--add-child-element (parent child &optional prepend-child do-not-replot)
+  "Add the CHILD element to PARENT element.
 
-This will also invalidate any drawing hints for siblings."
+When PREPEND-CHILD is non-nil the child will be prependend to the
+PARENT's child elements.  Default behavior is to append.
+
+When DO-NOT-REPLOT is non-nil no drawings will be invalidated and
+the display will not be redrawn.
+
+When DO-NOT-REPLOT is nil all children of PARENT will have their
+drawings invalidated and drawing hints erased, reverting them to
+automatic mode."
   (scxml--validate-parent-child-types parent child)
-  (scxml-visit parent
-               (lambda (child)
-                 (scxml--set-hint child nil)
-                 (scxml--set-drawing-invalid child 't))
-               (lambda (child)
-                 (and (scxml-drawable-element-class-p child)
-                      (not (eq child parent)))))
+  ;; (scxml--validate-parent-child-counts parent child)
   (scxml-add-child parent child (not prepend-child))
+  (when (and (scxml-element-with-initial-class-p parent)
+             (object-of-class-p child 'scxml-drawable-synthetic-initial))
+    ;; you're adding an initial attribute to the parent.
+    )
+
   (scxml-diagram-mode--apply-edit parent t)
-  (scxml-diagram-mode--redraw))
+  (unless do-not-replot
+    (scxml-visit parent
+                 (lambda (descendant)
+                   (scxml--set-hint descendant nil)
+                   (scxml--set-drawing-invalid descendant 't))
+                 (lambda (descendant)
+                   (and (scxml-drawable-element-class-p descendant)
+                        (not (eq descendant parent)))))
+    (scxml-diagram-mode--redraw)))
 (defun scxml-diagram-mode--add-child-state (id)
   "Add a child <state> element to the marked element"
   (interactive "sNew <state> id: ")
@@ -1015,6 +1099,8 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
     (unless (object-of-class-p element 'scxml-element-with-initial)
       (error "This element does not have a settable initial attribute"))
     ;; remove any existing initial synthetic drawings.
+    ;; ok - so this should throw if there is a child <initial> already.
+    ;; additionally - should be reusing this with adding initial by mouse click.
     (mapc (lambda (child)
             (when (object-of-class-p child 'scxml-initial)
               (scxml-make-orphan child)))
