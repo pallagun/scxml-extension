@@ -1,6 +1,6 @@
 ;;; scxml-element --- scxml element level functions -*- lexical-binding: t -*-
 
-;;; Commentary:
+;;; COMMENTARY:
 ;; The scxml-element is used as the base class for any <element
 ;; with="attributes">or child</element> in a valid <scxml> document.
 
@@ -8,9 +8,11 @@
 (require 'eieio)
 (require 'seq)
 (require 'cl-macs)
+(require 'scxml-element-core)
 
-(defclass scxml-element ()
+(defclass scxml-element (scxml--core)
   ((_attributes :initarg :attributes
+                ;; TODO - remove the initarg for this?
                 ;; :accessor scxml-element-attributes
                 :initform nil
                 :type (or hash-table null))
@@ -32,14 +34,6 @@
 (cl-defmethod cl-print-object ((object scxml-element) stream)
   "Pretty print the OBJECT to STREAM."
   (princ (scxml-print object) stream))
-(cl-defmethod scxml-xml-element-name ((element scxml-element))
-  "return what the xml element name would be for this ELEMENT.
-
-Doesn't check to ensure the ELEMENT is actually valid for rendering to xml.
-Assumes everyone follows a nice naming scheme."
-  (substring
-   (symbol-name (eieio-object-class element))
-   (length "scxml-")))
 (cl-defmethod scxml-xml-attributes ((element scxml-element))
   "Return an alist of ELEMENT's attributes for XML rendering."
   (let ((attribs nil))
@@ -56,28 +50,36 @@ Generally filters out symbols that start with 'scxml---'."
   (let ((prop-name (downcase (symbol-name key))))
     (or (< (length prop-name) (1+ (length "scxml---")))
         (not (equal (substring prop-name 0 8) "scxml---")))))
-(cl-defmethod scxml-xml-string ((element scxml-element))
-  "Get a string holding the XML for ELEMENT and any/all children."
-  (let ((xml-name (scxml-xml-element-name element))
-        (children (scxml-children element))
-        (attribute-list (mapcar (lambda (name-value)
-                                  (format "%s=\"%s\"" (car name-value) (cdr name-value)))
-                                (seq-filter 'cdr
-                                        (scxml-xml-attributes element)))))
-    (let ((start-tag (format "<%s" xml-name))
-          (attribute-string (if attribute-list
-                                (format " %s" (mapconcat 'identity attribute-list " "))
-                              ""))
-          (start-tag-ending (if children ">" " />"))
-          (children-xml (mapconcat 'scxml-xml-string children ""))
-          (end-tag (when children (format "</%s>" xml-name))))
-      (mapconcat 'identity
-                 (list start-tag
-                       attribute-string
-                       start-tag-ending
-                       children-xml
-                       end-tag)
-                 ""))))
+(cl-defmethod scxml-xml-string ((element scxml-element) &optional exclude-children)
+  "Get a string holding the XML for ELEMENT.
+
+Normally all child elements will be rendered to xml and output as
+well.  When EXCLUDE-CHILDREN is true then no child elements will
+be included in the output."
+  (let ((xml-name (scxml-xml-element-name element)))
+    (if (null xml-name)
+        ""
+      (let ((children (and (not exclude-children) (scxml-children element)))
+            (attribute-list (mapcar (lambda (name-value)
+                                      (format "%s=\"%s\"" (car name-value) (cdr name-value)))
+                                    (seq-filter 'cdr
+                                                (scxml-xml-attributes element)))))
+        (let ((start-tag (format "<%s" xml-name))
+              (attribute-string (if attribute-list
+                                    (format " %s" (mapconcat 'identity attribute-list " "))
+                                  ""))
+              (start-tag-ending (if children ">" " />"))
+              (children-xml (mapconcat 'scxml-xml-string children ""))
+              (end-tag (when children (format "</%s>" xml-name))))
+          (mapconcat 'identity
+                     (list start-tag
+                           attribute-string
+                           start-tag-ending
+                           children-xml
+                           end-tag)
+                     ""))))))
+(cl-defgeneric scxml-children ((element scxml-element))
+  "Return the children of ELEMENT.")
 (cl-defmethod scxml-children ((element scxml-element))
   "Return the children of ELEMENT."
   (oref element _children))
@@ -87,6 +89,18 @@ Generally filters out symbols that start with 'scxml---'."
 (cl-defmethod scxml-parent ((element scxml-element))
   "Return the parent of ELEMENT."
   (oref element _parent))
+(cl-defgeneric scxml-siblings ((element scxml-element))
+  "Return the siblings of ELEMENT")
+(cl-defmethod scxml-siblings ((element scxml-element))
+  "Return the siblings of ELEMENT"
+  (let ((parent (scxml-parent element)))
+    (if parent
+        (seq-filter (lambda (parents-child)
+                      (not (eq parents-child element)))
+                    (scxml-children parent))
+      nil)))
+(cl-defgeneric scxml-make-orphan ((element scxml-element))
+  "Break ELEMENT away from any parent elements.")
 (cl-defmethod scxml-make-orphan ((element scxml-element))
   "Break ELEMENT away from any parent elements."
   (with-slots (_parent) element
@@ -156,6 +170,8 @@ Return is unspecified."
     (if _attributes
         (gethash key _attributes default)
       default)))
+(cl-defgeneric scxml-root-element ((element scxml-element))
+  "Given any ELEMENT in an scxml-element tree, find the root of the tree.")
 (cl-defmethod scxml-root-element ((element scxml-element))
   "Given any ELEMENT in an scxml-element tree, find the root of the tree."
   (let ((last element)
@@ -189,12 +205,16 @@ Return value is undefined."
   (mapc (lambda (child)
           (scxml-visit child visitor filter))
         (scxml-children element)))
-
 (cl-defgeneric scxml-visit-all ((element scxml-element) visitor &optional filter)
   "Visit all elements (parent or child, recursively) starting at the root element.")
 (cl-defmethod scxml-visit-all ((element scxml-element) visitor &optional filter)
   "Visit all elements (parent or child, recursively) starting at the root element"
   (scxml-visit (scxml-root-element element) visitor filter))
+(cl-defgeneric scxml-collect ((element scxml-element) filter)
+    "Return a list of ELEMENT and ELEMENT's children filtered by FILTER.
+
+May include ELEMENT or children at any depth if they satisfy
+FILTER.")
 (cl-defmethod scxml-collect ((element scxml-element) filter)
   "Return a list of ELEMENT and ELEMENT's children filtered by FILTER.
 
@@ -205,21 +225,133 @@ FILTER."
                  (lambda (x) (push x matches))
                  filter)
     matches))
-(cl-defmethod scxml-find-nearest-mutual-parent ((A scxml-element) (B scxml-element))
-  "Given elements A and B return their closest mutual parent element."
-  (cl-labels ((build-parent-list
-               (element)
-               (if element
-                   (let ((parent (scxml-parent element)))
-                     (cons element (build-parent-list parent)))
-                 'nil)))
-    (let ((A-parents (build-parent-list A))
-          (B-parents (build-parent-list B)))
-      (cl-block scxml-find-parent
-        (mapc (lambda (A-element)
-                (when (cl-member A-element B-parents :test 'eq)
-                  (cl-return-from scxml-find-parent A-element)))
-              A-parents)))))
+(cl-defgeneric scxml-collect-all ((element scxml-element) filter)
+  "Return a list of all elements passing FILTER which are parent, child or siblings of ELEMENT.")
+(cl-defmethod scxml-collect-all ((element scxml-element) filter)
+  "Return a list of all elements passing FILTER which are parent, child or siblings of ELEMENT."
+  (scxml-collect (scxml-root-element element) filter))
+(defalias 'scxml-lcca 'scxml-find-nearest-mutual-parent
+  "Return the scxml's LCCA (Least Common Compound Ancestor) of all elements.
+
+Aliased to mesh up with the scxml example algorithm.")
+(cl-defmethod scxml-find-nearest-mutual-parent (&rest elements)
+  "Given a series of elements return their closest mutual ancestor.
+
+Currently does not validate that elements are actually
+scxml-elements.  Possibly it should do that?"
+  (cl-flet ((build-parent-list
+             (element)
+             (let ((parents)
+                   (parent (scxml-parent element)))
+               (while parent
+                 (push parent parents)
+                 (setq parent (scxml-parent parent)))
+               (nreverse parents))))
+    (let* ((parent-lists (mapcar #'build-parent-list elements))
+           (first-parent-list (first parent-lists))
+           (rest-parent-lists (rest parent-lists)))
+      (cl-block find-parent
+        (cl-loop for first-list-element in first-parent-list
+                 when (cl-every (lambda (other-ancestry)
+                                  (cl-find-if (lambda (entry)
+                                                (eq entry first-list-element))
+                                              other-ancestry))
+                                rest-parent-lists)
+                 do (cl-return-from find-parent first-list-element))
+        ))))
+(cl-defgeneric scxml-visit-parents ((element scxml-element) visitor)
+  "Visit all the parents of ELEMENT with VISITOR in increasing parent order.")
+(cl-defmethod scxml-visit-parents ((element scxml-element) visitor)
+  "Visit all the parents of ELEMENT with VISITOR in increasing parent order.
+
+Visitor should be of the form (lambda (parent-element) ...)."
+  (let ((parent (scxml-parent element)))
+    (while parent
+      (funcall visitor parent)
+      (setq parent (scxml-parent parent)))))
+(cl-defgeneric scxml-find-ancestor-if ((element scxml-element) predicate)
+  "Return ELEMENT's first ancestor satisfying PREDICATE.")
+(cl-defmethod scxml-find-ancestor-if ((element scxml-element) predicate)
+  "Return ELEMENT's first ancestor satisfying PREDICATE."
+  (cl-block find-parent-if
+    (scxml-visit-parents element
+                         (lambda (ancestor)
+                           (when (funcall predicate ancestor)
+                             (cl-return-from find-parent-if ancestor))))
+    nil))
+(cl-defgeneric scxml-is-descendant ((element scxml-element) (possible-descendant scxml-element))
+  "Return non-nil if POSSIBLE-DESCENDANT is a descendant of ELEMENT.
+
+Note: argument order is flipped between this function and the
+scxml reference algorithm.  When the arguments are equal the
+return value is nil.")
+(cl-defmethod scxml-is-descendant ((element scxml-element) (possible-descendant scxml-element))
+  "Return non-nil if POSSIBLE-DESCENDANT is a descendant of ELEMENT.
+
+Note: argument order is flipped between this function and the
+scxml reference algorithm.  When the arguments are equal the
+return value is nil."
+  (cl-block find-upward
+    (scxml-visit-parents possible-descendant
+                         (lambda (looking-upward)
+                           (when (eq looking-upward element)
+                             (cl-return-from find-upward t))))
+    nil))
+(cl-defgeneric scxml-xml-document-coordinate ((element scxml-element) &optional (relative-to scxml-element))
+  "Return the xml document coordinate of ELEMENT.
+
+Xml Document Coordinate is defined as a list of Xml Document
+Ordinates in descending order (from document root to ELEMENT).
+
+Xml Document Ordinate is defined is the index of a child element
+within it's parent.  e.g. <parent><a /><b /></parent> would have
+element <a /> at the 0-th index and <b /> as the 1st index.
+
+Given:
+ <grandparent>
+  <parent-a />
+  <parent-b>
+   <child-a />
+   <child-b />
+  </parent-b>
+ </grandparent>
+
+the coordinate of element <child-a> would be '(1 0).
+
+When RELATIVE-TO is set the coordinate returned will be the
+coordinate of ELEMENT relative to RELATIVE-TO as opposed to the
+root of the scxml document.
+
+Note: a root element would have a coordinate of nil."
+  (if (eq element relative-to)
+      ;; short-circut: coordinate relative to yourself is nil
+      nil
+    (let ((ordinates)
+          (current-element element)
+          (current-parent (scxml-parent element)))
+      (while current-parent
+        (let* ((siblings (scxml-children current-parent))
+               (ordinate (position current-element siblings)))
+          (unless ordinate
+            (error "Invalid element tree"))
+          (push ordinate ordinates)
+          (if (and relative-to (eq relative-to current-parent))
+              (setq current-parent nil)
+            (setq current-element current-parent)
+            (setq current-parent (scxml-parent current-element)))))
+      ordinates)))
+(defun scxml-xml-document-order-predicate (a b)
+  "Return non-nil if A comes before B in document order."
+  (let ((a-coordinates (scxml-xml-document-coordinate a))
+        (b-coordinates (scxml-xml-document-coordinate b)))
+    ;; Note - if one of these is the root element you could still technically sort it.
+    (unless (and a-coordinates b-coordinates)
+      (error "Either trying to sort the root element or invalid elements"))
+    (cl-loop for a-ordinate in a-coordinates
+             for b-ordinate in b-coordinates
+             unless (eq a-ordinate b-ordinate)
+             do (cl-return (< a-ordinate b-ordinate))
+             finally return nil)))
 
 (defclass scxml-element-with-id ()
   ((id :initarg :id
@@ -229,6 +361,19 @@ FILTER."
   :abstract t
   :documentation "Apply to an scxml element if it has an 'id'
   attribute that's significant.")
+(defun scxml-element-with-id-class-p (any-object)
+  "Equivalent of (object-of-class-p ANY-OBJECT 'scxml-element-with-id)"
+  (object-of-class-p any-object 'scxml-element-with-id))
+(cl-defmethod (setf scxml-element-id) :before (id (element scxml-element-with-id))
+  "Validate the id before setting.
+
+This should function with the :writer slot option for defclass
+but that does not appear to be working?"
+  (when id
+    ;; must validate
+    (when (scxml-element-find-by-id (scxml-root-element element) id)
+      (error "An element with id of %s already exists" id)))
+  (oset element id id))
 (cl-defmethod scxml-print ((idable-element scxml-element-with-id))
   (format "id:%s, %s"
           (scxml-element-id idable-element)
@@ -257,6 +402,34 @@ below SEARCH-ROOT")
   :abstract t
   :documentation "Apply to an scxml element if it has an
   'initial' attribute that's significant.")
+(defun scxml-element-with-initial-class-p (any-object)
+  "Equivalent of (object-of-class-p ANY-OBJECT 'scxml-element-with-initial)"
+  (object-of-class-p any-object 'scxml-element-with-initial))
+(cl-defmethod scxml-print ((initialable-element scxml-element-with-initial))
+  (format "initial:%s, %s"
+          (scxml-element-initial initialable-element)
+          (cl-call-next-method)))
+(cl-defmethod (setf scxml-element-initial) :before (initial (element scxml-element-with-initial))
+   "Validate the INITIAL attribute before setting.
+
+This should function with the :writer slot option for defclass
+but that does not appear to be working?"
+  ;; initial must reference a valid child and none of the
+  ;; existing children can be <initial> elements.
+  (when initial
+    ;; must validate
+    (let ((found))
+      (mapc (lambda (child)
+              (when (object-of-class-p child 'scxml-initial)
+                (error "Unable to set initial attribute when a child <initial> element exists"))
+              (when (and (not found)
+                         (object-of-class-p child 'scxml-element-with-id)
+                         (equal (scxml-element-id child) initial))
+                (setq found t)))
+            (scxml-children element))
+      (when (not found)
+        (error "Unable to find child element with id: %s" initial))))
+  (oset element initial initial))
 
 (provide 'scxml-element)
 ;;; scxml-element.el ends here

@@ -18,6 +18,9 @@
              :documentation "A list of all dividers in this rect as scxml-segments.  This is really only used for rendering."))
   :abstract 't
   :documentation "Represents a rectangle which can be drawn with divisions")
+(defun scxml-drawing-divided-rect-class-p (any)
+  "Equivalent of (object-of-class-p ANY 'scxml-drawing-divided-rect)."
+  (object-of-class-p any 'scxml-drawing-divided-rect))
 (cl-defmethod scxml-get-inner-canvas ((rect scxml-drawing-divided-rect))
   "Given a rectangle, pull an inner canvas"
   (with-slots (x-min y-min x-max y-max) rect
@@ -105,6 +108,8 @@
   "Get out all the divisons in a list of (coordinate . rect) entries."
   (cl-loop for cell in (scxml-cells stripe)
            while cell
+           do (when (eq cell nil)
+                (error "Someone made a bad cell"))
            with sub-divisions = 'nil
            with cell-idx = 0
            for sub-rect = (scxml---get-sub-rect stripe (list cell-idx) rect)
@@ -162,11 +167,11 @@ The coordinate returned is for the cell right before the division."
 
     (let ((point-producer (if (eq (scxml-axis stripe) 'scxml--horizontal)
                               (lambda (division-param)
-                                (scxml-point :x (scxml-parametric (scxml-x rect) division-param)
+                                (scxml-point :x (scxml-parametric (scxml-x-span rect) division-param)
                                              :y (/ (+ (scxml-y-min rect) (scxml-y-max rect)) 2.0)))
                             (lambda (division-param)
                               (scxml-point :x (/ (+ (scxml-x-min rect) (scxml-x-max rect)) 2.0)
-                                           :y (scxml-parametric (scxml-y rect) division-param))))))
+                                           :y (scxml-parametric (scxml-y-span rect) division-param))))))
       (cl-loop for division-param in (scxml-divisions stripe)
                for cell-idx = 0
                do (push (cons (funcall point-producer division-param)
@@ -184,10 +189,14 @@ The coordinate returned is for the cell right before the division."
            do (push 'undivided cells)
            finally return cells))
 (defun scxml---stripe-build (num-cells &optional axis)
+  (unless (and (integerp num-cells) (> num-cells 0))
+    (error "Unable to build a stripe with 0 cells"))
   (scxml---nest-stripe :axis (or axis 'scxml--horizontal)
                        :cells (scxml---stripe-build-cells num-cells)
                        :divisions (scxml---stripe-build-division-offsets num-cells)))
 (defun scxml---stripe-initialize (container num-cells &optional axis)
+  (unless (and (integerp num-cells) (> num-cells 0))
+    (error "Unable to build a stripe with 0 cells"))
   (oset container axis (or axis 'scxml--horizontal))
   (oset container cells (scxml---stripe-build-cells num-cells))
   (oset container divisions (scxml---stripe-build-division-offsets num-cells))
@@ -241,9 +250,18 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
   ((relative-rect :initarg :relative-rect
                   :accessor scxml-relative-rect
                   :type scxml-rect)
+   (stripe-invalid :accessor scxml-stripe-invalid
+                   :type (member t nil)
+                   :initarg nil
+                   :documentation "It's possible for only the stripe to be invalid (e.g. a child was added or removed.")
    (stripe :initarg :stripe
            :accessor scxml-stripe
            :type scxml---nest-stripe)))
+
+(cl-defmethod scxml--build-empty-nest-rect-hint ((relative-rect scxml-rect))
+  "Build an empty parallel hint from only a rectangle."
+  (scxml---drawing-nest-rect-hint :relative-rect relative-rect
+                                  :stripe (scxml---stripe-build 1)))
 
 (cl-defmethod scxml-get-divisions ((divided-rect scxml-drawing-nest-rect))
   (scxml---get-divisions divided-rect (scxml-get-inner-canvas divided-rect)))
@@ -266,7 +284,7 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
   "Get the pixel locations of the edit idxs for DIVIDED-RECT as a list."
   (append (cl-call-next-method)
           (scxml---get-edit-points divided-rect divided-rect)))
-(cl-defmethod scxml-build-idx-edited ((divided-rect scxml-drawing-nest-rect) (edit-idx integer) (move-vector scxml-point))
+(cl-defmethod scxml-build-idx-edited ((divided-rect scxml-drawing-nest-rect) (edit-idx integer) (move-vector scxml-point) (viewport scxml-viewport))
   ;; This needs to be documented.
   (if (< edit-idx 8)
       (let ((rect-shell (cl-call-next-method)))
@@ -290,8 +308,8 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
                               (scxml-point :x 1.0 :y 0.0)
                             (scxml-point :x 0.0 :y 1.0)))
              (parent-cell-span (if (eq (scxml-axis parent-cell) 'scxml--horizontal)
-                                   (scxml-x parent-rect)
-                                 (scxml-y parent-rect)))
+                                   (scxml-x-span parent-rect)
+                                 (scxml-y-span parent-rect)))
              (allowed-movement (scxml-dot-prod axis-vector move-vector))
              (relative-movement (/ allowed-movement (scxml-length parent-cell-span))))
         ;; determine the cell axis and bump (nth child-coord (scxml-divisions parent-cell))
@@ -308,7 +326,7 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
                                  :axis (scxml-axis deep-clone)
                                  :cells (scxml-cells deep-clone)
                                  :divisions (scxml-divisions deep-clone))))))
-(cl-defmethod scxml-build-move-edited ((divided-rect scxml-drawing-nest-rect) (move-vector scxml-point))
+(cl-defmethod scxml-build-move-edited ((divided-rect scxml-drawing-nest-rect) (move-vector scxml-point) (viewport scxml-viewport))
   ;; TODO- possibly this would work for *all* scxml-drawings?
   (scxml-incf (clone divided-rect) move-vector))
 (cl-defmethod scxml-build-hint ((divided-rect scxml-drawing-nest-rect) (parent-canvas scxml-inner-canvas))

@@ -1,4 +1,5 @@
-;; TODO - clean this up a bit.  It's a test recorder and replayer with
+;; TODO - clean this up a bit.  It's a test recorder and replayer with  -*- lexical-binding: t; -*-
+
 ;; asserts on what the screen looks like.
 
 ;; TODO - rename this scxml-test-recorder?  I'm not sure if it's important if it's only used in tests.
@@ -121,6 +122,7 @@ should macro to enforce recorded screen asserts."
                                (apply #'scxml-begin-replay-session (cdr instruction))))
                         ((eq function-name 'assert-screen)
                          (if perform-asserts
+                             (message "last instr: %s" last-instruction)
                              (should (equal (cadr instruction)
                                             (scxml-capture-screen (scxml-diagram-viewport diagram))))
                            ;; otherwise, if you're in human-mode, yell about it.

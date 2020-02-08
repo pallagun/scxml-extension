@@ -43,13 +43,13 @@
       (object-of-class-p element 'scxml-parallel)))
 
 ;; enhancements to scxml-element& friends to support drawing
-(cl-defgeneric scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector scxml-point))
+(cl-defgeneric scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector scxml-point) (viewport scxml-viewport))
   ;; TODO - this should move do scxml-drawable-element.el
-  "Modify the drawing hint for ELEMENT (within ROOT) by moving it or it's edit-idx by MOVE-VECTOR")
-(cl-defmethod scxml--modify-drawing-hint ((scxml scxml-scxml) (move-vector scxml-point))
+  "Modify the drawing hint for ELEMENT (within ROOT) by moving it or it's edit-idx by MOVE-VECTOR, perform modification so it looks correct in VIEWPORT.")
+(cl-defmethod scxml--modify-drawing-hint ((scxml scxml-scxml) (move-vector scxml-point) (viewport scxml-viewport))
   "Always returns nil, currently you can't modify these"
   nil)
-(cl-defmethod scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector scxml-point))
+(cl-defmethod scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector scxml-point) (viewport scxml-viewport))
   "Move or change ELEMENT by MOVE-VECTOR.
 
 When ELEMENT has an edit-idx highlighted the drawing will be
@@ -58,13 +58,16 @@ drawing will be moved/displaced.
 
 Will throw if it can't move it."
   (unless (scxml---is-renderable-as-node element)
-    (error "Scxml--modify-drawing-hint not tested for this type yet, only state+parallel+final"))
+    (error "Scxml--modify-drawing-hint not tested for this type(%s) yet, only state+parallel+final"
+           (eieio-object-class-name element)))
   (let ((rect (scxml-element-drawing element)))
     (when (not (scxml-drawing-noshell-rect-p rect)) ;noshell rects are hintless, they strictly obey their parent.
       (let* ((edit-idx (scxml--edit-idx element))
              (edited-rect (scxml-build-edited-drawing rect
                                                       edit-idx
-                                                      move-vector))
+                                                      move-vector
+                                                      viewport))
+             ;; TODO - use the parent drawing canvas function here.
              (parent (scxml-parent element))
              (parent-drawing (scxml-element-drawing parent))
              (parent-drawing-canvas (scxml-get-inner-canvas parent-drawing)))
@@ -91,15 +94,23 @@ Will throw if it can't move it."
           ;; this as possibly invalid as well).
           (scxml--set-drawing-invalid element 't)
           (scxml--set-hint element (scxml-build-hint edited-rect parent-drawing-canvas)))))))
-(cl-defmethod scxml--modify-drawing-hint ((transition scxml-transition) (move-vector scxml-point))
+(cl-defmethod scxml--modify-drawing-hint ((transition scxml-transition) (move-vector scxml-point) (viewport scxml-viewport))
   "Given some TRANSITION in edit-mode, move the current index by MOVE-VECTOR.
 
 Will throw if it can't move it. will not render!!"
   (let* ((arrow (scxml-element-drawing transition))
+         ;; TODO - this num-edit-idxs local variable should be down in
+         ;; the (if edited-arrow block but for some reason the
+         ;; (scxml-build-edited-drawing call is modifying the arrow.
+         ;; It should not be, determine why that's happening.  Example
+         ;; case is when the arrow has an increase in edit-idxs
+         ;; because of an edge jump
+         (num-edit-idxs (scxml-num-edit-idxs arrow))
          (edit-idx (scxml--edit-idx transition))
          (edited-arrow (scxml-build-edited-drawing arrow
                                                    edit-idx
-                                                   move-vector))
+                                                   move-vector
+                                                   viewport))
          (parent (scxml-parent transition))
          (parent-drawing (scxml-element-drawing parent))
          (parent-drawing-canvas (or (scxml-get-inner-canvas parent-drawing)
@@ -112,17 +123,24 @@ Will throw if it can't move it. will not render!!"
                 (scxml-arrow-path arrow) path)
           ;; In some situations the number of edit idxs may change.
           ;; In these situations the edit-idx must be kept valid.
-          (let ((num-edit-idxs (scxml-num-edit-idxs edited-arrow))
-                (current-idx (scxml--edit-idx transition)))
-            (when (and current-idx
-                       (>= current-idx num-edit-idxs))
-              (scxml--set-edit-idx transition (1- num-edit-idxs))))
+          (let ((current-idx (scxml--edit-idx transition)))
+            (when current-idx
+              (let ((curr-num-edit-idxs (scxml-num-edit-idxs edited-arrow)))
+                (cond
+                 ;; edit idx count was reduced and you're over the maximum, snap to maximum.
+                 ((>= current-idx curr-num-edit-idxs)
+                  (scxml--set-edit-idx transition (1- curr-num-edit-idxs)))
+                 ;; edit idx count increased and you were at the previous maximum idx, go to the current maximum idx
+                 ((and (> curr-num-edit-idxs num-edit-idxs)
+                       (eq current-idx (1- num-edit-idxs)))
+                  (scxml--set-edit-idx transition (1- curr-num-edit-idxs)))))))
           (scxml--set-hint transition
                            (scxml-build-hint arrow parent-drawing-canvas))
           (scxml--set-drawing-invalid transition 't)
           't)
       'nil)))
-(cl-defgeneric scxml--simplify-drawing-hint ((element scxml-drawable-element))
+
+(cl-defgeneric scxml--simplify-drawing-hint ((element scxml-drawable-element) (viewport scxml-viewport))
   ;; TODO - this should be moved out to the scxml-drawable-element.el file.
   "Given a drawable ELEMENT, simplify the drawing hint if it exists.")
 (cl-defmethod scxml--simplify-drawing-hint ((state scxml-state))
@@ -193,6 +211,7 @@ Will throw if it can't move it. will not render!!"
                          4.0)))
 (cl-defmethod scxml---get-canvas-divisions ((rectangle scxml-drawing-divided-rect) (num-child-nodes integer))
   ;; TODO - this should be moved out into the drawing file.
+
   (mapcar (lambda (division)
             (let ((sub-rect (cdr division)))
               (with-slots (x-min x-max y-min y-max) sub-rect
@@ -218,6 +237,8 @@ Will throw if it can't move it. will not render!!"
     (when child-nodes
       (let ((divided-canvases (scxml---get-canvas-divisions node
                                                             (length child-nodes))))
+        (unless divided-canvases
+          (error "why is this null????"))
         ;; (cond ((scxml-parallel-p element)
         ;;        (error "Error????"))
         ;;       ('t                         ; scxml-state and scxml-scxml
@@ -258,12 +279,11 @@ Will throw if it can't move it. will not render!!"
              (let ((target-connector (scxml-arrow-target arrow-drawing)))
                (when (object-of-class-p target-connector 'scxml-drawing-connector-unconnected)
                  (let* ((source-connector (scxml-arrow-source arrow-drawing))
-                        (exit-direction (scxml-exit-direction source-connector)))
-                   ;; always set the direction.
-                   (scxml-set-terminal-direction target-connector exit-direction)
+                        (exit-direction (scxml-from-node-direction source-connector)))
                    (when (null (scxml-dangling-point target-connector))
                      ;; no point is set, must set it.
                      (let ((exit-vector (scxml-vector-from-direction exit-direction)))
+                       (scxml-set-to-node-direction target-connector exit-direction)
                        (scxml-set-point target-connector (scxml-add
                                                           (scxml-connection-point source-connector)
                                                           (scxml-scaled exit-vector 2.0))))))))))
@@ -312,7 +332,7 @@ Will throw if it can't move it. will not render!!"
                          ;; for later assignment.  I'm collecting them by state(element)
                          ;; and edge
                          (when (scxml-drawing-connector-rect-p connector)
-                           (let* ((edge (scxml-node-edge connector))
+                           (let* ((edge (scxml-from-node-direction connector))
                                   (key (cons element edge))
                                   (cell (assoc key by-state-and-edge)))
                              (if cell
@@ -418,7 +438,7 @@ Will throw if it can't move it. will not render!!"
                                                  (when e (scxml-print e))
                                                  (when drawing (scxml-print drawing)))
                          (progn
-                           (when (object-of-class-p drawing 'scxml-drawing-divided-rect)
+                           (when (scxml-drawing-divided-rect-class-p drawing);; (object-of-class-p drawing 'scxml-drawing-divided-rect)
                              (scxml--scratch-dividers scratch
                                                       viewport
                                                       (scxml-dividers drawing)))

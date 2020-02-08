@@ -352,12 +352,35 @@ That should be sorted out before calling this."
           'nil)))))
 (cl-defmethod scxml-coarse-direction ((segment scxml-segment))
   (scxml-coarse-direction (scxml-characteristic-vector segment)))
+
+(cl-defmethod scxml-get-closest-parametric ((segment scxml-segment) (pt scxml-point) &optional bounded)
+  "Get the parametric coordinate of the closest point along SEGMENT to PT.
+
+Output is bounded to be between [0, 1] inclusive when BOUNDED is t."
+  (with-slots (start) segment
+    (let* ((seg-start-to-pt (scxml-subtract pt start))
+           (char-vec (scxml-characteristic-vector segment))
+           (parametric (/ (scxml-dot-prod (scxml-normalized char-vec)
+                                          seg-start-to-pt)
+                          (scxml-length segment))))
+      (if bounded
+          (min (max parametric 0.0) 1.0)
+        parametric))))
+
+(cl-defmethod scxml-absolute-coordinates ((base-segment scxml-segment) (coordinate number))
+  "Return the point along BASE-SEGMENT at the segments parametric COORDINATE."
+  (with-slots (start) base-segment
+    (scxml-add start
+               (scxml-scaled (scxml-characteristic-vector base-segment)
+                             coordinate))))
+
 (cl-defmethod scxml-get-parametric ((segment scxml-segment) (pt scxml-point) &optional distance-tolerance)
   "Get the parametric coordinate of PT along SEGMENT.
 
 Note: this is similar to scxml-relative-coordinate but as it
 could return a nil value it's differentiated with the
 -get-parametric name."
+  ;; TODO -replace the first few let clauses with a call to scxml-get-closest-parametric?
   (with-slots (start) segment
     (let* ((seg-start-to-pt (scxml-subtract pt start))
            (char-vec (scxml-characteristic-vector segment))

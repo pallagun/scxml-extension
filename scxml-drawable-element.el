@@ -8,6 +8,7 @@
 (require 'scxml-element)
 (require 'scxml-drawing)
 (require 'scxml-canvas)
+(require 'scxml-viewport)
 
 (defconst scxml---hint-symbol 'scxml---drawing-hint
   "The xml attribute name used to store drawing hints.")
@@ -18,47 +19,127 @@
             :type (or scxml-drawing null)
             :initform nil))
   :abstract 't
-  :documentation "This is an element that can be drawn.")
+  :documentation "This is an element that can be drawn and which
+  has a 1 to 1 relationship with an element in a valid scxml
+  document.")
+(defun scxml-drawable-element-class-p (any)
+  "Equivalent of (object-of-class-p ANY 'scxml-drawable-element)."
+  (object-of-class-p any 'scxml-drawable-element))
+(defclass scxml-synthetic-drawing (scxml--core-nil)
+  ((_hint-key :allocation :class
+              :documentation "Drawing hints for synthetic
+              drawings are stored on the first non-synthetic
+              ancestor.  To differentiate between the ancestor's
+              drawing hint and this elements drawing hint they
+              are inserted into the hint alist with the specified
+              hint-key."))
+  :documentation "This class signifies that the object which is
+  drawn does not have a 1 to 1 correspondence with an scxml
+  element.")
+
+(cl-defmethod scxml--find-first-non-synthetic-ancestor ((element scxml-element))
+  "Find first ancestor that is not synthetic."
+  (scxml-parent element))
+(cl-defmethod scxml--find-first-non-synthetic-ancestor ((element scxml-synthetic-drawing))
+  "Find first ancestor that is not synthetic."
+  (scxml-find-ancestor-if element
+                          (lambda (e)
+                            (not (object-of-class-p e 'scxml-synthetic-drawing)))))
+
 (cl-defmethod scxml-print ((element scxml-drawable-element))
   "Pretty print ELEMENT for human eyeballs."
   (format "hasDrawing:%s, %s"
           (and (scxml-element-drawing element) t)
           (cl-call-next-method)))
-(cl-defmethod scxml-xml-element-name ((element scxml-drawable-element))
-  "Return the equivalent non-drawable name."
-  (substring
-   (symbol-name (eieio-object-class element))
-   (length "scxml-drawable-")))
 (cl-defmethod scxml-xml-attributes ((element scxml-drawable-element))
   "Return an xml attribute alist for ELEMENT.
 
 Push in the drawing hint attribute."
-  (append (list
-           (cons scxml---hint-symbol
-                 (scxml-get-attrib element scxml---hint-symbol nil)))
-          (cl-call-next-method)))
+  (let ((hint (scxml--hint element t)))
+    (if hint
+        (append (list
+                 (cons scxml---hint-symbol hint))
+                (cl-call-next-method))
+      (cl-call-next-method))))
+
 (cl-defgeneric scxml--drawing-invalid? ((element scxml-drawable-element))
   "Could the drawing for this ELEMENT be invalid? (i.e. needs to be replotted)"
   (scxml-get-attrib element 'scxml---drawing-invalid 't))
 (cl-defgeneric scxml--set-drawing-invalid ((element scxml-drawable-element) is-invalid)
   "Note that the drawing for this ELEMENT might not be valid."
+  (scxml--set-drawing-invalid-raw element is-invalid))
+(defsubst scxml--set-drawing-invalid-raw (element is-invalid)
+  "Modify ELEMENT (as a scxml-drawable-element) to have drawing valid flag IS-VALID.
+
+This is the base method with no additional functionality."
   (scxml-put-attrib element 'scxml---drawing-invalid is-invalid))
 
-(cl-defmethod scxml--hint ((element scxml-drawable-element))
-  "Get the hint for this drawable ELEMENT"
-  (scxml-get-attrib element scxml---hint-symbol))
+(cl-defmethod scxml--unserialize-drawing-hint (hint-string)
+  "Return the drawing hint alist in HINT-STRING.
+
+Convention is that the drawing hint specific to ELEMENT will be
+in the association list with key 'self."
+  (if hint-string
+      (let* ((reader-cons (read-from-string hint-string))
+             (all-hints (car reader-cons)))
+        all-hints)
+    nil))
+
+(cl-defgeneric scxml--hint ((element scxml-drawable-element) &optional full-hint)
+  "Get the hint for this drawable ELEMENT.
+
+When FULL-HINT is true the entire hint will be returned which may
+be an association list containing other drawing information
+pertaining to synthetic children.")
+(cl-defmethod scxml--hint ((element scxml-drawable-element) &optional full-hint)
+  "Get the hint for this drawable ELEMENT.
+
+When FULL-HINT is true the entire hint will be returned which may
+be an association list containing other drawing information
+pertaining to synthetic children."
+  (let ((all-hints (scxml-get-attrib element scxml---hint-symbol nil)))
+    (if full-hint
+        all-hints
+      (alist-get 'self all-hints nil))))
+(cl-defmethod scxml--hint ((synth scxml-synthetic-drawing) &optional full-hint)
+  "Get the hint for this drawable ELEMENT."
+  (when full-hint
+    (error "Full hint is not a valid request for a synthetic drawing"))
+  (let ((hint-key (oref synth _hint-key))
+        (hinted-element (scxml--find-first-non-synthetic-ancestor synth)))
+    (unless hinted-element
+      (error "Unable to find where this hint should be stored"))
+    (let ((all-hints (scxml-get-attrib hinted-element scxml---hint-symbol nil)))
+      (alist-get hint-key all-hints nil))))
+(cl-defgeneric scxml--set-hint ((element scxml-drawable-element) hint)
+  "Set the hint for this drawable ELEMENT as HINT")
 (cl-defmethod scxml--set-hint ((element scxml-drawable-element) hint)
   "Set the hint for this drawable ELEMENT as HINT"
-  (scxml-put-attrib element scxml---hint-symbol hint))
+  (let ((all-hints (scxml-get-attrib element scxml---hint-symbol nil)))
+    (if hint
+        (setf (alist-get 'self all-hints) hint)
+      (setf all-hints (assq-delete-all 'self all-hints)))
+    (scxml-put-attrib element scxml---hint-symbol all-hints)))
+(cl-defmethod scxml--set-hint ((synth scxml-synthetic-drawing) hint)
+  "Set the hint for this drawable ELEMENT as HINT"
+  ;; todo - this shares a lot with the hint getter scxml--hint
+  (let ((hint-key (oref synth _hint-key))
+        (hinted-element (scxml--find-first-non-synthetic-ancestor synth)))
+    (unless hinted-element
+      (error "Unable to find where this hint should be stored"))
+    (let ((all-hints (scxml-get-attrib hinted-element scxml---hint-symbol nil)))
+      (if hint
+          (setf (alist-get hint-key all-hints) hint)
+        (setf all-hints (assq-delete-all hint-key all-hints)))
+      (scxml-put-attrib hinted-element scxml---hint-symbol all-hints))))
+
 (cl-defmethod scxml--set-hint-from-attrib-list ((element scxml-drawable-element) (attributes list))
   "Set the hint for ELEMENT if a valid hint is found in ATTRIBUTES.
 
 Used for parsing hints out of xml attributes."
-  (let ((hint-string (alist-get scxml---hint-symbol attributes nil)))
-    (when hint-string
-      (let ((drawing-hint (read-from-string hint-string)))
-        (when (car drawing-hint)
-          (scxml--set-hint element (car drawing-hint)))))))
+  (let* ((hint-string (alist-get scxml---hint-symbol attributes nil))
+         (all-hints (scxml--unserialize-drawing-hint hint-string)))
+    (scxml-put-attrib element scxml---hint-symbol all-hints)))
 
 (cl-defmethod scxml--highlight ((element scxml-drawable-element))
   "Return non-nil if this element should be highlighted."
@@ -122,9 +203,19 @@ Returns the current ELEMENT drawing."
         (scxml--set-drawing-invalid element 'nil)
         drawing)))
   (scxml-element-drawing element))
-
 (cl-defgeneric scxml-build-drawing ((element scxml-drawable-element) (canvas scxml-canvas))
   "Return a drawing for ELEMENT within CANVAS.")
+(cl-defgeneric scxml-simplify-drawing ((element scxml-drawable-element) (viewport scxml-viewport))
+  "Attempt to simplify the drawing for ELEMENT.")
+(cl-defmethod scxml-simplify-drawing ((element scxml-drawable-element) (viewport scxml-viewport))
+  "Attempt to simplify the drawing for ELEMENT."
+  (let ((simplified (scxml-build-simplified (scxml-element-drawing element)
+                                            viewport)))
+    (when simplified
+      (scxml--set-hint element
+                       (scxml-build-hint simplified
+                                         (scxml-get-parent-drawing-inner-canvas element t)))
+      (scxml--set-drawing-invalid element t))))
 
 (cl-defgeneric scxml-parent-drawing ((element scxml-drawable-element))
   "Return the drawing of ELEMENT's parent scxml-element.")
@@ -134,14 +225,40 @@ Returns the current ELEMENT drawing."
     (and parent (scxml-element-drawing parent))))
 (cl-defgeneric scxml-get-parent-drawing-inner-canvas ((element scxml-drawable-element))
   "Return the ELEMENT's parent's inner canvas.")
-(cl-defmethod scxml-get-parent-drawing-inner-canvas ((element scxml-drawable-element))
-  "Return the ELEMENT's parent's inner canvas.
+(cl-defmethod scxml-get-parent-drawing-inner-canvas ((element scxml-drawable-element) &optional allow-any-ancestor)
+  "Return the ELEMENT's parent's inner canvas or ALLOW-ANY-ANCESTOR.
 
-Equivalent to (scxml-inner-canvas (scxml-parent-drawing ELEMENT))
-but with some checks."
-  (let* ((parent (scxml-parent element))
-         (parent-drawing (and parent (scxml-element-drawing parent))))
-    (and parent-drawing (scxml-get-inner-canvas parent-drawing))))
+When ALLOW-ANY-ANCESTOR is nil this is equivalent
+to (scxml-inner-canvas (scxml-parent-drawing ELEMENT)) but with
+some checks.
+
+When ALLOW-ANY-ANCESTOR is non-nil this will find the first
+ancestor that has a non-nil inner-canvas and recturn that
+canvas."
+  (if allow-any-ancestor
+      ;; Look upwards through ancestors for the first valid inner canvas.
+      (block find-parent-inner-canvas
+        (scxml-visit-parents element
+                             (lambda (parent)
+                               (let ((parent-drawing (scxml-element-drawing parent)))
+                                 (when parent-drawing
+                                   (let ((canvas (scxml-get-inner-canvas parent-drawing)))
+                                     (when canvas
+                                       (return-from find-parent-inner-canvas canvas)))))))
+        nil)
+    ;; strictly return the direct parent's inner canvas
+    (let* ((parent (scxml-parent element))
+           (parent-drawing (and parent (scxml-element-drawing parent))))
+      (and parent-drawing (scxml-get-inner-canvas parent-drawing)))))
+
+(cl-defmethod scxml--build-synthetic-children ((element scxml-drawable-element) (attrib-alist list))
+  "Build additional synthethc elements if needed from the attrib-alist.
+
+The only example is for <state> and <scxml> elements which can
+have an 'initial=\"...\"' attribute.  When this is found
+synthetic <initial> and <transition> elements are made to
+graphically display the meanining of the initial attribute."
+nil)
 
 (provide 'scxml-drawable-element)
 ;;; scxml-drawable-element.el ends here

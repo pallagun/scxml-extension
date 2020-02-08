@@ -137,10 +137,10 @@ Symbols will be one of: 'up, 'down, 'left, 'right."
   (with-slots (x y) vector
     (let ((abs-x (abs x))
           (abs-y (abs y)))
-      (cond ((>= x abs-y) 'right)
-            ((>= y abs-x) 'up)
-            ((> abs-x abs-y) 'left)
-            ((> abs-y abs-x) 'down)
+      (cond ((>= y abs-x) 'up)
+            ((>= x abs-y) 'right)
+            ((>= abs-y abs-x) 'down)
+            ((>= abs-x abs-y) 'left)
             (t (error "Unable to determine coarse direction"))))))
 (cl-defmethod scxml-coarse-direction-unit-vector ((vector scxml-point))
   "Get a unit vector in a cardinal direction closest to VECTOR.

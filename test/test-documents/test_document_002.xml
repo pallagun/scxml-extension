@@ -1,4 +1,4 @@
-<scxml initial="A" version="1.0">
+<scxml version="1.0">
   <state id="A">
     <initial>
       <transition target="A.1" />

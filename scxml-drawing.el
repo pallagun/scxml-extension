@@ -52,23 +52,26 @@ By default, assume zero."
   "Get the scxml-point location of the given edit IDX in DRAWING")
 (cl-defgeneric scxml-edit-idx-points ((drawing scxml-drawing))
   "Get a list of all the edit-idx points for this DRAWING in order")
+(cl-defmethod scxml-edit-idx-points ((drawing scxml-drawing))
+  "By default, none."
+  nil)
 
-(cl-defgeneric scxml-build-edited-drawing ((drawing scxml-drawing) edit-idx (move-vector scxml-point))
-  "Derive an edited drawing from DRAWING, EDIT-IDX (nillable) and MOVE-VECTOR.
+(cl-defgeneric scxml-build-edited-drawing ((drawing scxml-drawing) edit-idx (move-vector scxml-point) (viewport scxml-viewport))
+  "Derive an edited drawing from DRAWING, EDIT-IDX (nillable) and MOVE-VECTOR for VIEWPORT.
 
 This should only build a new drawing and return it (if possible)
 and should not mutate anything.  Note: EDIT-IDX can be nil
 meaning move all the edit-idxs (i.e. just move the whole
 thing)."
   (if edit-idx
-      (scxml-build-idx-edited drawing edit-idx move-vector)
-    (scxml-build-move-edited drawing move-vector)))
-(cl-defgeneric scxml-build-move-edited ((drawing scxml-drawing) (move-vector scxml-point))
+      (scxml-build-idx-edited drawing edit-idx move-vector viewport)
+    (scxml-build-move-edited drawing move-vector viewport)))
+(cl-defgeneric scxml-build-move-edited ((drawing scxml-drawing) (move-vector scxml-point) (viewport scxml-viewport))
   "Build a drawing based off moving DRAWING by MOVE-VECTOR.
 
 This should only build a new drawing and return it (if possible)
 and should not mutate anything.")
-(cl-defgeneric scxml-build-idx-edited ((drawing scxml-drawing) (edit-idx integer) (move-vector scxml-point))
+(cl-defgeneric scxml-build-idx-edited ((drawing scxml-drawing) (edit-idx integer) (move-vector scxml-point) (viewport scxml-viewport))
   "Build a drawing based off moving EDIT-IDX of DRAWING by MOVE-VECTOR.
 
 This should only build a new drawing and return it (if possible)
@@ -80,6 +83,10 @@ A drawing 'hint' is something that captures the intent of the
 drawing but not the exact pixels.  Something like box-on-the-left
 instead of an exact set of pixels/segments.  It may or may not be
 relative to the parent-canvas.")
+(cl-defgeneric scxml-build-simplified ((drawing scxml-drawing) (viewport scxml-viewport))
+  "Attempt to build a simplified DRAWING as seen by human eyes in VIEWPORT.
+
+VIEWPORT is used to establish how agressive the simplification can be.")
 
 (cl-defgeneric scxml-get-inner-canvas ((drawing scxml-drawing))
   "Return the inner canvas of DRAWING which may be nil.")

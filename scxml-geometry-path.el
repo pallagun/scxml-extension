@@ -180,10 +180,11 @@ The implementation is not efficient, use caution."
   "Return a simplified version of the PATH.
 
 Removes duplicates and colinear points."
+  ;; todo - this should return a cardinal path when it's given one.
   (with-slots (points) path
-    (scxml-path :points (scxml---path-append-simplify points))))
+    (scxml-path :points (scxml-simplified points))))
 
-(cl-defmethod scxml---get-deltas ((points list))
+(cl-defmethod scxml--get-deltas ((points list))
   "Given a list of N points, return a list of deltas between the points.
 
 Will return nil if length of the path is 1 or less."
@@ -196,12 +197,7 @@ Will return nil if length of the path is 1 or less."
                 (setq last-point pt))
               (cdr points))
         (nreverse deltas))))
-;; (cl-defmethod scxml---get-deltas ((path scxml-path))
-;;   "Given a path of length N, return a list of deltas between the points.
-;; Will return nil if length of the path is 1 or less."
-;;   (with-slots (points) path
-;;     (scxml---get-deltas points)))
-(cl-defmethod scxml---path-from-deltas ((deltas list) (start-point scxml-point))
+(cl-defmethod scxml--path-from-deltas ((deltas list) (start-point scxml-point))
   "Return a list of points starting at START-POINT and having DELTAS as per point deltas.
 
 Something of the opposite of scml---get-deltas."
@@ -430,8 +426,8 @@ parameter.  No promises are made.
     (error "Write this part, that will handle min start and end segment distances"))
   (let ((points (scxml---path-cardinal start end entry-vector exit-vector min-segment-distance)))
     (scxml-cardinal-path :points points)))
-(defun scxml---path-append-simplify (&rest n-path-pts)
-  "Take all points from N-PATH-PTS lists and simplify them.
+(defun scxml-simplified (&rest n-path-pts)
+  "Take all points from N-PATH-PTS lists-of-points and simplify them.
 
 Remove duplicate points.
 Remove colinear intermediary points."
@@ -525,7 +521,7 @@ have the desired start and end points."
                                      1.0) ;TODO - this 1.0 is a guess, I'm not sure what it should really be
             ;; You have the liberty to inject displacements into this path to
             ;; make it stretch correctly.  Determine the displacement.
-            (let ((deltas (scxml---get-deltas points))
+            (let ((deltas (scxml--get-deltas points))
                   (additional-displacement (scxml-subtract force-displacement old-displacement))
                   (vertical-deltas 'nil)
                   (horizontal-deltas 'nil))
@@ -545,7 +541,7 @@ have the desired start and end points."
                                               (float (length vertical-deltas)))))
                   (cl-loop for delta in vertical-deltas
                            do (oset delta y (+ (scxml-y delta) additional-vertical)))))
-                (scxml---path-from-deltas deltas force-start))))))))
+                (scxml--path-from-deltas deltas force-start))))))))
 
 (defun scxml---nudge-path-start (points move-vector)
   "Move the first element of POINTS by MOVE-VECTOR and update subsequent points."

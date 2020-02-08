@@ -51,10 +51,10 @@ canvas.  It can optionally have a name.")
      ;; err
      (otherwise (error "Invalid edit-mode idx: %s" idx)))))
 
-(cl-defmethod scxml-build-move-edited ((rect scxml-drawing-rect) (move-vector scxml-point))
+(cl-defmethod scxml-build-move-edited ((rect scxml-drawing-rect) (move-vector scxml-point) (viewport scxml-viewport))
   "Given a RECT, and a MOVE-DIRECTION, move in one pixel in that direction."
   (scxml-incf (clone rect) move-vector))
-(cl-defmethod scxml-build-idx-edited ((rect scxml-drawing-rect) (edit-idx integer) (move-vector scxml-point))
+(cl-defmethod scxml-build-idx-edited ((rect scxml-drawing-rect) (edit-idx integer) (move-vector scxml-point) (viewport scxml-viewport))
   (let ((pts (scxml-bounding-pts rect))
         (horizontal-pts 'nil)
         (vertical-pts 'nil))

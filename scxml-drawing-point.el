@@ -16,13 +16,10 @@
 (cl-defmethod scxml-num-edit-idxs ((pt-drawing scxml-drawing-point))
   "A point drawing has no edit idxs"
   0)
-(cl-defmethod scxml-edit-idx-points ((pt-drawing scxml-drawing-point))
-  "A point drawing has no edit idxs, this will always return nil"
-  nil)
 (cl-defmethod scxml-edit-idx-point ((pt-drawing scxml-drawing-point) (idx integer))
   "A point drawing has no edit idxs, this will always error"
   (error "Invalid edit-mode idx"))
-(cl-defmethod scxml-build-move-edited ((pt-drawing scxml-drawing-point) (move-vector scxml-point))
+(cl-defmethod scxml-build-move-edited ((pt-drawing scxml-drawing-point) (move-vector scxml-point) (viewport scxml-viewport))
   "Given a PT-DRAWING and a MOVE-VECTOR, apply the movement."
   ;; TODO - this can probabyl just be a clone and incf.
   (let ((new-pt (scxml-add pt-drawing move-vector)))
@@ -30,7 +27,7 @@
                          :y (scxml-y new-pt)
                          :label (scxml-label pt-drawing)
                          :parent (scxml-parent pt-drawing))))
-(cl-defmethod scxml-build-idx-edited ((pt-drawing scxml-drawing-point) (edit-idx integer) (move-vector scxml-point))
+(cl-defmethod scxml-build-idx-edited ((pt-drawing scxml-drawing-point) (edit-idx integer) (move-vector scxml-point) (viewport scxml-viewport))
   "A point drawing has no edit idxs, this will always error."
   (error "Unable to build an idx-edited scxml-drawing-point object."))
 

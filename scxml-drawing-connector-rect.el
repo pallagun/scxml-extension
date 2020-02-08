@@ -10,9 +10,7 @@
 
 (defclass scxml-drawing-connector-rect (scxml-drawing-connector-connected)
   ((edge :initarg :edge
-         :accessor scxml-node-edge
-         :type symbol
-         :documentation "TODO : bad name, rename this accessor")
+         :type symbol)                  ;todo - validation here sould be chaneg to (member up down left right)
    (parametric :initarg :parametric
                :accessor scxml-edge-parametric)))
 
@@ -21,11 +19,13 @@
   (with-slots (edge parametric) connector
     (format "ConR(%s@%f/%s)" edge parametric (scxml-print (scxml-connection-point connector)))))
 
-(cl-defgeneric scxml-terminal-direction ((connector scxml-drawing-connector-rect))
+(cl-defgeneric scxml-to-node-direction ((connector scxml-drawing-connector-rect))
   "terminal-direction"
-  (scxml-reverse (scxml-node-edge connector)))
-(cl-defmethod scxml-exit-direction ((connector scxml-drawing-connector-rect))
-  (scxml-node-edge connector))
+  (scxml-reverse (oref connector edge)))
+
+(cl-defmethod scxml-from-node-direction ((connector scxml-drawing-connector-rect))
+  "Formerly 'scxml-node-edge'"
+  (oref connector edge))
 
 (cl-defmethod scxml-connection-point ((connector scxml-drawing-connector-rect) &optional offset)
   "Get the point of this connector."
@@ -49,11 +49,11 @@ Might return the connector right back to you if alreay snapped."
       (progn
         (let ((parametric (scxml---connector-parametric connector
                                                         snapped-point
-                                                        (scxml-node-edge connector)
+                                                        (oref connector edge)
                                                         (when allow-partial-snap 1.01))))
           (if parametric
               (scxml-drawing-connector-rect :node (scxml-node connector)
-                               :edge (scxml-node-edge connector)
+                               :edge (oref connector edge)
                                :parametric parametric)
             (error "Unable to snap connector - is this something that can be ignored? probably not")))))))
 
@@ -68,6 +68,39 @@ Might return the connector right back to you if alreay snapped."
       edge-parametric)))
 
 (cl-defmethod scxml-build-connector ((connector scxml-drawing-connector-rect) (target-point scxml-point))
+  "Build a brand new connector based off nudging CONNECTOR over to TARGET-POINT.
+
+This function may return connectors which aren't exactly at
+TARGET-POINT.
+
+When told to build a connector at a point which is valid (on the
+edges of the rectangle) this function will do so.
+
+When told to build a connector at a point which is invalid (not
+on the edges of the rectangle) this function will return a valid
+connector which is as close as possible to the TARGET-POINT but
+is still valid."
+  (with-slots ((rect node) edge) connector
+    (cl-loop with best-connection-set = nil
+             for edge-candidate in '(up down left right)
+             for edge-segment = (scxml-edge rect edge-candidate)
+             for edge-parametric = (scxml-get-closest-parametric edge-segment target-point t)
+             for edge-point = (scxml-absolute-coordinates edge-segment edge-parametric)
+             for distance-sq = (scxml-distance-sq edge-point target-point)
+             if (null best-connection-set)
+               do (setq best-connection-set (list distance-sq edge-candidate edge-parametric))
+             else
+               if (or (< distance-sq (first best-connection-set))
+                      (and (<= distance-sq (first best-connection-set))
+                           (eq edge-candidate edge)))
+                 do (setq best-connection-set (list distance-sq edge-candidate edge-parametric))
+               end
+             end
+             finally return (scxml-drawing-connector-rect :node rect
+                                                          :edge (second best-connection-set)
+                                                          :parametric (third best-connection-set)))))
+
+(cl-defmethod scxml-build-connector-old ((connector scxml-drawing-connector-rect) (target-point scxml-point))
   "Build a brand new connector based off nudging CONNECTOR over to TARGET-POINT.
 
 Will return nil if the connector can't be built."
