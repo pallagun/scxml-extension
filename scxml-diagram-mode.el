@@ -173,7 +173,7 @@ If this is set it will be called with no arguments.")
     (error "Invalid buffer: %s" drawing-buffer))
   (let ((buffer (or drawing-buffer
                     (scxml-draw--get-buffer (format "%s" (current-buffer)))))
-        (root-element (scxml-read-buffer)))
+        (root-element (scxml-read-buffer nil #'scxml--drawable-element-factory)))
     (unless (object-of-class-p root-element 'scxml-scxml)
       (error "Unable to parse buffer as <scxml>"))
     (let* ((canvas (or canvas (scxml-canvas--default)))
@@ -197,7 +197,7 @@ If this is set it will be called with no arguments.")
     (error "Invalid buffer: %s" drawing-buffer))
   (let ((buffer (or drawing-buffer (scxml-draw--get-buffer (format "%s"
                                                                    xml-buffer))))
-        (root-element (scxml-read-buffer)))
+        (root-element (scxml-read-buffer nil #'scxml--drawable-element-factory)))
     (unless (object-of-class-p root-element 'scxml-scxml)
       (error "Unable to parse buffer as <scxml>"))
     (split-window-right)
@@ -308,34 +308,34 @@ Currently only able to zoom out when in viewport mode."
   "Modify the selected drawing element by move-vector"
   (if (eq scxml-diagram-mode--mouse-mode 'viewport)
       ;; You're in viewport mode, modify the viewport.
-      (let ((flipped (scxml-additive-inverse move-vector)))
+      (let ((flipped (2dg-additive-inverse move-vector)))
         (scxml-diagram-mode--pan (scxml-x flipped) (scxml-y flipped)))
     ;; else, normal view/edit mode.
     (when scxml-diagram-mode--marked-element
-      (unless (scxml-point-p move-vector)
-        (error "Must supply an scxml-point as MOVE-VECTOR"))
+      (unless (2dg-point-p move-vector)
+        (error "Must supply an 2dg-point as MOVE-VECTOR"))
       (scxml-save-excursion
        (scxml-diagram-mode--move move-vector)))))
 (defun scxml-diagram-mode--modify-right ()
   "Modify rightward"
   (interactive)
   (scxml-record 'scxml-diagram-mode--modify-right)
-  (scxml-diagram-mode--modify (scxml-point :x 1.0 :y 0.0)))
+  (scxml-diagram-mode--modify (2dg-point :x 1.0 :y 0.0)))
 (defun scxml-diagram-mode--modify-left ()
   "Modify leftward"
   (interactive)
   (scxml-record 'scxml-diagram-mode--modify-left)
-  (scxml-diagram-mode--modify (scxml-point :x -1.0 :y 0.0)))
+  (scxml-diagram-mode--modify (2dg-point :x -1.0 :y 0.0)))
 (defun scxml-diagram-mode--modify-up ()
   "Modify upward"
   (interactive)
   (scxml-record 'scxml-diagram-mode--modify-up)
-  (scxml-diagram-mode--modify (scxml-point :x 0.0 :y 1.0)))
+  (scxml-diagram-mode--modify (2dg-point :x 0.0 :y 1.0)))
 (defun scxml-diagram-mode--modify-down ()
   "Modify downward"
   (interactive)
   (scxml-record 'scxml-diagram-mode--modify-down)
-  (scxml-diagram-mode--modify (scxml-point :x 0.0 :y -1.0)))
+  (scxml-diagram-mode--modify (2dg-point :x 0.0 :y -1.0)))
 
 (defun scxml-diagram-mode--redraw ()
   "Redraw the screen."
@@ -453,19 +453,19 @@ Currently only able to zoom out when in viewport mode."
                     ;; Only process when the 'pixel' changes.  That's the smallest unit of distance a user can change something by
                     (when (and current-pixel ;pixel must be valid and exist (it won't exist if you leave the window)
                                (not (equal current-pixel last-pixel)))
-                      (let* ((current-delta (scxml-subtract current-pixel last-pixel))
-                             (total-delta (scxml-subtract current-pixel start-pixel))
+                      (let* ((current-delta (2dg-subtract current-pixel last-pixel))
+                             (total-delta (2dg-subtract current-pixel start-pixel))
                              (start (scxml-get-coord-centroid (scxml-diagram-mode--viewport) last-pixel))
                              (end (scxml-get-coord-centroid (scxml-diagram-mode--viewport) current-pixel))
-                             (delta (scxml-subtract end start)))
+                             (delta (2dg-subtract end start)))
 
-                        ;; (message "delta pixel raw: %s" (scxml-subtract end start))
+                        ;; (message "delta pixel raw: %s" (2dg-subtract end start))
                         ;; (message "Mouse Event[%d]: start: %s, delta %s, t-delta %s, dir %s"
                         ;;          event-count
                         ;;          (scxml-print start-pixel)
                         ;;          (scxml-print current-delta)
                         ;;          (scxml-print total-delta)
-                        ;;          (scxml--direction-name  (scxml-coarse-direction current-delta)))
+                        ;;          (scxml--direction-name  (2dg-coarse-direction current-delta)))
                         ;; (message "delta: %s" (scxml-print delta))
                         ;; (message "type: %s" event-type)
                         (if (eq scxml-diagram-mode--mouse-mode 'viewport)
@@ -699,7 +699,7 @@ the user is attempting to mark an edit idx."
                                   (scxml-diagram-mode--marked-drawing))
                  for edit-pt in edit-pts
                  for edit-idx from 0 to (1- (length edit-pts))
-                 if (scxml-contains drawing-coord edit-pt 'stacked)
+                 if (2dg-contains drawing-coord edit-pt 'stacked)
                  do (progn
                       (scxml--set-edit-idx scxml-diagram-mode--marked-element edit-idx)
                       (return-from scxml--found))))
@@ -718,13 +718,13 @@ the user is attempting to mark an edit idx."
                        with best-pt = nil
                        for edit-pt in edit-pts
                        for edit-idx from 0 to (1- (length edit-pts))
-                       if (scxml-contains drawing-coord edit-pt 'stacked)
+                       if (2dg-contains drawing-coord edit-pt 'stacked)
                        do (progn
                             (scxml--set-edit-idx element edit-idx)
                             (setq pixel (scxml-get-pixel viewport edit-pt))
                             (cl-return))
                        else
-                       do (let ((distance (scxml-distance (scxml-centroid drawing-coord)
+                       do (let ((distance (2dg-distance (2dg-centroid drawing-coord)
                                                           edit-pt)))
                             (when (< distance best-distance)
                               (setq best-distance distance)
@@ -758,8 +758,8 @@ the user is attempting to mark an edit idx."
 (defun scxml-diagram-mode--move (move-vector)
   "Whatever edit-idx you're at (or not at), move it by MOVE-VECTOR."
   ;; TODO - should this be a cl-defmethod?
-  (unless (scxml-point-p move-vector)
-    (error "Must supply a scxml-point to specify move vector"))
+  (unless (2dg-point-p move-vector)
+    (error "Must supply a 2dg-point to specify move vector"))
   ;; pass in viewport here, it has to get all the way to drawings.
   (scxml--modify-drawing-hint scxml-diagram-mode--marked-element
                               move-vector
@@ -904,7 +904,7 @@ with the drawing being resized."
       ;;      and that inner-canvas in entirely consumed by children.
 
 
-      (unless (scxml-contains valid-area drawing-coord)
+      (unless (2dg-contains valid-area drawing-coord)
         (error "Must select a pixel entirely inside a valid inner canvas"))
 
 
@@ -920,7 +920,7 @@ with the drawing being resized."
               (scxml-add-child new-element (if (object-of-class-p new-element 'scxml-synthetic-drawing)
                                                (scxml-drawable-synthetic-transition)
                                              (scxml-drawable-transition)))
-              (scxml--set-hint new-element (scxml-build-hint (scxml-centroid drawing-coord) valid-area)))
+              (scxml--set-hint new-element (scxml-build-hint (2dg-centroid drawing-coord) valid-area)))
           ;; When non-initial (state, parallel or final) immediately
           ;; go to drawing resize mode and select the 2nd edit idx.
           ;; when the mouse button is release exit resizing mode.
@@ -1231,7 +1231,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
     (if hint
         (cond ((or (scxml-rect-p hint)
                    (scxml-arrow-hint-p hint)
-                   (scxml-point-p hint))
+                   (2dg-point-p hint))
                (scxml-print hint))
               ((scxml---drawing-nest-rect-hint-p hint)
                "it's a divided nest rect")
@@ -1276,7 +1276,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
                                                                               (scxml-BL (scxml-get-coord (scxml-diagram-mode--viewport)
                                                                                                          scxml-diagram-mode--last-click-pixel))))
                                                 (scxml-print (scxml-get-pixel (scxml-diagram-mode--viewport)
-                                                                              (scxml-centroid (scxml-get-coord (scxml-diagram-mode--viewport)
+                                                                              (2dg-centroid (scxml-get-coord (scxml-diagram-mode--viewport)
                                                                                                                scxml-diagram-mode--last-click-pixel)))))
                                       "none"))
            (format "Marked:   %s\n" (scxml-print marked))

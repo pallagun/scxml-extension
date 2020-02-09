@@ -27,19 +27,19 @@
   "Return non-nil if A and B are the same pixel."
   (and (equal (scxml-x A) (scxml-x B))
        (equal (scxml-y A) (scxml-y B))))
-(cl-defmethod scxml-almost-equal ((A scxml-pixel) (B scxml-pixel))
+(cl-defmethod 2dg-almost-equal ((A scxml-pixel) (B scxml-pixel))
   "Return non-nil if A nd B are almost the same pixel.
 
 Note: this just calls scxml-equal as pixels are far too coarse to
 bother with almost equality checking."
   (scxml-equal A B))
-(cl-defmethod scxml-subtract ((A scxml-pixel) (B scxml-pixel))
+(cl-defmethod 2dg-subtract ((A scxml-pixel) (B scxml-pixel))
   "Return the result of pixel A - pixel B.
 
 Note: the coordinate system is that of pixels."
   (scxml-pixel :x (- (scxml-x A) (scxml-x B))
                :y (- (scxml-y A) (scxml-y B))))
-(cl-defmethod scxml-coarse-direction ((vector scxml-pixel))
+(cl-defmethod 2dg-coarse-direction ((vector scxml-pixel))
   "Return the closest cardinal direction of a vector as a symbol.
 
 Symbols will be one of: 'up, 'down, 'left, 'right.

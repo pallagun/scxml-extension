@@ -32,17 +32,17 @@
          :accessor scxml-hint-edge
          :type symbol)
    (parametric :initarg :parametric
-               :accessor scxml-parametric
+               :accessor 2dg-parametric
                :type number)))
 (cl-defmethod scxml-print ((hint scxml-arrow-connector-rect-hint))
   "Return a stringified version of POINT for human eyes."
   (format "[E:%s, P:%f]"
           (scxml-hint-edge hint)
-          (scxml-parametric hint)))
+          (2dg-parametric hint)))
 (defclass scxml-arrow-connector-dangling-hint (scxml-arrow-connector-hint)
   ((point :initarg :point
           :accessor scxml-connector-hint-point
-          :type scxml-point)
+          :type 2dg-point)
    (terminal-direction :initarg :terminal-direction
                    :accessor scxml-connector-terminal-direction
                    :type symbol)))
@@ -66,7 +66,7 @@
   (if (object-of-class-p drawing 'scxml-drawing)
       (scxml-drawing-connector-rect :node drawing
                                     :edge (scxml-hint-edge hint)
-                                    :parametric (scxml-parametric hint))
+                                    :parametric (2dg-parametric hint))
     (scxml-drawing-connector-dangling)))
 (cl-defmethod scxml-build-arrow-connector ((hint scxml-arrow-connector-dangling-hint) &optional (drawing scxml-drawing))
   (scxml-drawing-connector-dangling
@@ -162,7 +162,7 @@ path (target-point))."))
   "Return t if the ARROW's target connector can not be move-edited."
   (object-of-class-p (scxml-arrow-target arrow) 'scxml-drawing-connector-point))
 (cl-defmethod scxml-edit-idx-point ((arrow scxml-arrow) (idx integer))
-  "Return the scxml-point of ARROW's edit-idx IDX."
+  "Return the 2dg-point of ARROW's edit-idx IDX."
   ;; 0 is the start connector, N is the end connector
   ;; 1 -> N-1 are the path points
   (when (< idx 0)
@@ -211,14 +211,14 @@ path (target-point))."))
       ;; Both the source and target connectors must exist or this is not possible.
       (if (and new-source new-target)
           (let* (;; TODO - note that the 2.0 below here is a 'looks-nice-fudge-factor'
-                 (connector-offset (scxml-scaled connector-offset 2.0))
+                 (connector-offset (2dg-scaled connector-offset 2.0))
                  (new-source-point (scxml-connection-point new-source))
                  (new-target-point (scxml-connection-point new-target))
-                 (source-point-moved (not (scxml-almost-equal current-source-point new-source-point)))
-                 (target-point-moved (not (scxml-almost-equal current-target-point new-target-point)))
+                 (source-point-moved (not (2dg-almost-equal current-source-point new-source-point)))
+                 (target-point-moved (not (2dg-almost-equal current-target-point new-target-point)))
                  (any-end-point-moved (or source-point-moved target-point-moved))
-                 (source-point-match (scxml-almost-equal new-source-point first-path-point))
-                 (target-point-match (scxml-almost-equal new-target-point last-path-point))
+                 (source-point-match (2dg-almost-equal new-source-point first-path-point))
+                 (target-point-match (2dg-almost-equal new-target-point last-path-point))
                  (set-last-connector-direction (lambda (arrow)
                                                  ;; Always returns arrow!
                                                  ;;
@@ -232,7 +232,7 @@ path (target-point))."))
                                                      (let ((last-valid-segment (scxml--last-non-zero-length-segment arrow)))
                                                        (when last-valid-segment
                                                          (scxml-set-to-node-direction target-connector
-                                                                                      (scxml-coarse-direction last-valid-segment))))))
+                                                                                      (2dg-coarse-direction last-valid-segment))))))
                                                  arrow)))
             (cond ((and is-endpoint-move any-end-point-moved)
                    ;; this is an end point move and one of the end points has moved.
@@ -242,14 +242,14 @@ path (target-point))."))
                      ;; Source connect has jumped edges, ensure there is a perpendicular start.
                      (let ((first-segment (scxml-segment :start (first new-pts)
                                                          :end (second new-pts)))
-                           (required-vector (scxml-vector-from-direction (scxml-from-node-direction new-source))))
-                       (when (or (scxml-almost-zero (scxml-length first-segment))
-                                 (<= (scxml-dot-prod
+                           (required-vector (2dg-vector-from-direction (scxml-from-node-direction new-source))))
+                       (when (or (2dg-almost-zero (scxml-length first-segment))
+                                 (<= (2dg-dot-prod
                                       (scxml-characteristic-vector first-segment)
                                       required-vector)
-                                     scxml--almost-zero))
-                         (push (scxml-subtract first-path-point
-                                               (scxml-scaled required-vector
+                                     2dg--almost-zero))
+                         (push (2dg-subtract first-path-point
+                                               (2dg-scaled required-vector
                                                              connector-offset))
                                new-pts))))
                    (when (not (eq (scxml-from-node-direction current-target)
@@ -258,17 +258,17 @@ path (target-point))."))
                      ;; target connect has jumped edges, ensure there is a perpendicular end.
                      (let ((last-segment (scxml-segment :start (car last-path-links)
                                                         :end last-path-point))
-                           (required-vector (scxml-vector-from-direction
+                           (required-vector (2dg-vector-from-direction
                                              (scxml-from-node-direction new-target))))
-                       (when (or (scxml-almost-zero (scxml-length last-segment))
-                                 (<=  (scxml-dot-prod
+                       (when (or (2dg-almost-zero (scxml-length last-segment))
+                                 (<=  (2dg-dot-prod
                                        (scxml-characteristic-vector last-segment)
                                        required-vector)
-                                      scxml--almost-zero))
+                                      2dg--almost-zero))
                          (setq new-pts (append
                                         new-pts
-                                        (list (scxml-subtract last-path-point
-                                                              (scxml-scaled required-vector
+                                        (list (2dg-subtract last-path-point
+                                                              (2dg-scaled required-vector
                                                                             connector-offset))))))))
                    ;; Build the path by stretching.
                    (let* ((full-path (scxml---path-stretch new-pts
@@ -358,18 +358,18 @@ path (target-point))."))
 ;;             (scxml--arrow-set-default-path new-arrow))
 ;;           new-arrow)
 ;;       nil)))
-(cl-defmethod scxml-build-move-edited ((arrow scxml-arrow) (move-vector scxml-point) (viewport scxml-viewport))
+(cl-defmethod scxml-build-move-edited ((arrow scxml-arrow) (move-vector 2dg-point) (viewport scxml-viewport))
   "Return a new arrow representing ARROW moved by MOVE-VECTOR.
 
 This may not be possible due to constraint violation and in those
 cases this function may return nil."
   (let ((desired-points (mapcar (lambda (pt)
-                                  (scxml-add pt move-vector))
+                                  (2dg-add pt move-vector))
                                 (scxml--full-path arrow))))
     ;; (scxml---build-path-if-valid arrow desired-points)
     (scxml--build-closest-path arrow desired-points (scxml-get-point-scaling viewport) nil)
     ))
-(cl-defmethod scxml-build-idx-edited ((arrow scxml-arrow) (edit-idx integer) (move-vector scxml-point) (viewport scxml-viewport))
+(cl-defmethod scxml-build-idx-edited ((arrow scxml-arrow) (edit-idx integer) (move-vector 2dg-point) (viewport scxml-viewport))
   "Return a new arrow representing ARROW's EDIT-IDX moved by MOVE-VECTOR.
 
 This may not be possible due to constraint violation and in those
@@ -395,9 +395,9 @@ cases this function may return nil."
                                (or (eq unbiased-edit-idx 0)
                                    (eq unbiased-edit-idx (1- (length full-pts)))))))
 
-(cl-defmethod scxml-has-intersection ((rect scxml-rect) (arrow scxml-arrow) &optional evaluation-mode)
+(cl-defmethod 2dg-has-intersection ((rect scxml-rect) (arrow scxml-arrow) &optional evaluation-mode)
   "Return non-nil if RECT intersect with ARROW's path at any point."
-  (scxml-has-intersection rect (scxml-path :points (scxml--full-path arrow)) evaluation-mode))
+  (2dg-has-intersection rect (scxml-path :points (scxml--full-path arrow)) evaluation-mode))
 (cl-defgeneric scxml--full-path ((arrow scxml-arrow) &optional offset)
   "Get the full path of the ARROW with optional start/end OFFSET from ends.
 
@@ -438,7 +438,7 @@ is always cardinal."
             ;; do I need to shape up the beginning?
             (let ((path-start (first path-pts))
                   (path-end (car (last path-pts))))
-              (if (scxml-cardinal-displacement? start path-start)
+              (if (2dg-cardinal-displacement-p start path-start)
                   (setq path-pts (cons start path-pts))
                 (let ((start-path (scxml---path-stretch
                                    (list start-original path-start)
@@ -446,7 +446,7 @@ is always cardinal."
                                    path-start)))
                   (mapc (lambda (pt) (push pt path-pts))
                         (reverse start-path))))
-              (if (scxml-cardinal-displacement? path-end end)
+              (if (2dg-cardinal-displacement-p path-end end)
                   (append path-pts (list end))
                 (append path-pts
                         (scxml---path-stretch
@@ -454,7 +454,7 @@ is always cardinal."
                          path-end
                          end))))
           ;; no inner points.  stretch the originals if needed
-          (if (scxml-cardinal-displacement? start end)
+          (if (2dg-cardinal-displacement-p start end)
               (list start end)
             (scxml---path-stretch (list start-original end-original)
                                     start
@@ -479,7 +479,7 @@ start point of the arrow."
     (let* ((rev-points (reverse (scxml-points inner-path))))
       (cl-loop with last-pt = (scxml-connection-point target-connector)
                for pt in rev-points
-               unless (scxml-almost-equal pt last-pt)
+               unless (2dg-almost-equal pt last-pt)
                  do (cl-return (scxml-segment :start pt :end last-pt))
                do (setq last-pt pt)
                finally return nil))))
@@ -495,8 +495,8 @@ points."
            (target (scxml-arrow-target arrow))
            (full-path (scxml-build-path-cardinal (scxml-connection-point source)
                                                  (scxml-connection-point target)
-                                                 (scxml-vector-from-direction (scxml-from-node-direction source))
-                                                 (scxml-vector-from-direction (scxml-reverse (scxml-from-node-direction target)))
+                                                 (2dg-vector-from-direction (scxml-from-node-direction source))
+                                                 (2dg-vector-from-direction (2dg-reverse (scxml-from-node-direction target)))
                                                  ;; TODO: this shouldn't be 1.0 - it should be a defconst
                                                  (or offset scxml-arrow-connector-offset)))
            (middle-path (if (> (scxml-num-points full-path) 2)
@@ -549,25 +549,25 @@ been correctly set."
                            ;;                  :parametric (scxml-target-parametric hint))
                            )
          (relative-rect (scxml--generate-hint-rect source target))
-         (points (mapcar (lambda (pt) (scxml-absolute-coordinates relative-rect pt))
+         (points (mapcar (lambda (pt) (2dg-absolute-coordinates relative-rect pt))
                          (scxml-relative-points hint))))
     (when (scxml--possibly-invalid? hint)
       (let* ((last-move-direction (scxml-last-move-direction hint))
              (last-move-connector (scxml-last-move-connector hint))
-             (last-move-axis (scxml--direction-axis last-move-direction))
+             (last-move-axis (2dg-direction-axis last-move-direction))
              (source-point (scxml-connection-point source-connector))
              (target-point (scxml-connection-point target-connector))
-             (delta (scxml-subtract target-point source-point)))
+             (delta (2dg-subtract target-point source-point)))
         (when (not (scxml--cardinal-direction-vector? delta))
           (cl-flet ((build-connection-path
                      (source-pt target-pt connection-axis)
                      (if (eq connection-axis 'scxml--vertical)
                          (let ((mid-x (/ (+ (scxml-x source-pt) (scxml-x target-pt)) 2.0)))
-                           (list (scxml-point :x mid-x :y (scxml-y source-pt))
-                                 (scxml-point :x mid-x :y (scxml-y target-pt))))
+                           (list (2dg-point :x mid-x :y (scxml-y source-pt))
+                                 (2dg-point :x mid-x :y (scxml-y target-pt))))
                        (let ((mid-y (/ (+ (scxml-y source-pt) (scxml-y target-pt)) 2.0)))
-                         (list (scxml-point :x (scxml-x source-pt) :y mid-y)
-                               (scxml-point :x (scxml-x target-pt) :y mid-y))))))
+                         (list (2dg-point :x (scxml-x source-pt) :y mid-y)
+                               (2dg-point :x (scxml-x target-pt) :y mid-y))))))
             ;; this is no longer a cardinal direction vector, adjust the end points if possible
             ;; and if not, insert a jog to the middle of the points.
             (let* ((corrected-delta (if (eq last-move-axis 'scxml--vertical)
@@ -577,10 +577,10 @@ been correctly set."
                                                     :y (scxml-y delta)))))
               (if (eq last-move-connector 'source)
                   ;; source was last to move, so move the target connector to satisfy
-                  (let* ((correct-target-point (scxml-add source-point corrected-delta))
+                  (let* ((correct-target-point (2dg-add source-point corrected-delta))
                          (correct-target-connector (scxml-draw--move-connector-if-possble
                                                     target-connector
-                                                    (scxml-subtract corrected-delta
+                                                    (2dg-subtract corrected-delta
                                                                     delta))))
                     (if correct-target-connector
                         ;; you can make the connector handle this change.
@@ -594,10 +594,10 @@ been correctly set."
                       (setf points (build-connection-path source-point target-point last-move-axis))))
 
                 ;; target was last to move, so move the source connector to satisfy
-                (let* ((correct-source-point (scxml-add target-point corrected-delta))
+                (let* ((correct-source-point (2dg-add target-point corrected-delta))
                        (correct-source-connector (scxml-draw--move-connector-if-possble
                                                   source-connector
-                                                  (scxml-add corrected-delta
+                                                  (2dg-add corrected-delta
                                                              delta))))
                   (if correct-source-connector
                       ;; you can make the connector handle thisp change.
@@ -623,13 +623,13 @@ been correctly set."
   (cl-flet
       ((new-free-neighbor-pt
         (idx-pt neighbor-pt move-vec)
-        (let ((to-neighbor (scxml-subtract neighbor-pt idx-pt)))
-          (if (scxml-almost-equal (scxml-dot-prod to-neighbor move-vec) 0)
+        (let ((to-neighbor (2dg-subtract neighbor-pt idx-pt)))
+          (if (2dg-almost-equal (2dg-dot-prod to-neighbor move-vec) 0)
               neighbor-pt          ; no movement needed
-            (scxml-add neighbor-pt move-vec))))
+            (2dg-add neighbor-pt move-vec))))
        (new-connector-neighbor-pt
         (idx-pt neighbor-connector move-vec)
-        (let ((should-move (scxml-dot-prod
+        (let ((should-move (2dg-dot-prod
                             move-vec
                             (scxml-cardinal-exit-vector (scxml-from-node-direction neighbor-connector)))))
           (if (not should-move)
@@ -672,7 +672,7 @@ been correctly set."
                         :target-parametric (scxml-edge-parametric target)
                         :relative-points
                         (mapcar (lambda (pt)
-                                  (scxml-relative-coordinates relative-rect pt))
+                                  (2dg-relative-coordinates relative-rect pt))
                                 (scxml-points path))))))
 
 (cl-defmethod scxml-build-hint ((arrow scxml-arrow) (parent-canvas scxml-inner-canvas))
@@ -711,7 +711,7 @@ The arrow factory when building from a hint is smart enough to sort it all out."
         (last-compacted-pt (first full-path-pts))
         (compacted-pts (list (first full-path-pts))))
     (cl-loop for real-pt in (cdr full-path-pts)
-             for delta = (scxml-subtract real-pt last-compacted-pt)
+             for delta = (2dg-subtract real-pt last-compacted-pt)
              for abs-delta-x = (abs (scxml-x delta))
              for abs-delta-y = (abs (scxml-y delta))
              ;; if you went through either slack add a new point with the slack
@@ -722,27 +722,27 @@ The arrow factory when building from a hint is smart enough to sort it all out."
                            ;; X and Y went over allowance.
                            (push real-pt compacted-pts)
                          ;; X went over but Y did not.
-                         (push (scxml-point :x (scxml-x real-pt) :y (scxml-y last-compacted-pt))
+                         (push (2dg-point :x (scxml-x real-pt) :y (scxml-y last-compacted-pt))
                                compacted-pts))
                        (incf num-compacted-pts)
                        (setq last-compacted-pt (first compacted-pts)))
                       ((>= abs-delta-y slack-allowance-y)
                        ;; Y went over but X did not
-                       (push (scxml-point :x (scxml-x last-compacted-pt) :y (scxml-y real-pt))
+                       (push (2dg-point :x (scxml-x last-compacted-pt) :y (scxml-y real-pt))
                              compacted-pts)
                        (setq last-compacted-pt (first compacted-pts))
                        (incf num-compacted-pts)))
              do (setq last-path-pt real-pt
                       num-pts (1+ num-pts)))
-    (if (scxml-almost-equal last-path-pt last-compacted-pt)
+    (if (2dg-almost-equal last-path-pt last-compacted-pt)
         ;; end point matches, no additional work needed.
         (nreverse compacted-pts)
       ;; End point does not match, amend the first N points to handle this.
       ;; note: if the list is only 2 elements long this will be impossible and
       ;;       the path router needs to be called.
       (if (>= num-compacted-pts 3)
-          (let* ((required-delta (scxml-subtract last-path-pt last-compacted-pt))
-                 (required-unit-vec (scxml-normalized required-delta))
+          (let* ((required-delta (2dg-subtract last-path-pt last-compacted-pt))
+                 (required-unit-vec (2dg-normalized required-delta))
                  (failure))
             ;; go through compacted-pts, adding this delta until you hit a segment
             ;; wich you don't need to.
@@ -756,15 +756,15 @@ The arrow factory when building from a hint is smart enough to sort it all out."
                      unless (and end-pt)
                      do (progn (setq failure t)
                                (cl-return))
-                     for segment-char-vec = (scxml-subtract end-pt start-pt)
-                     for segment-unit-vec = (scxml-normalized segment-char-vec)
+                     for segment-char-vec = (2dg-subtract end-pt start-pt)
+                     for segment-unit-vec = (2dg-normalized segment-char-vec)
 
                      ;; the start point *must* be moved.
-                     do (scxml-incf start-pt required-delta)
+                     do (2dg-incf start-pt required-delta)
 
                      ;; if the dot product is zero, then you have to move this point, it won't have freedom
                      ;; in the required direction.
-                     do (unless (scxml-almost-zero (scxml-dot-prod required-unit-vec segment-unit-vec))
+                     do (unless (2dg-almost-zero (2dg-dot-prod required-unit-vec segment-unit-vec))
                           (cl-return)))
             (scxml-simplified (if failure
                                 full-path-pts

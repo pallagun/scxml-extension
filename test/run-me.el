@@ -8,8 +8,8 @@
 ;; This could be run with a batch command or in a session.  I'm not
 ;; sure how to properly load files in that case, but determining the
 ;; project root and going from there seems ok for now.
-(defvar scxml-test-root nil
-  "project root, used to resolve tests and test files.")
+;; (defvar scxml-test-root nil
+;;   "project root, used to resolve tests and test files.")
 
 (let ((root (locate-dominating-file default-directory "scxml.el")))
   (setq scxml-test-root root)

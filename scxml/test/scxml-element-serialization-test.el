@@ -135,10 +135,4 @@
      (equal "<transition target=\"another\" extra=\"attribute\" />"
             (scxml-xml-string element)))))
 
-
-
-
-
-
-
 (provide 'scxml-element-serialization-test)

@@ -80,15 +80,27 @@ element factory is not specified the default
                                  t))
               (scxml--trim-xml children))
         element)))
-(defun scxml-read-string (xml-string)
-  "Return the scxml-element tree of XML-STRING."
+(defun scxml-read-string (xml-string &optional element-factory)
+  "Return the scxml-element tree of XML-STRING.
+
+Optionally use ELEMENT-FACTORY to build elements.
+ELEMENT-FACTORY is called with a type and attributes alist to
+build a childless element.  Children are then appended.  When
+element factory is not specified the default
+scxml--element-factory is used."
   (interactive "sXml string:")
   (with-temp-buffer
     (insert xml-string)
-    (scxml-read-buffer)))
+    (scxml-read-buffer nil element-factory)))
 
-(defun scxml-read-buffer (&optional buffer-to-read)
-  "Return the scxml-element tree of 'current-buffer' or BUFFER-TO-READ."
+(defun scxml-read-buffer (&optional buffer-to-read element-factory)
+  "Return the scxml-element tree of 'current-buffer' or BUFFER-TO-READ.
+
+Optionally use ELEMENT-FACTORY to build elements.
+ELEMENT-FACTORY is called with a type and attributes alist to
+build a childless element.  Children are then appended.  When
+element factory is not specified the default
+scxml--element-factory is used."
   (interactive)
   (let* ((xml-data (progn (if buffer-to-read
                               (with-current-buffer buffer-to-read
@@ -99,7 +111,7 @@ element factory is not specified the default
     (unless (and (eq root-xml-element 'scxml)
                  (eq (length xml-data) 1))
       (error "Unable to read non-<scxml> documents"))
-    (scxml--factory root-xml-element)))
+    (scxml--factory root-xml element-factory)))
 (defun scxml-write-buffer ()
   "fire out some XML to a random buffer"
   (interactive)

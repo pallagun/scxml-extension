@@ -21,7 +21,7 @@
 
 (cl-defgeneric scxml-to-node-direction ((connector scxml-drawing-connector-rect))
   "terminal-direction"
-  (scxml-reverse (oref connector edge)))
+  (2dg-reverse (oref connector edge)))
 
 (cl-defmethod scxml-from-node-direction ((connector scxml-drawing-connector-rect))
   "Formerly 'scxml-node-edge'"
@@ -30,11 +30,11 @@
 (cl-defmethod scxml-connection-point ((connector scxml-drawing-connector-rect) &optional offset)
   "Get the point of this connector."
   (with-slots ((rect node) edge parametric) connector
-    (let ((raw-point (scxml-parametric (scxml-edge rect edge) parametric)))
+    (let ((raw-point (2dg-parametric (scxml-edge rect edge) parametric)))
       (if (null offset)
           raw-point
-        (let ((offset-vec (scxml-vector-from-direction edge)))
-          (scxml-add raw-point (scxml-scaled offset-vec offset)))))))
+        (let ((offset-vec (2dg-vector-from-direction edge)))
+          (2dg-add raw-point (2dg-scaled offset-vec offset)))))))
 (cl-defmethod scxml-snap ((connector scxml-drawing-connector-rect) &optional allow-partial-snap)
   ;; TODO - should this function be deleted?  It's a snap function.
   "Return a snapped version of CONNECTOR if possible.
@@ -67,7 +67,7 @@ Might return the connector right back to you if alreay snapped."
                (<= edge-parametric 1.0))
       edge-parametric)))
 
-(cl-defmethod scxml-build-connector ((connector scxml-drawing-connector-rect) (target-point scxml-point))
+(cl-defmethod scxml-build-connector ((connector scxml-drawing-connector-rect) (target-point 2dg-point))
   "Build a brand new connector based off nudging CONNECTOR over to TARGET-POINT.
 
 This function may return connectors which aren't exactly at
@@ -85,8 +85,8 @@ is still valid."
              for edge-candidate in '(up down left right)
              for edge-segment = (scxml-edge rect edge-candidate)
              for edge-parametric = (scxml-get-closest-parametric edge-segment target-point t)
-             for edge-point = (scxml-absolute-coordinates edge-segment edge-parametric)
-             for distance-sq = (scxml-distance-sq edge-point target-point)
+             for edge-point = (2dg-absolute-coordinates edge-segment edge-parametric)
+             for distance-sq = (2dg-distance-sq edge-point target-point)
              if (null best-connection-set)
                do (setq best-connection-set (list distance-sq edge-candidate edge-parametric))
              else
@@ -100,7 +100,7 @@ is still valid."
                                                           :edge (second best-connection-set)
                                                           :parametric (third best-connection-set)))))
 
-(cl-defmethod scxml-build-connector-old ((connector scxml-drawing-connector-rect) (target-point scxml-point))
+(cl-defmethod scxml-build-connector-old ((connector scxml-drawing-connector-rect) (target-point 2dg-point))
   "Build a brand new connector based off nudging CONNECTOR over to TARGET-POINT.
 
 Will return nil if the connector can't be built."

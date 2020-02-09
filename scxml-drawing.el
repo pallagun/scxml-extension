@@ -49,14 +49,14 @@
 By default, assume zero."
   0)
 (cl-defgeneric scxml-edit-idx-point ((drawing scxml-drawing) (idx integer))
-  "Get the scxml-point location of the given edit IDX in DRAWING")
+  "Get the 2dg-point location of the given edit IDX in DRAWING")
 (cl-defgeneric scxml-edit-idx-points ((drawing scxml-drawing))
   "Get a list of all the edit-idx points for this DRAWING in order")
 (cl-defmethod scxml-edit-idx-points ((drawing scxml-drawing))
   "By default, none."
   nil)
 
-(cl-defgeneric scxml-build-edited-drawing ((drawing scxml-drawing) edit-idx (move-vector scxml-point) (viewport scxml-viewport))
+(cl-defgeneric scxml-build-edited-drawing ((drawing scxml-drawing) edit-idx (move-vector 2dg-point) (viewport scxml-viewport))
   "Derive an edited drawing from DRAWING, EDIT-IDX (nillable) and MOVE-VECTOR for VIEWPORT.
 
 This should only build a new drawing and return it (if possible)
@@ -66,12 +66,12 @@ thing)."
   (if edit-idx
       (scxml-build-idx-edited drawing edit-idx move-vector viewport)
     (scxml-build-move-edited drawing move-vector viewport)))
-(cl-defgeneric scxml-build-move-edited ((drawing scxml-drawing) (move-vector scxml-point) (viewport scxml-viewport))
+(cl-defgeneric scxml-build-move-edited ((drawing scxml-drawing) (move-vector 2dg-point) (viewport scxml-viewport))
   "Build a drawing based off moving DRAWING by MOVE-VECTOR.
 
 This should only build a new drawing and return it (if possible)
 and should not mutate anything.")
-(cl-defgeneric scxml-build-idx-edited ((drawing scxml-drawing) (edit-idx integer) (move-vector scxml-point) (viewport scxml-viewport))
+(cl-defgeneric scxml-build-idx-edited ((drawing scxml-drawing) (edit-idx integer) (move-vector 2dg-point) (viewport scxml-viewport))
   "Build a drawing based off moving EDIT-IDX of DRAWING by MOVE-VECTOR.
 
 This should only build a new drawing and return it (if possible)

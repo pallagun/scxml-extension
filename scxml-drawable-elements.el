@@ -87,7 +87,7 @@ consumes the entire canvas."
       (let ((parent-drawing-canvas (scxml-get-parent-drawing-inner-canvas state)))
         (unless parent-drawing-canvas
           (error "Unable to build drawing without an already drawn parent."))
-        (let ((absolute-rect (scxml-absolute-coordinates parent-drawing-canvas hint)))
+        (let ((absolute-rect (2dg-absolute-coordinates parent-drawing-canvas hint)))
           (with-slots (x-min x-max y-min y-max) absolute-rect
             (funcall drawing-factory
                      :x-min x-min
@@ -135,7 +135,7 @@ Note: there should only be one child and it should be a transition."
         (label (if (object-of-class-p initial 'scxml-drawable-synthetic-initial)
                    scxml--drawable-synthetic-initial-label
                  scxml--drawable-initial-label))
-        (centroid (scxml-centroid canvas)))
+        (centroid (2dg-centroid canvas)))
     (if (null hint)
         ;; Generate the drawing (not based on a hint)
         (scxml-drawing-point :x (scxml-x centroid)
@@ -147,7 +147,7 @@ Note: there should only be one child and it should be a transition."
       (let ((parent-drawing-canvas (scxml-get-parent-drawing-inner-canvas initial)))
         (unless parent-drawing-canvas
           (error "Unable to build drawing without an already drawn parent."))
-        (let ((placement (scxml-absolute-coordinates parent-drawing-canvas hint)))
+        (let ((placement (2dg-absolute-coordinates parent-drawing-canvas hint)))
           (scxml-drawing-point :x (scxml-x placement)
                                :y (scxml-y placement)
                                :label label
@@ -219,7 +219,7 @@ When APPEND is nil NEW-CHILD will become the first child."
         (let ((parent-drawing-canvas (scxml-get-parent-drawing-inner-canvas parallel)))
           (unless parent-drawing-canvas
             (error "Unable to build drawing without an already drawn parent."))
-          (let ((absolute-rect (scxml-absolute-coordinates parent-drawing-canvas
+          (let ((absolute-rect (2dg-absolute-coordinates parent-drawing-canvas
                                                            (scxml-relative-rect hint)))
                 (guide-stripe (scxml-stripe hint)))
             (when (scxml-stripe-invalid hint)

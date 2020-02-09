@@ -43,13 +43,13 @@
       (object-of-class-p element 'scxml-parallel)))
 
 ;; enhancements to scxml-element& friends to support drawing
-(cl-defgeneric scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector scxml-point) (viewport scxml-viewport))
+(cl-defgeneric scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector 2dg-point) (viewport scxml-viewport))
   ;; TODO - this should move do scxml-drawable-element.el
   "Modify the drawing hint for ELEMENT (within ROOT) by moving it or it's edit-idx by MOVE-VECTOR, perform modification so it looks correct in VIEWPORT.")
-(cl-defmethod scxml--modify-drawing-hint ((scxml scxml-scxml) (move-vector scxml-point) (viewport scxml-viewport))
+(cl-defmethod scxml--modify-drawing-hint ((scxml scxml-scxml) (move-vector 2dg-point) (viewport scxml-viewport))
   "Always returns nil, currently you can't modify these"
   nil)
-(cl-defmethod scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector scxml-point) (viewport scxml-viewport))
+(cl-defmethod scxml--modify-drawing-hint ((element scxml-drawable-element) (move-vector 2dg-point) (viewport scxml-viewport))
   "Move or change ELEMENT by MOVE-VECTOR.
 
 When ELEMENT has an edit-idx highlighted the drawing will be
@@ -74,10 +74,10 @@ Will throw if it can't move it."
         ;; any element inside of this one must be marked as possibly invalid as well.
         (when (and
                ;; Ensure your edit didn't make you extend outside of your parent.
-               (scxml-contains parent-drawing-canvas edited-rect)
+               (2dg-contains parent-drawing-canvas edited-rect)
                ;; Ensure your edit didn't make you collide with any sibling rectangles
                (not (find-if (lambda (other-child-drawing)
-                               (scxml-intersection edited-rect other-child-drawing))
+                               (2dg-intersection edited-rect other-child-drawing))
                              (mapcar 'scxml-element-drawing
                                      (seq-filter (lambda (sibling)
                                                    (and (scxml---is-renderable-as-node sibling)
@@ -94,7 +94,7 @@ Will throw if it can't move it."
           ;; this as possibly invalid as well).
           (scxml--set-drawing-invalid element 't)
           (scxml--set-hint element (scxml-build-hint edited-rect parent-drawing-canvas)))))))
-(cl-defmethod scxml--modify-drawing-hint ((transition scxml-transition) (move-vector scxml-point) (viewport scxml-viewport))
+(cl-defmethod scxml--modify-drawing-hint ((transition scxml-transition) (move-vector 2dg-point) (viewport scxml-viewport))
   "Given some TRANSITION in edit-mode, move the current index by MOVE-VECTOR.
 
 Will throw if it can't move it. will not render!!"
@@ -262,9 +262,9 @@ Will throw if it can't move it. will not render!!"
              (transition drawing destination-drawing)
              (if (null drawing)
                  ;; this connector won't be connected, make a dangling connector.
-                 (scxml-drawing-connector-dangling :point) ;; (scxml-centroid (scxml-element-drawing (scxml-parent transition))))
+                 (scxml-drawing-connector-dangling :point) ;; (2dg-centroid (scxml-element-drawing (scxml-parent transition))))
 
-               (let* ((target-point (scxml-centroid (or destination-drawing (scxml-element-drawing (scxml-parent transition)))))
+               (let* ((target-point (2dg-centroid (or destination-drawing (scxml-element-drawing (scxml-parent transition)))))
 
                       (edge-enumerator (scxml-leaving-segment-collision-edge drawing target-point)))
                  (cond ((object-of-class-p drawing 'scxml-drawing-rect)
@@ -282,11 +282,11 @@ Will throw if it can't move it. will not render!!"
                         (exit-direction (scxml-from-node-direction source-connector)))
                    (when (null (scxml-dangling-point target-connector))
                      ;; no point is set, must set it.
-                     (let ((exit-vector (scxml-vector-from-direction exit-direction)))
+                     (let ((exit-vector (2dg-vector-from-direction exit-direction)))
                        (scxml-set-to-node-direction target-connector exit-direction)
-                       (scxml-set-point target-connector (scxml-add
+                       (scxml-set-point target-connector (2dg-add
                                                           (scxml-connection-point source-connector)
-                                                          (scxml-scaled exit-vector 2.0))))))))))
+                                                          (2dg-scaled exit-vector 2.0))))))))))
     (let* ((all-transitions (scxml-collect start (lambda (e) (object-of-class-p e 'scxml-transition))))
            (need-drawings (seq-filter (lambda (transition)
                                         (or (not (scxml-element-drawing transition))

@@ -24,7 +24,7 @@
 (cl-defmethod cl-print-object ((object scxml-span) stream)
   "This seems to be used only for edebug sessions."
   (princ (scxml-print object) stream))
-(cl-defmethod scxml-scaled ((span scxml-span) alpha)
+(cl-defmethod 2dg-scaled ((span scxml-span) alpha)
   "Return a span of SPAN scaled by ALPHA."
   (scxml-span :start (* alpha (scxml-start span))
               :end (* alpha (scxml-end span))))
@@ -44,7 +44,7 @@
       span)))
 (cl-defmethod scxml-inverse-scaled ((range scxml-span) (alpha number))
   "Return a span of SPAN scaled by 1/ALPHA."
-  (scxml-scaled range (/ 1.0 alpha)))
+  (2dg-scaled range (/ 1.0 alpha)))
 (defun scxml---span-ordered-intersection (A B)
   "Get the intersection of the ordered spans A and B.
 
@@ -55,14 +55,14 @@ A and B must be ordered before calling."
     (if (<= start end)
         (scxml-span :start start :end end)
       'nil)))
-(cl-defmethod scxml-intersection ((A scxml-span) (B scxml-span))
+(cl-defmethod 2dg-intersection ((A scxml-span) (B scxml-span))
   "Get the intersection of two spans.
 
 Result will be ordered."
   (scxml---span-ordered-intersection
    (scxml---span-ordered-if-not A)
    (scxml---span-ordered-if-not B)))
-(cl-defmethod scxml-contains ((container scxml-span) (coordinate number) &optional evaluation-mode)
+(cl-defmethod 2dg-contains ((container scxml-span) (coordinate number) &optional evaluation-mode)
   "Return non-nil if the CONTAINER contains COORDINATE using EVALUATION-MODE."
   (let ((container (scxml---span-ordered-if-not container)))
     (cond ((eq evaluation-mode 'strict)
@@ -72,7 +72,7 @@ Result will be ordered."
                 (< coordinate (scxml-end container))))
           (t                              ;normal
            (<= (scxml-start container) coordinate (scxml-end container))))))
-(cl-defmethod scxml-contains ((container scxml-span) (containee scxml-span) &optional evaluation-mode)
+(cl-defmethod 2dg-contains ((container scxml-span) (containee scxml-span) &optional evaluation-mode)
   "Return non-nil if the CONTAINER contains CONTAINEE using EVALUATION-MODE."
   (let ((container (scxml---span-ordered-if-not container))
         (containee (scxml---span-ordered-if-not containee)))
@@ -89,10 +89,10 @@ Result will be ordered."
             (t                              ;normal
              (and (<= bound-start test-start)
                   (<= test-end bound-end)))))))
-(cl-defmethod scxml-has-intersection ((A scxml-span) (B number) &optional evaluation-mode)
+(cl-defmethod 2dg-has-intersection ((A scxml-span) (B number) &optional evaluation-mode)
   "Return non-nil if A contains B using EVALUATION-MODE."
-  (scxml-contains A B evaluation-mode))
-(cl-defmethod scxml-has-intersection  ((A scxml-span) (B scxml-span) &optional evaluation-mode)
+  (2dg-contains A B evaluation-mode))
+(cl-defmethod 2dg-has-intersection  ((A scxml-span) (B scxml-span) &optional evaluation-mode)
   "Return non-nil if A contains B using EVALUATION-MODE."
   (let ((A (scxml---span-ordered-if-not A))
         (B (scxml---span-ordered-if-not B)))
@@ -105,34 +105,34 @@ Result will be ordered."
                   (< (scxml-start intersection) (scxml-end A)))
                  (t
                   t))))))
-(cl-defmethod scxml-parametric ((span scxml-span) parametric-coord)
+(cl-defmethod 2dg-parametric ((span scxml-span) parametric-coord)
   "Get a point along SPAN by PARAMETRIC-COORD between [0,1]."
   (with-slots (start end) span
     (+ start (* (- end start) parametric-coord))))
 (cl-defmethod scxml-length ((span scxml-span))
   "How large is this SPAN (can be negative if the span is flipped)."
   (with-slots (start end) span (- end start)))
-(cl-defmethod scxml-relative-coordinates ((base-span scxml-span) (span scxml-span))
+(cl-defmethod 2dg-relative-coordinates ((base-span scxml-span) (span scxml-span))
   "Given a BASE-SPAN, return SPAN's relative coordinates."
   (with-slots (start) base-span
     (let ((width (float (scxml-length base-span)))
           (start (float start)))
       (scxml-span :start (/ (- (float (scxml-start span)) start) width)
                   :end (/ (- (float (scxml-end span)) start) width)))))
-(cl-defmethod scxml-relative-coordinates ((base-span scxml-span) (scalar number))
+(cl-defmethod 2dg-relative-coordinates ((base-span scxml-span) (scalar number))
   "Given a BASE-SPAN, return the relative coordinate of the SCALAR."
   (with-slots (start) base-span
     (let ((width (float (scxml-length base-span))))
       (/ (- (float scalar) start) width))))
-(cl-defmethod scxml-absolute-coordinates ((base-span scxml-span) (scalar number))
+(cl-defmethod 2dg-absolute-coordinates ((base-span scxml-span) (scalar number))
   "Given a BASE-SPAN, return the absolute coordinate of the relative SCALAR."
   (with-slots (start) base-span
     (let ((width (float (scxml-length base-span))))
       (+ start (* scalar width)))))
-(cl-defmethod scxml-absolute-coordinates ((base-span scxml-span) (relative-span scxml-span))
+(cl-defmethod 2dg-absolute-coordinates ((base-span scxml-span) (relative-span scxml-span))
   "Given BASE-SPAN, return RELATIVE-SPAN's absolute coordinates
 
-scxml-relative-coordinates reversed"
+2dg-relative-coordinates reversed"
   (with-slots (start) base-span
     (let ((width (float (scxml-length base-span)))
           (start (float start)))

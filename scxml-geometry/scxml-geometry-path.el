@@ -34,7 +34,7 @@
            with is-cardinal = 't
            for pt in (cdr points-list)
            when pt
-           do (setq is-cardinal (scxml-cardinal-displacement? pt last-pt))
+           do (setq is-cardinal (2dg-cardinal-displacement-p pt last-pt))
            do (setq last-pt pt)
            until (not is-cardinal)
            finally return is-cardinal))
@@ -77,19 +77,19 @@
 May return nil if PATH contains 1 or less points."
   (let ((second (scxml-nth path 1)))
     (when second
-      (scxml-subtract second (scxml-nth path 0)))))
+      (2dg-subtract second (scxml-nth path 0)))))
 (cl-defmethod scxml-end-vector ((path scxml-path))
   "Return a characteristic-vector of PATH's last segment.
 
 May return nil if PATH contains 1 or less points."
   (let ((num-pts (scxml-num-points path)))
     (when (> num-pts 2)
-      (scxml-subtract (scxml-nth path (1- num-pts))
+      (2dg-subtract (scxml-nth path (1- num-pts))
                       (scxml-nth path (- num-pts 2))))))
-(cl-defmethod scxml-push ((path scxml-path) (pt scxml-point))
+(cl-defmethod scxml-push ((path scxml-path) (pt 2dg-point))
   "Modify PATH by pushing PT on to the start."
   (push pt (scxml-points path)))
-(cl-defmethod scxml-almost-equal ((A scxml-path) (B scxml-path) &optional tolerance)
+(cl-defmethod 2dg-almost-equal ((A scxml-path) (B scxml-path) &optional tolerance)
   "Return non-nil if A and B are equal within TOLERANCE."
   (let ((a-len (scxml-num-points A))
         (b-len (scxml-num-points B)))
@@ -99,7 +99,7 @@ May return nil if PATH contains 1 or less points."
             (miss-match 'nil))
         (while (and (not miss-match)
                     (< i a-len))
-          (when (not (scxml-almost-equal (scxml-nth A i)
+          (when (not (2dg-almost-equal (scxml-nth A i)
                                          (scxml-nth B i)
                                          tolerance))
             (setq miss-match 't))
@@ -126,7 +126,7 @@ adding up the length of every segment."
     (let ((last-pt (first points))
           (len 0.0))
       (mapc (lambda (pt)
-              (incf len (scxml-distance last-pt pt))
+              (incf len (2dg-distance last-pt pt))
               (setq last-pt pt))
             (cdr points))
       len)))
@@ -159,21 +159,21 @@ End points are considered by their flags."
             b-segments)))
        a-segments)
       'nil)))
-(cl-defmethod scxml-distance ((path scxml-path) (point scxml-point))
+(cl-defmethod 2dg-distance ((path scxml-path) (point 2dg-point))
   "Return the minimum distance between PATH and POINT.
 
 The implementation is not efficient, use caution."
   (cl-loop for segment in (scxml-segments path)
-           for distance = (scxml-distance segment point)
+           for distance = (2dg-distance segment point)
            with best = 'nil
            do (when (or (null best) (< distance best))
                 (setq best distance))
            finally return best))
 
-(cl-defmethod scxml-has-intersection ((rect scxml-rect) (path scxml-path) &optional evaluation-mode)
+(cl-defmethod 2dg-has-intersection ((rect scxml-rect) (path scxml-path) &optional evaluation-mode)
   "Return non-nil if RECT intersects PATH using EVALUATION-MODE."
   (cl-loop for segment in (scxml-segments path)
-           when (scxml-has-intersection rect segment evaluation-mode)
+           when (2dg-has-intersection rect segment evaluation-mode)
            return t
            finally return nil))
 (cl-defmethod scxml-simplify ((path scxml-path))
@@ -193,22 +193,22 @@ Will return nil if length of the path is 1 or less."
       (let ((last-point (first points))
             (deltas 'nil))
         (mapc (lambda (pt)
-                (push (scxml-subtract pt last-point) deltas)
+                (push (2dg-subtract pt last-point) deltas)
                 (setq last-point pt))
               (cdr points))
         (nreverse deltas))))
-(cl-defmethod scxml--path-from-deltas ((deltas list) (start-point scxml-point))
+(cl-defmethod scxml--path-from-deltas ((deltas list) (start-point 2dg-point))
   "Return a list of points starting at START-POINT and having DELTAS as per point deltas.
 
 Something of the opposite of scml---get-deltas."
   (let ((points (list start-point)))
     (mapc (lambda (delta)
-            (push (scxml-add delta (first points)) points))
+            (push (2dg-add delta (first points)) points))
           deltas)
     (nreverse points)))
 
 ;; Path *building* functions:
-(cl-defmethod scxml-build-path-straight-line ((start scxml-point) (end scxml-point))
+(cl-defmethod scxml-build-path-straight-line ((start 2dg-point) (end 2dg-point))
   "Make a path which is a single straight line from START to END.
 
 This might be an scxml-path or an scxml-cardinal-path."
@@ -220,19 +220,19 @@ This might be an scxml-path or an scxml-cardinal-path."
 
 This is a helper function for the cardinal direction path
 generator."
-  (let* ((unit-direction (scxml-normalized entry-direction))
-         (delta (scxml-subtract destination-pt start-pt))
-         (unit-delta (scxml-normalized delta))
-         (dot (scxml-dot-prod unit-direction unit-delta)))
+  (let* ((unit-direction (2dg-normalized entry-direction))
+         (delta (2dg-subtract destination-pt start-pt))
+         (unit-delta (2dg-normalized delta))
+         (dot (2dg-dot-prod unit-direction unit-delta)))
     (cond
      ;; must go _backwards_, turn around.
-     ((<= dot scxml--almost-zero)
+     ((<= dot 2dg--almost-zero)
       ;; go one direction or the other, determine which get closer
-      (let ((dir-rot-90 (scxml-rotate-90 unit-direction)))
-        (if (>= (scxml-dot-prod dir-rot-90 unit-delta) 0.0)
+      (let ((dir-rot-90 (2dg-rotate-90 unit-direction)))
+        (if (>= (2dg-dot-prod dir-rot-90 unit-delta) 0.0)
             ;; guessed direction is correct
             dir-rot-90
-          (scxml-additive-inverse dir-rot-90))))
+          (2dg-additive-inverse dir-rot-90))))
      ;; just keep going?
      ('t
       unit-direction))))
@@ -259,32 +259,32 @@ joining start and end, recursing until it joins them."
                                                     entry-vector
                                                     end))
         (reverse-end-vec (scxml---path-cardinal-direction end
-                                                         (scxml-additive-inverse exit-vector)
+                                                         (2dg-additive-inverse exit-vector)
                                                          start)))
     (cl-flet ((perpendicular-vectors?
                (A B)
-               (>= (abs (scxml-cross-prod A B))
-                   scxml--almost-zero))
+               (>= (abs (2dg-cross-prod A B))
+                   2dg--almost-zero))
               (perpendicular-collision
                (A-pt A-dir B-pt)
                ;; this collision can only happen at one of two points.
-               ;; (scxml-point :x from A-pt and :y from B-pt)
-               ;; (scxml-point :x from B-pt and :y from A-pt)
+               ;; (2dg-point :x from A-pt and :y from B-pt)
+               ;; (2dg-point :x from B-pt and :y from A-pt)
                (if (equal (scxml-x A-dir) 0.0)
                    ;; A-dir is vertical, therefore your intersection must be at A-pt's X
                    ;; determine if the collision is at A or B's Y coordinates
-                   (scxml-point :x (scxml-x A-pt) :y (scxml-y B-pt))
+                   (2dg-point :x (scxml-x A-pt) :y (scxml-y B-pt))
                  ;; A-dir is horizontal, therefore your intersection must be at A-pt's Y
-                 (scxml-point :x (scxml-x B-pt) :y (scxml-y A-pt)))))
+                 (2dg-point :x (scxml-x B-pt) :y (scxml-y A-pt)))))
       (cond
        ;; Vectors are heading in perpendicular directions.  If possible join them
        ;; otherwise turn the best candidate towards a future collision.
        ((perpendicular-vectors? start-vec reverse-end-vec)
         (let* ((intersection-pt (perpendicular-collision start start-vec end))
-               (start-delta (scxml-subtract intersection-pt start))
-               (start-parametric (scxml-dot-prod start-vec start-delta))
-               (end-delta (scxml-subtract intersection-pt end))
-               (end-parametric (scxml-dot-prod reverse-end-vec end-delta)))
+               (start-delta (2dg-subtract intersection-pt start))
+               (start-parametric (2dg-dot-prod start-vec start-delta))
+               (end-delta (2dg-subtract intersection-pt end))
+               (end-parametric (2dg-dot-prod reverse-end-vec end-delta)))
           ;; -if both are positive, you've found a connection and you're done.
           ;; -if one of them is negative, that vec goes min distance the other
           ;; goes zero distance
@@ -296,20 +296,20 @@ joining start and end, recursing until it joins them."
 
                 ;; start is positive, end is negative.
                 ;; start goes zero distance, end goes min distance, try again.
-                (let ((pre-end (scxml-add end (scxml-scaled reverse-end-vec
+                (let ((pre-end (2dg-add end (2dg-scaled reverse-end-vec
                                                             min-segment-distance))))
                   (append (scxml---path-cardinal start
                                                pre-end
                                                entry-vector
-                                               (scxml-additive-inverse reverse-end-vec)
+                                               (2dg-additive-inverse reverse-end-vec)
                                                min-segment-distance)
                           (list end))))
             ;; start-parametric is =< 0
             (if (> end-parametric 0.0)
             ;; start-parametric is negative(or zero), end is positive.
             ;; end goes zero, start goes min distance, try again
-                (let ((post-start (scxml-add start
-                                             (scxml-scaled start-vec
+                (let ((post-start (2dg-add start
+                                             (2dg-scaled start-vec
                                                            min-segment-distance))))
                   (cons start
                         (scxml---path-cardinal post-start
@@ -319,30 +319,30 @@ joining start and end, recursing until it joins them."
                                              min-segment-distance)))
               ;; start parametric is negative, end parametric is negative
               ;; both of them go min distance
-              (let ((post-start (scxml-add start
-                                           (scxml-scaled start-vec
+              (let ((post-start (2dg-add start
+                                           (2dg-scaled start-vec
                                                          min-segment-distance)))
-                    (pre-end (scxml-add end
-                                        (scxml-scaled reverse-end-vec
+                    (pre-end (2dg-add end
+                                        (2dg-scaled reverse-end-vec
                                                       min-segment-distance))))
                 (cons start
                       (append (scxml---path-cardinal post-start
                                                      pre-end
                                                      start-vec
-                                                     (scxml-additive-inverse reverse-end-vec)
+                                                     (2dg-additive-inverse reverse-end-vec)
                                                      min-segment-distance)
                               (list end))))))))
 
        ;; the vectors are parallel and going in opposites directions
        ;; - find a midway point along continuations, go there - path jog
-       ((< (scxml-dot-prod start-vec reverse-end-vec) 0.0)
-        (let* ((delta (scxml-subtract end start))
-               (parallel-distance (scxml-dot-prod delta start-vec))
-               (perp-distance (abs (scxml-cross-prod delta start-vec))))
+       ((< (2dg-dot-prod start-vec reverse-end-vec) 0.0)
+        (let* ((delta (2dg-subtract end start))
+               (parallel-distance (2dg-dot-prod delta start-vec))
+               (perp-distance (abs (2dg-cross-prod delta start-vec))))
 
           (cond
            ;; if the perp-distance is < almost-zero then just slap them together
-           ((and (< perp-distance scxml--almost-zero)
+           ((and (< perp-distance 2dg--almost-zero)
                  (>= parallel-distance min-segment-distance))
             ;; satisfies the constraints for a direct connection
             (list start end))
@@ -353,8 +353,8 @@ joining start and end, recursing until it joins them."
             ;; looks like these constraints need a few more segments to be able to solve
             ;; bend one of the paths in the correct direction, travel the minimum
             ;; distance then try again.
-            (let ((post-start (scxml-add start
-                                         (scxml-scaled start-vec min-segment-distance))))
+            (let ((post-start (2dg-add start
+                                         (2dg-scaled start-vec min-segment-distance))))
               (cons start
                     (scxml---path-cardinal post-start
                                          end
@@ -378,37 +378,37 @@ joining start and end, recursing until it joins them."
 
            ;; ok, conditions satisfied for a jog type path.
            ('t
-            (let ((midway-displacement (scxml-scaled start-vec (/ parallel-distance 2.0))))
+            (let ((midway-displacement (2dg-scaled start-vec (/ parallel-distance 2.0))))
               (list start
-                    (scxml-add start midway-displacement)
-                    (scxml-subtract end midway-displacement)
+                    (2dg-add start midway-displacement)
+                    (2dg-subtract end midway-displacement)
                     end))))))
 
        ;; the vectors are parallel and facing the same direction
        ;; whoever is "ahead" turns, recurse
        ;; use delta to find who is "ahead" - then turn the ahead
        ('t
-        (let* ((delta (scxml-subtract end start)))
-          (if (> (scxml-dot-prod delta start-vec) 0.0)
+        (let* ((delta (2dg-subtract end start)))
+          (if (> (2dg-dot-prod delta start-vec) 0.0)
               ;;end is further 'ahead'
-              (let ((pre-end (scxml-add end
-                                        (scxml-scaled reverse-end-vec min-segment-distance))))
+              (let ((pre-end (2dg-add end
+                                        (2dg-scaled reverse-end-vec min-segment-distance))))
                 (append (scxml---path-cardinal start
                                              pre-end
                                              entry-vector
-                                             (scxml-additive-inverse reverse-end-vec)
+                                             (2dg-additive-inverse reverse-end-vec)
                                              min-segment-distance)
                         (list end)))
             ;; start is further 'ahead'
-            (let ((post-start (scxml-add start
-                                         (scxml-scaled start-vec min-segment-distance))))
+            (let ((post-start (2dg-add start
+                                         (2dg-scaled start-vec min-segment-distance))))
               (cons start
                     (scxml---path-cardinal post-start
                                          end
                                          start-vec
                                          exit-vector
                                          min-segment-distance))))))))))
-(cl-defgeneric scxml-build-path-cardinal ((start scxml-point) (end scxml-point) (entry-vector scxml-point) (exit-vector scxml-point) (min-segment-distance number) &optional min-start-segment-distance min-end-segment-distance)
+(cl-defgeneric scxml-build-path-cardinal ((start 2dg-point) (end 2dg-point) (entry-vector 2dg-point) (exit-vector 2dg-point) (min-segment-distance number) &optional min-start-segment-distance min-end-segment-distance)
   "Create a cardinal path joining START and END.
 
 The ENTRY-VECTOR describes the direction the path should start if
@@ -448,10 +448,10 @@ Remove colinear intermediary points."
 
     (mapc (lambda (path-pts)
             (mapc (lambda (pt)
-                    (when (not (scxml-almost-equal pt last-point))
-                      (let ((cur-vec (scxml-normalized (scxml-subtract pt last-point))))
+                    (when (not (2dg-almost-equal pt last-point))
+                      (let ((cur-vec (2dg-normalized (2dg-subtract pt last-point))))
                         (when (and last-vec
-                                   (not (scxml-almost-equal cur-vec last-vec)))
+                                   (not (2dg-almost-equal cur-vec last-vec)))
                             (push last-point rev-s-points))
                         (setq last-vec cur-vec)))
                     (setq last-point pt))
@@ -459,7 +459,7 @@ Remove colinear intermediary points."
           n-path-pts)
     ;; Push the very last point on to the output.
     (nreverse
-     (if (scxml-almost-equal last-point (first rev-s-points))
+     (if (2dg-almost-equal last-point (first rev-s-points))
                  rev-s-points
                (push last-point rev-s-points)))))
 (defun scxml---path-stretch (points force-start force-end)
@@ -473,10 +473,10 @@ which tries to look like the original points but is stretched to
 have the desired start and end points."
   (let* ((old-start (first points))
          (old-end (car (last points)))
-         (force-displacement (scxml-subtract force-end force-start))
-         (old-displacement (scxml-subtract old-end old-start)))
-    (when (and (scxml-almost-equal old-start force-start)
-               (scxml-almost-equal old-end force-end))
+         (force-displacement (2dg-subtract force-end force-start))
+         (old-displacement (2dg-subtract old-end old-start)))
+    (when (and (2dg-almost-equal old-start force-start)
+               (2dg-almost-equal old-end force-end))
       ;; TODO - deterimine the source of this and attempt to remove.
       ;; (error "Call to path-stretch but no stretching was required?")
       points)
@@ -492,7 +492,7 @@ have the desired start and end points."
                                              with y-free = 'nil
                                              with last-pt = (first points)
                                              for pt in (cdr points)
-                                             for delta = (scxml-subtract pt last-pt)
+                                             for delta = (2dg-subtract pt last-pt)
                                              do (setf x-free (or x-free (not (equal (scxml-x delta) 0.0)))
                                                       y-free (or y-free (not (equal (scxml-y delta) 0.0))))
                                              when (and x-free y-free)
@@ -504,9 +504,9 @@ have the desired start and end points."
             (scale-y (get-scale (scxml-y force-displacement) (scxml-y old-displacement))))
         (if (and scale-x scale-y)
             ;; both scalings are valid, apply them and finish
-            (let ((scale (scxml-point :x scale-x :y scale-y)))
+            (let ((scale (2dg-point :x scale-x :y scale-y)))
               (mapcar (lambda (point)
-                        (scxml-add (scxml-scaled (scxml-subtract point old-start) scale)
+                        (2dg-add (2dg-scaled (2dg-subtract point old-start) scale)
                                    force-start))
                       points))
           ;; one scaling or the other is not applicable, must jog or offset things.
@@ -514,15 +514,15 @@ have the desired start and end points."
               ;; there is no freedom in this path, just insert a jog.
               (scxml---path-cardinal force-start
                                      force-end
-                                     (scxml-subtract (second points)
+                                     (2dg-subtract (second points)
                                                      (first points))
-                                     (scxml-subtract (car (last points))
+                                     (2dg-subtract (car (last points))
                                                      (car (last points 2)))
                                      1.0) ;TODO - this 1.0 is a guess, I'm not sure what it should really be
             ;; You have the liberty to inject displacements into this path to
             ;; make it stretch correctly.  Determine the displacement.
             (let ((deltas (scxml--get-deltas points))
-                  (additional-displacement (scxml-subtract force-displacement old-displacement))
+                  (additional-displacement (2dg-subtract force-displacement old-displacement))
                   (vertical-deltas 'nil)
                   (horizontal-deltas 'nil))
               (cl-loop for delta in deltas
@@ -550,12 +550,12 @@ have the desired start and end points."
   (let ((num-points (length points)))
     (if (= num-points 1)
         ;; if there's only one point, just move it.
-        (list (scxml-add (car points) move-vector))
+        (list (2dg-add (car points) move-vector))
       ;; there is more than one point.
       (let* ((first-point (first points))
-             (raw-offset (scxml-subtract (second points) first-point))
-             (raw-box-magnitude (scxml-box-magnitude raw-offset))
-             (first-offset (if (scxml-almost-zero raw-box-magnitude)
+             (raw-offset (2dg-subtract (second points) first-point))
+             (raw-box-magnitude (2dg-box-magnitude raw-offset))
+             (first-offset (if (2dg-almost-zero raw-box-magnitude)
                                ;; If there's no displacement between these two points
                                ;; then they're likely in the exact same place.
                                ;; If true I can separate them in any direction I choose
@@ -563,22 +563,22 @@ have the desired start and end points."
                                move-vector
                              ;; normal path - these two points are not the same.
                              raw-offset))
-             (first-unit-offset (scxml-normalized first-offset))
-             (parallel-move (scxml-scaled first-unit-offset
-                                          (scxml-dot-prod first-unit-offset move-vector)))
-             (perpendicular-move (scxml-subtract move-vector parallel-move)))
+             (first-unit-offset (2dg-normalized first-offset))
+             (parallel-move (2dg-scaled first-unit-offset
+                                          (2dg-dot-prod first-unit-offset move-vector)))
+             (perpendicular-move (2dg-subtract move-vector parallel-move)))
 
-        (if (scxml-almost-zero (scxml-box-magnitude perpendicular-move))
+        (if (2dg-almost-zero (2dg-box-magnitude perpendicular-move))
             ;; You're requesting a move in a direction parallel to your
             ;; current segment direction, just allow the movement.
-            (cons (scxml-add first-point move-vector)
+            (cons (2dg-add first-point move-vector)
                   (cdr points))
           ;; You're moving in a direction _not_entirely_ parallel
           ;; move your first point by move-vec and append to
           ;; recursion with (cdr path) and perpendicular-move
-          (cons (scxml-add first-point move-vector)
+          (cons (2dg-add first-point move-vector)
                 (scxml---nudge-path-start (cdr points) perpendicular-move)))))))
-(cl-defmethod scxml-nudge-path ((path list) (point-idx integer) (move-vector scxml-point))
+(cl-defmethod scxml-nudge-path ((path list) (point-idx integer) (move-vector 2dg-point))
   "Nudge POINT-IDX point in PATH by MOVE-VECTOR and update surrounding points."
   (when (or (< point-idx 0) (>= point-idx (length path)))
     (error "Error: point-idx must be < path length"))

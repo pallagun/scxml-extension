@@ -13,8 +13,8 @@
 (defclass scxml-viewport (scxml-rect)
   ((scaling :initarg :scaling
             :accessor scxml-scaling
-            :type scxml-point
-            :initform (scxml-point :x 1.0 :y 1.0)
+            :type 2dg-point
+            :initform (2dg-point :x 1.0 :y 1.0)
             :documentation "Scaling is applied as:
 X pixel = X coordinate * X scaling;
 Y pixel = Y coordinate * Y scalxng;
@@ -47,32 +47,32 @@ The scaling slot represents how that space should be scaled before rendering")
 
 Return the viewport after modification"
   (setf (scxml-x-min viewport) (scxml-x-min area)
-        (scxml-x-max viewport) (float (ceiling (+ scxml--almost-zero (scxml-x-max area))))
+        (scxml-x-max viewport) (float (ceiling (+ 2dg--almost-zero (scxml-x-max area))))
         (scxml-y-min viewport) (scxml-y-min area)
-        (scxml-y-max viewport) (float (ceiling (+ scxml--almost-zero (scxml-y-max area))))))
+        (scxml-y-max viewport) (float (ceiling (+ 2dg--almost-zero (scxml-y-max area))))))
 (cl-defmethod scxml-zoom ((viewport scxml-viewport) (alpha number))
   "Zoom the VIEWPORT by ALPHA, modifies viewport, returns viewport.
 
 Alpha > 1 zooms in.  Alpha < 1 zooms out."
   (when (<= alpha 0.0)
     (error "That's a crazy alpha"))
-  (let ((centroid (scxml-centroid viewport))
+  (let ((centroid (2dg-centroid viewport))
         (x-radius (/ (scxml-width viewport) 2.0 alpha))
         (y-radius (/ (scxml-height viewport) 2.0 alpha)))
     (oset viewport x-min (- (scxml-x centroid) x-radius))
     (oset viewport x-max (+ (scxml-x centroid) x-radius))
     (oset viewport y-min (- (scxml-y centroid) y-radius))
     (oset viewport y-max (+ (scxml-y centroid) y-radius))
-    (oset viewport scaling (scxml-scaled (scxml-scaling viewport)
+    (oset viewport scaling (2dg-scaled (scxml-scaling viewport)
                                          alpha))))
-(cl-defmethod scxml-pan ((viewport scxml-viewport) (drawing-coord-delta scxml-point))
+(cl-defmethod scxml-pan ((viewport scxml-viewport) (drawing-coord-delta 2dg-point))
   "Move VIEWPORT by DRAWING-COORD-DELTA.
 
 Uses drawing coordinate system."
-  (scxml-incf viewport drawing-coord-delta))
+  (2dg-incf viewport drawing-coord-delta))
 (cl-defmethod scxml-pan-scratch ((viewport scxml-viewport) (scratch-x integer) (scratch-y integer))
   "Move VIEWPORT by SCRATCH-X and SCRATCH-Y scratch pixels"
-  (scxml-pan viewport (scxml-scaled (scxml-point :x (float scratch-x)
+  (scxml-pan viewport (2dg-scaled (2dg-point :x (float scratch-x)
                                                  :y (float scratch-y))
                                     (scxml-get-point-scaling viewport))))
 
@@ -92,7 +92,7 @@ Uses drawing coordinate system."
 (cl-defmethod scxml-get-point-scaling ((viewport scxml-viewport))
   "Grab the scaling from pixel to point from VIEWPORT"
   (with-slots (scaling) viewport
-    (scxml-point :x (/ 1.0 (scxml-x scaling))
+    (2dg-point :x (/ 1.0 (scxml-x scaling))
                  :y (/ 1.0 (scxml-y scaling)))))
 
 ;; Three coordinate schemes are:
@@ -100,9 +100,9 @@ Uses drawing coordinate system."
 ;; - scratch coordinates - What is rendered out in the scratch buffer renderer
 ;; - pixel coordinates - image style coordinates for mouse clicks and what not.
 
-(cl-defgeneric scxml-get-pixel ((viewport scxml-viewport) (drawing-point scxml-point))
+(cl-defgeneric scxml-get-pixel ((viewport scxml-viewport) (drawing-point 2dg-point))
   "Given a drawing coordinate DRAWING-POINT in a VIEWPORT, get the pixel for it")
-(cl-defmethod scxml-get-pixel ((viewport scxml-viewport) (drawing-point scxml-point))
+(cl-defmethod scxml-get-pixel ((viewport scxml-viewport) (drawing-point 2dg-point))
   "Given a drawing coordinate DRAWING-POINT in a VIEWPORT, get the pixel for it"
   (let ((scratch-coord (scxml-get-scratch-coord viewport drawing-point)))
     ;; (let ((fart (scxml-pixel :x (floor (scxml-x scratch-coord))
@@ -122,10 +122,10 @@ Uses drawing coordinate system."
 
 ;; (ert-deftest scxml-pixel-point-pixel-roundtrips ()
 ;;   "Make sure a pixel, translated to a drawing coordinate and back, is the same"
-;;   (let ((viewport (scxml-viewport :scaling (scxml-point :x 1.0 :y 1.0)
+;;   (let ((viewport (scxml-viewport :scaling (2dg-point :x 1.0 :y 1.0)
 ;;                                   :x-min 0.0 :x-max 101.0
-;;   test1#s(scxml-viewport 0.0 0.0 41.0 101.0 #s(scxml-point 1.0 1.0))
-;;   test2#s(scxml-point 22.5 40.0))))))
+;;   test1#s(scxml-viewport 0.0 0.0 41.0 101.0 #s(2dg-point 1.0 1.0))
+;;   test2#s(2dg-point 22.5 40.0))))))
 (ert-deftest scxml-get-pixel-from-viewport-point ()
   ;; this test is really bad, this has to get fixed.
   (let* ((canvas (scxml-canvas :x-min 0.0 :x-max 4.0
@@ -139,30 +139,30 @@ Uses drawing coordinate system."
             (should (scxml-equal
                      (scxml-get-pixel viewport pt)
                      (scxml-pixel :x 0 :y bottom-px-offset))))
-          (list (scxml-point :x 0.0 :y 0.0)
-                (scxml-point :x 0.1 :y 0.0)
-                (scxml-point :x 0.1 :y 0.1)
-                (scxml-point :x 0.0 :y 0.1)
-                (scxml-point :x 0.9 :y 0.0)
-                (scxml-point :x 0.9 :y 0.1)
-                (scxml-point :x 0.0 :y 0.9)
-                (scxml-point :x 0.1 :y 0.9)
-                (scxml-point :x 0.9 :y 0.9)))
+          (list (2dg-point :x 0.0 :y 0.0)
+                (2dg-point :x 0.1 :y 0.0)
+                (2dg-point :x 0.1 :y 0.1)
+                (2dg-point :x 0.0 :y 0.1)
+                (2dg-point :x 0.9 :y 0.0)
+                (2dg-point :x 0.9 :y 0.1)
+                (2dg-point :x 0.0 :y 0.9)
+                (2dg-point :x 0.1 :y 0.9)
+                (2dg-point :x 0.9 :y 0.9)))
     (should (scxml-equal
-             (scxml-get-pixel viewport (scxml-point :x 0.0 :y 0.1))
+             (scxml-get-pixel viewport (2dg-point :x 0.0 :y 0.1))
              (scxml-pixel :x 0 :y bottom-px-offset)))
     (should (scxml-equal
-             (scxml-get-pixel viewport (scxml-point :x 1.0 :y 0.0))
+             (scxml-get-pixel viewport (2dg-point :x 1.0 :y 0.0))
              (scxml-pixel :x 1 :y bottom-px-offset)))
     (should (scxml-equal
-             (scxml-get-pixel viewport (scxml-point :x 1.0 :y 1.0))
+             (scxml-get-pixel viewport (2dg-point :x 1.0 :y 1.0))
              (scxml-pixel :x 1 :y (1- bottom-px-offset))))
     ;; out of bounds coordinates should still be calculable (is that a word?)
     (should (scxml-equal
-             (scxml-get-pixel viewport (scxml-point :x -1.0 :y -1.0))
+             (scxml-get-pixel viewport (2dg-point :x -1.0 :y -1.0))
              (scxml-pixel :x -1 :y (1+ bottom-px-offset))))
     ;; (should (scxml-equal
-    ;;          (scxml-get-pixel viewport (scxml-point :x 12.0 :y 12.0))
+    ;;          (scxml-get-pixel viewport (2dg-point :x 12.0 :y 12.0))
     ;;          (scxml-pixel :x 12 :y -2)))
     )
   ;; Same should work for offset canvases
@@ -175,20 +175,20 @@ Uses drawing coordinate system."
     (let* ((height (scxml-required-pixel-height viewport))
            (bottom-px-offset (1- height)))
       (should (scxml-equal
-               (scxml-get-pixel viewport (scxml-point :x 2.0 :y 2.0))
+               (scxml-get-pixel viewport (2dg-point :x 2.0 :y 2.0))
                (scxml-pixel :x 0 :y bottom-px-offset)))
       (should (scxml-equal
-               (scxml-get-pixel viewport (scxml-point :x 3.0 :y 2.0))
+               (scxml-get-pixel viewport (2dg-point :x 3.0 :y 2.0))
                (scxml-pixel :x 1 :y bottom-px-offset)))
       (should (scxml-equal
-               (scxml-get-pixel viewport (scxml-point :x 3.0 :y 3.0))
+               (scxml-get-pixel viewport (2dg-point :x 3.0 :y 3.0))
                (scxml-pixel :x 1 :y (1- bottom-px-offset))))
       ;; out of bounds coordinates should still be calculable (is that a word?)
       (should (scxml-equal
-               (scxml-get-pixel viewport (scxml-point :x 1.0 :y 1.0))
+               (scxml-get-pixel viewport (2dg-point :x 1.0 :y 1.0))
                (scxml-pixel :x -1 :y (1+ bottom-px-offset))))
       (should (scxml-equal
-               (scxml-get-pixel viewport (scxml-point :x 12.0 :y 12.0))
+               (scxml-get-pixel viewport (2dg-point :x 12.0 :y 12.0))
                (scxml-pixel :x 10 :y -2)))))
   ;; Same should work for offset canvases zoomed in.
   ;; (let* ((canvas (scxml-canvas :x-min 0.0 :x-max 10.0
@@ -202,22 +202,22 @@ Uses drawing coordinate system."
   ;;   (let* ((height (scxml-required-pixel-height viewport))
   ;;          (bottom-px-offset (1- height)))
   ;;        (should (scxml-equal
-  ;;                 (scxml-get-pixel viewport (scxml-point :x 2.0 :y 2.0))
+  ;;                 (scxml-get-pixel viewport (2dg-point :x 2.0 :y 2.0))
   ;;                 (scxml-pixel :x 0 :y bottom-px-offset)))
   ;;        (should (scxml-equal
-  ;;                 (scxml-get-pixel viewport (scxml-point :x 3.0 :y 2.0))
+  ;;                 (scxml-get-pixel viewport (2dg-point :x 3.0 :y 2.0))
   ;;                 (scxml-pixel :x 2 :y bottom-px-offset)))
   ;;        (should (scxml-equal
-  ;;                 (scxml-get-pixel viewport (scxml-point :x 3.0 :y 3.0))
+  ;;                 (scxml-get-pixel viewport (2dg-point :x 3.0 :y 3.0))
   ;;                 (scxml-pixel :x 2 :y (- bottom-px-offset 2))))
   ;;        (should (scxml-equal
-  ;;                 (scxml-get-pixel viewport (scxml-point :x 1.0 :y 1.0))
+  ;;                 (scxml-get-pixel viewport (2dg-point :x 1.0 :y 1.0))
   ;;                 (scxml-pixel :x -2 :y (+ 2 bottom-px-offset))))
   ;;        (should (scxml-equal
-  ;;                 (scxml-get-pixel viewport (scxml-point :x 12.0 :y 12.0))
+  ;;                 (scxml-get-pixel viewport (2dg-point :x 12.0 :y 12.0))
   ;;                 (scxml-pixel :x 20 :y -4)))))
   ;; Same should work for offset canvases zoomed out.
-  ;; (let* ((viewport (scxml-viewport :scaling (scxml-point :x 0.5 :y 0.5)
+  ;; (let* ((viewport (scxml-viewport :scaling (2dg-point :x 0.5 :y 0.5)
   ;;                                  :x-min 2.0
   ;;                                  :x-max 10.0
   ;;                                  :y-min 2.0
@@ -225,118 +225,118 @@ Uses drawing coordinate system."
   ;;        (height (scxml-required-pixel-height viewport))
   ;;        (bottom-px-offset (1- height)))
   ;;   (should (scxml-equal
-  ;;            (scxml-get-pixel viewport (scxml-point :x 2.0 :y 2.0))
+  ;;            (scxml-get-pixel viewport (2dg-point :x 2.0 :y 2.0))
   ;;            (scxml-pixel :x 0 :y bottom-px-offset)))
   ;;   (should (scxml-equal
-  ;;            (scxml-get-pixel viewport (scxml-point :x 3.0 :y 2.0))
+  ;;            (scxml-get-pixel viewport (2dg-point :x 3.0 :y 2.0))
   ;;            (scxml-pixel :x 0 :y bottom-px-offset)))
   ;;   (should (scxml-equal
-  ;;            (scxml-get-pixel viewport (scxml-point :x 3.0 :y 3.0))
+  ;;            (scxml-get-pixel viewport (2dg-point :x 3.0 :y 3.0))
   ;;            (scxml-pixel :x 0 :y bottom-px-offset)))
   ;;   (should (scxml-equal
-  ;;            (scxml-get-pixel viewport (scxml-point :x 4.0 :y 4.0))
+  ;;            (scxml-get-pixel viewport (2dg-point :x 4.0 :y 4.0))
   ;;            (scxml-pixel :x 1 :y (1- bottom-px-offset))))
   ;;   (should (scxml-equal
-  ;;            (scxml-get-pixel viewport (scxml-point :x 0.99 :y 0.99))
+  ;;            (scxml-get-pixel viewport (2dg-point :x 0.99 :y 0.99))
   ;;            (scxml-pixel :x -1 :y (+ 1 bottom-px-offset))))
   ;;   (should (scxml-equal
-  ;;            (scxml-get-pixel viewport (scxml-point :x 12.0 :y 12.0))
+  ;;            (scxml-get-pixel viewport (2dg-point :x 12.0 :y 12.0))
   ;;            (scxml-pixel :x 5 :y -1))))
   )
 
-(cl-defmethod scxml-get-scratch-coord ((viewport scxml-viewport) (drawing-point scxml-point))
+(cl-defmethod scxml-get-scratch-coord ((viewport scxml-viewport) (drawing-point 2dg-point))
   "Given a DRAWING-POINT on VIEWPORT, determine the proper scratch coordinate."
   (with-slots (scaling x-min y-min) viewport
-    (scxml-scaled (scxml-point :x (- (scxml-x drawing-point) x-min)
+    (2dg-scaled (2dg-point :x (- (scxml-x drawing-point) x-min)
                                :y (- (scxml-y drawing-point) y-min))
                   scaling)))
 (ert-deftest scxml-get-scratch-coord-from-viewport-drawing-pt ()
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 1.0 :y 1.0)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 1.0 :y 1.0)
                                    :x-min 0.0
                                    :x-max 10.0
                                    :y-min 0.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 0.0 :y 0.0))
-             (scxml-point :x 0.0 :y 0.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 1.0 :y 0.0))
-             (scxml-point :x 1.0 :y 0.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 1.0 :y 1.0))
-             (scxml-point :x 1.0 :y 1.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x -1.0 :y -1.0))
-             (scxml-point :x -1.0 :y -1.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 12.0 :y 12.0))
-             (scxml-point :x 12.0 :y 12.0))))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 0.0 :y 0.0))
+             (2dg-point :x 0.0 :y 0.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 1.0 :y 0.0))
+             (2dg-point :x 1.0 :y 0.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 1.0 :y 1.0))
+             (2dg-point :x 1.0 :y 1.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x -1.0 :y -1.0))
+             (2dg-point :x -1.0 :y -1.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 12.0 :y 12.0))
+             (2dg-point :x 12.0 :y 12.0))))
   ;; Same should work for offset canvases
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 1.0 :y 1.0)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 1.0 :y 1.0)
                                    :x-min 2.0
                                    :x-max 10.0
                                    :y-min 2.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 2.0 :y 2.0))
-             (scxml-point :x 0.0 :y 0.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 3.0 :y 2.0))
-             (scxml-point :x 1.0 :y 0.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 3.0 :y 3.0))
-             (scxml-point :x 1.0 :y 1.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 1.0 :y 1.0))
-             (scxml-point :x -1.0 :y -1.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 12.0 :y 12.0))
-             (scxml-point :x 10.0 :y 10.0))))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 2.0 :y 2.0))
+             (2dg-point :x 0.0 :y 0.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 3.0 :y 2.0))
+             (2dg-point :x 1.0 :y 0.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 3.0 :y 3.0))
+             (2dg-point :x 1.0 :y 1.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 1.0 :y 1.0))
+             (2dg-point :x -1.0 :y -1.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 12.0 :y 12.0))
+             (2dg-point :x 10.0 :y 10.0))))
   ;; Same should work for offset canvases zoomed in.
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 2.0 :y 2.0)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 2.0 :y 2.0)
                                    :x-min 2.0
                                    :x-max 10.0
                                    :y-min 2.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 2.0 :y 2.0))
-             (scxml-point :x 0.0 :y 0.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 3.0 :y 2.0))
-             (scxml-point :x 2.0 :y 0.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 3.0 :y 3.0))
-             (scxml-point :x 2.0 :y 2.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 1.0 :y 1.0))
-             (scxml-point :x -2.0 :y -2.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 12.0 :y 12.0))
-             (scxml-point :x 20.0 :y 20.0))))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 2.0 :y 2.0))
+             (2dg-point :x 0.0 :y 0.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 3.0 :y 2.0))
+             (2dg-point :x 2.0 :y 0.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 3.0 :y 3.0))
+             (2dg-point :x 2.0 :y 2.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 1.0 :y 1.0))
+             (2dg-point :x -2.0 :y -2.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 12.0 :y 12.0))
+             (2dg-point :x 20.0 :y 20.0))))
   ;; Same should work for offset canvases zoomed out.
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 0.5 :y 0.5)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 0.5 :y 0.5)
                                    :x-min 2.0
                                    :x-max 10.0
                                    :y-min 2.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 2.0 :y 2.0))
-             (scxml-point :x 0.0 :y 0.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 3.0 :y 2.0))
-             (scxml-point :x 0.5 :y 0.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 3.0 :y 3.0))
-             (scxml-point :x 0.5 :y 0.5)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 4.0 :y 4.0))
-             (scxml-point :x 1.0 :y 1.0)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 1.0 :y 1.0))
-             (scxml-point :x -0.5 :y -0.5)))
-    (should (scxml-almost-equal
-             (scxml-get-scratch-coord viewport (scxml-point :x 11.0 :y 11.0))
-             (scxml-point :x 4.5 :y 4.5)))))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 2.0 :y 2.0))
+             (2dg-point :x 0.0 :y 0.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 3.0 :y 2.0))
+             (2dg-point :x 0.5 :y 0.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 3.0 :y 3.0))
+             (2dg-point :x 0.5 :y 0.5)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 4.0 :y 4.0))
+             (2dg-point :x 1.0 :y 1.0)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 1.0 :y 1.0))
+             (2dg-point :x -0.5 :y -0.5)))
+    (should (2dg-almost-equal
+             (scxml-get-scratch-coord viewport (2dg-point :x 11.0 :y 11.0))
+             (2dg-point :x 4.5 :y 4.5)))))
 
 (cl-defmethod scxml-get-coord-centroid ((viewport scxml-viewport) (pixel scxml-pixel))
   "Given a pixel, return the center of it in drawing coordinates"
@@ -344,57 +344,57 @@ Uses drawing coordinate system."
     (let ((height (scxml-required-pixel-height viewport))
           (scale-x (/ 1.0 (scxml-x scaling)))
           (scale-y (/ 1.0 (scxml-y scaling))))
-      (scxml-point :x (+ x-min (* scale-x (+ 0.5 (scxml-x pixel))))
+      (2dg-point :x (+ x-min (* scale-x (+ 0.5 (scxml-x pixel))))
                    :y (+ y-min (* scale-y (- height (+ 0.5 (scxml-y pixel)))))))))
 (ert-deftest scxml-get-coord-centroid-from-viewport ()
   "should fire out rectangles"
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 1.0 :y 1.0)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 1.0 :y 1.0)
                                    :x-min 0.0
                                    :x-max 10.0
                                    :y-min 0.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-coord-centroid viewport (scxml-pixel :x 0 :y 0))
-             (scxml-centroid (scxml-get-coord viewport (scxml-pixel :x 0 :y 0)))))
-    (should (scxml-almost-equal
+             (2dg-centroid (scxml-get-coord viewport (scxml-pixel :x 0 :y 0)))))
+    (should (2dg-almost-equal
              (scxml-get-coord-centroid viewport (scxml-pixel :x 1 :y 1))
-             (scxml-centroid (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))))))
+             (2dg-centroid (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))))))
   ;; offset a bit.
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 1.0 :y 1.0)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 1.0 :y 1.0)
                                    :x-min 2.0
                                    :x-max 10.0
                                    :y-min 2.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-coord-centroid viewport (scxml-pixel :x 0 :y 0))
-             (scxml-centroid (scxml-get-coord viewport (scxml-pixel :x 0 :y 0)))))
-    (should (scxml-almost-equal
+             (2dg-centroid (scxml-get-coord viewport (scxml-pixel :x 0 :y 0)))))
+    (should (2dg-almost-equal
              (scxml-get-coord-centroid viewport (scxml-pixel :x 1 :y 1))
-             (scxml-centroid (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))))))
+             (2dg-centroid (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))))))
   ;; offset a bit and zoom in
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 2.0 :y 2.0)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 2.0 :y 2.0)
                                    :x-min 2.0
                                    :x-max 10.0
                                    :y-min 2.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-coord-centroid viewport (scxml-pixel :x 0 :y 0))
-             (scxml-centroid (scxml-get-coord viewport (scxml-pixel :x 0 :y 0)))))
-    (should (scxml-almost-equal
+             (2dg-centroid (scxml-get-coord viewport (scxml-pixel :x 0 :y 0)))))
+    (should (2dg-almost-equal
              (scxml-get-coord-centroid viewport (scxml-pixel :x 1 :y 1))
-             (scxml-centroid (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))))))
+             (2dg-centroid (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))))))
   ;; offset a bit and zoom out
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 0.5 :y 0.5)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 0.5 :y 0.5)
                                    :x-min 2.0
                                    :x-max 10.0
                                    :y-min 2.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-coord-centroid viewport (scxml-pixel :x 0 :y 0))
-             (scxml-centroid (scxml-get-coord viewport (scxml-pixel :x 0 :y 0)))))
-    (should (scxml-almost-equal
+             (2dg-centroid (scxml-get-coord viewport (scxml-pixel :x 0 :y 0)))))
+    (should (2dg-almost-equal
              (scxml-get-coord-centroid viewport (scxml-pixel :x 1 :y 1))
-             (scxml-centroid (scxml-get-coord viewport (scxml-pixel :x 1 :y 1)))))))
+             (2dg-centroid (scxml-get-coord viewport (scxml-pixel :x 1 :y 1)))))))
 
 (cl-defmethod scxml-get-coord ((viewport scxml-viewport) (pixel scxml-pixel))
   "Given a pixel, return the drawing coordinate rectangle for it"
@@ -408,59 +408,59 @@ Uses drawing coordinate system."
                   :y-min (+ y-min (* scale-y (- height (1+ (scxml-y pixel)))))))))
 (ert-deftest scxml-get-coord-from-viewport ()
   "should fire out rectangles"
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 1.0 :y 1.0)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 1.0 :y 1.0)
                                    :x-min 0.0
                                    :x-max 10.0
                                    :y-min 0.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 0 :y 0))
              (scxml-rect :x-min 0.0 :x-max 1.0
                          :y-min 9.0 :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))
              (scxml-rect :x-min 1.0 :x-max 2.0
                          :y-min 8.0 :y-max 9.0))))
 
   ;; offset a bit.
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 1.0 :y 1.0)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 1.0 :y 1.0)
                                    :x-min 2.0
                                    :x-max 10.0
                                    :y-min 2.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 0 :y 0))
              (scxml-rect :x-min 2.0 :x-max 3.0
                          :y-min 9.0 :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))
              (scxml-rect :x-min 3.0 :x-max 4.0
                          :y-min 8.0 :y-max 9.0))))
   ;; offset a bit and zoom in
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 2.0 :y 2.0)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 2.0 :y 2.0)
                                    :x-min 2.0
                                    :x-max 10.0
                                    :y-min 2.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 0 :y 0))
              (scxml-rect :x-min 2.0 :x-max 2.5
                          :y-min 9.5 :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))
              (scxml-rect :x-min 2.5 :x-max 3.0
                          :y-min 9.0 :y-max 9.5))))
   ;; offset a bit and zoom out
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 0.5 :y 0.5)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 0.5 :y 0.5)
                                    :x-min 2.0
                                    :x-max 10.0
                                    :y-min 2.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 0 :y 0))
              (scxml-rect :x-min 2.0 :x-max 4.0
                          :y-min 8.0 :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))
              (scxml-rect :x-min 4.0 :x-max 6.0
                          :y-min 6.0 :y-max 8.0)))))
@@ -469,56 +469,56 @@ Uses drawing coordinate system."
   "Given a pixel, return a rectangle describing the area which was clicked in drawing coordinates"
   (with-slots (x-min y-min) viewport
     (let ((height (scxml-required-pixel-height viewport)))
-      (scxml-point :x (float (scxml-x pixel))
+      (2dg-point :x (float (scxml-x pixel))
                    :y (float (- height (1+ (scxml-y pixel))))))))
 (ert-deftest scxml-get-scratch-coord-from-viewport-pixel ()
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 1.0 :y 1.0)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 1.0 :y 1.0)
                                    :x-min 0.0
                                    :x-max 10.0
                                    :y-min 0.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-scratch-coord viewport (scxml-pixel :x 0 :y 0))
-             (scxml-point :x 0.0 :y 9.0)))
-    (should (scxml-almost-equal
+             (2dg-point :x 0.0 :y 9.0)))
+    (should (2dg-almost-equal
              (scxml-get-scratch-coord viewport (scxml-pixel :x 1 :y 1))
-             (scxml-point :x 1.0 :y 8.0))))
+             (2dg-point :x 1.0 :y 8.0))))
   ;; offset a bit.
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 1.0 :y 1.0)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 1.0 :y 1.0)
                                    :x-min 2.0
                                    :x-max 10.0
                                    :y-min 2.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-scratch-coord viewport (scxml-pixel :x 0 :y 0))
-             (scxml-point :x 0.0 :y 7.0)))
-    (should (scxml-almost-equal
+             (2dg-point :x 0.0 :y 7.0)))
+    (should (2dg-almost-equal
              (scxml-get-scratch-coord viewport (scxml-pixel :x 1 :y 1))
-             (scxml-point :x 1.0 :y 6.0))))
+             (2dg-point :x 1.0 :y 6.0))))
   ;; offset a bit and zoom in
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 2.0 :y 2.0)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 2.0 :y 2.0)
                                    :x-min 2.0
                                    :x-max 10.0
                                    :y-min 2.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-scratch-coord viewport (scxml-pixel :x 0 :y 0))
-             (scxml-point :x 0.0 :y 15.0)))
-    (should (scxml-almost-equal
+             (2dg-point :x 0.0 :y 15.0)))
+    (should (2dg-almost-equal
              (scxml-get-scratch-coord viewport (scxml-pixel :x 1 :y 1))
-             (scxml-point :x 1.0 :y 14.0)))
+             (2dg-point :x 1.0 :y 14.0)))
   ;; offset a bit and zoom out
-  (let* ((viewport (scxml-viewport :scaling (scxml-point :x 0.5 :y 0.5)
+  (let* ((viewport (scxml-viewport :scaling (2dg-point :x 0.5 :y 0.5)
                                    :x-min 2.0
                                    :x-max 10.0
                                    :y-min 2.0
                                    :y-max 10.0)))
-    (should (scxml-almost-equal
+    (should (2dg-almost-equal
              (scxml-get-scratch-coord viewport (scxml-pixel :x 0 :y 0))
-             (scxml-point :x 0.0 :y 3.0)))
-    (should (scxml-almost-equal
+             (2dg-point :x 0.0 :y 3.0)))
+    (should (2dg-almost-equal
              (scxml-get-scratch-coord viewport (scxml-pixel :x 1 :y 1))
-             (scxml-point :x 1.0 :y 2.0))))))
+             (2dg-point :x 1.0 :y 2.0))))))
 
 (cl-defmethod scxml-get-scratch-transformers ((viewport scxml-viewport))
   "Return a cons cell of X and Y transformers that convert from drawing coordinates to scratch coordinates."
@@ -546,22 +546,22 @@ for reasons that should be investigated, y must be floored.
          (y-scale (scxml-y (scxml-scaling viewport))))
      (lambda (y-point) (floor (* (- y-point y-offset) y-scale))))))
 (ert-deftest scxml-get-scratch-transformers-match ()
-  (let ((viewports (list (scxml-viewport :scaling (scxml-point :x 1.0 :y 1.0)
+  (let ((viewports (list (scxml-viewport :scaling (2dg-point :x 1.0 :y 1.0)
                                          :x-min 0.0
                                          :x-max 10.0
                                          :y-min 0.0
                                          :y-max 10.0)
-                         (scxml-viewport :scaling (scxml-point :x 1.0 :y 1.0)
+                         (scxml-viewport :scaling (2dg-point :x 1.0 :y 1.0)
                                          :x-min 2.0
                                          :x-max 10.0
                                          :y-min 2.0
                                          :y-max 10.0)
-                         (scxml-viewport :scaling (scxml-point :x 2.0 :y 2.0)
+                         (scxml-viewport :scaling (2dg-point :x 2.0 :y 2.0)
                                          :x-min 2.0
                                          :x-max 10.0
                                          :y-min 2.0
                                          :y-max 10.0)
-                         (scxml-viewport :scaling (scxml-point :x 0.5 :y 0.5)
+                         (scxml-viewport :scaling (2dg-point :x 0.5 :y 0.5)
                                          :x-min 2.0
                                          :x-max 10.0
                                          :y-min 2.0
@@ -572,11 +572,11 @@ for reasons that should be investigated, y must be floored.
              for transform-y = (cdr transformers)
              do (cl-loop for x from -2.0 to 2.0 by 0.1
                          do (cl-loop for y from -2.0 to 2.0 by 0.1
-                                     for drawing-point = (scxml-point :x x :y y)
-                                     for transformers-scratch = (scxml-point :x (funcall transform-x x)
+                                     for drawing-point = (2dg-point :x x :y y)
+                                     for transformers-scratch = (2dg-point :x (funcall transform-x x)
                                                                              :y (funcall transform-y y))
                                      for one-shot-scratch = (scxml-get-scratch-coord viewport drawing-point)
-                                     do (should (scxml-almost-equal transformers-scratch
+                                     do (should (2dg-almost-equal transformers-scratch
                                                                     one-shot-scratch)))))))
 
 (provide 'scxml-viewport)

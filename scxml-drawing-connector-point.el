@@ -23,16 +23,16 @@
 
 (cl-defgeneric scxml-to-node-direction ((connector scxml-drawing-connector-point))
   "Terminal-direction as a symbol"
-  (scxml-reverse (scxml-exit-direction connector)))
+  (2dg-reverse (scxml-exit-direction connector)))
 (cl-defgeneric scxml-from-node-direction ((connector scxml-drawing-connector-point))
   (scxml-exit-direction connector))
 
 
-(cl-defmethod scxml-build-connector ((connector scxml-drawing-connector-point) (target-point scxml-point))
+(cl-defmethod scxml-build-connector ((connector scxml-drawing-connector-point) (target-point 2dg-point))
   "Build a brand new connector based off nudging CONNECTOR over to TARGET-POINT.
 
 This function will always return a valid connector.  Like the scxml-build-connector function for rectangles this one will 'try' to get as close as possible to the TARGET-POINT.  However, because the connector is constrained to a single point it will always return a connector at that point."
-  ;; (when (scxml-almost-equal target-point (scxml-connection-point connector))
+  ;; (when (2dg-almost-equal target-point (scxml-connection-point connector))
   (scxml-drawing-connector-point :exit-direction (scxml-exit-direction connector)
                                  :node (scxml-node connector)))
 
@@ -45,10 +45,10 @@ This function will always return a valid connector.  Like the scxml-build-connec
     (let ((x (scxml-x point))
           (y (scxml-y point)))
       (if (null offset)
-          (scxml-point :x x :y y)
-        (let* ((offset-unit-vec (scxml-vector-from-direction exit-direction))
-               (offset-vec (scxml-scaled offset-unit-vec offset)))
-          (scxml-add (scxml-point :x x :y y) offset-vec))))))
+          (2dg-point :x x :y y)
+        (let* ((offset-unit-vec (2dg-vector-from-direction exit-direction))
+               (offset-vec (2dg-scaled offset-unit-vec offset)))
+          (2dg-add (2dg-point :x x :y y) offset-vec))))))
 
 (provide 'scxml-drawing-connector-point)
 ;;; scxml-drawing-connector-point.el ends here

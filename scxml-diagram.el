@@ -71,7 +71,7 @@ search-parent."
     (mapc (lambda (child)
             (let ((drawing (scxml-element-drawing child)))
               (when (and drawing
-                         (scxml-has-intersection selection-rect drawing 'stacked))
+                         (2dg-has-intersection selection-rect drawing 'stacked))
                 (return-from scxml---find-selection
                   (scxml---find-other selection-rect child)))))
           (seq-filter (lambda (element) (and (not (object-of-class-p element 'scxml-transition))
@@ -88,7 +88,7 @@ nil."
                  (lambda (element)
                    (let ((drawing (scxml-element-drawing element)))
                      (when (and drawing
-                                (scxml-has-intersection selection-rect drawing 'stacked))
+                                (2dg-has-intersection selection-rect drawing 'stacked))
                        (return-from scxml---find-selection element))))
                  (lambda (element)
                    (object-of-class-p element 'scxml-transition)))
@@ -102,7 +102,7 @@ nil."
                  (lambda (element)
                    (let ((drawing (scxml-element-drawing element)))
                      (when (and drawing
-                                (scxml-has-intersection selection-rect drawing 'stacked)
+                                (2dg-has-intersection selection-rect drawing 'stacked)
                                 (return-from scxml---find-selection element)))))
                  (lambda (element)
                    (object-of-class-p element 'scxml-initial)))

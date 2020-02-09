@@ -27,7 +27,7 @@ Optionally set the root canvas size to X-SIZE by Y-SIZE."
          (y-size (or y-size 40))
          (root (prog2
                    (find-file (scxml-resolve-file test-file))
-                   (scxml-read-buffer)
+                   (scxml-read-buffer nil #'scxml--drawable-element-factory)
                  (kill-this-buffer)))
          (buffer (get-buffer-create (format "%s-scxml-replay" (abs (random)))))
          (canvas (scxml-canvas :x-min 0.0 :y-min 0.0

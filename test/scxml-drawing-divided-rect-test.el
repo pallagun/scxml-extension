@@ -10,7 +10,7 @@
               ;; cell coordinates should be the same
               (equal (car A) (car B))
               ;; cell rectangles need to be almost equal
-              (scxml-almost-equal (cdr A) (cdr B)))))
+              (2dg-almost-equal (cdr A) (cdr B)))))
     (let* ((stripe (scxml--set-layout (scxml---nest-stripe) 2 2))
            (rect (scxml-rect :x-min 0.0 :y-min 0.0 :x-max 10.0 :y-max 10.0))
            (divisions (scxml---get-divisions stripe rect)))

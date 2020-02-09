@@ -167,11 +167,11 @@ The coordinate returned is for the cell right before the division."
 
     (let ((point-producer (if (eq (scxml-axis stripe) 'scxml--horizontal)
                               (lambda (division-param)
-                                (scxml-point :x (scxml-parametric (scxml-x-span rect) division-param)
+                                (2dg-point :x (2dg-parametric (scxml-x-span rect) division-param)
                                              :y (/ (+ (scxml-y-min rect) (scxml-y-max rect)) 2.0)))
                             (lambda (division-param)
-                              (scxml-point :x (/ (+ (scxml-x-min rect) (scxml-x-max rect)) 2.0)
-                                           :y (scxml-parametric (scxml-y-span rect) division-param))))))
+                              (2dg-point :x (/ (+ (scxml-x-min rect) (scxml-x-max rect)) 2.0)
+                                           :y (2dg-parametric (scxml-y-span rect) division-param))))))
       (cl-loop for division-param in (scxml-divisions stripe)
                for cell-idx = 0
                do (push (cons (funcall point-producer division-param)
@@ -284,7 +284,7 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
   "Get the pixel locations of the edit idxs for DIVIDED-RECT as a list."
   (append (cl-call-next-method)
           (scxml---get-edit-points divided-rect divided-rect)))
-(cl-defmethod scxml-build-idx-edited ((divided-rect scxml-drawing-nest-rect) (edit-idx integer) (move-vector scxml-point) (viewport scxml-viewport))
+(cl-defmethod scxml-build-idx-edited ((divided-rect scxml-drawing-nest-rect) (edit-idx integer) (move-vector 2dg-point) (viewport scxml-viewport))
   ;; This needs to be documented.
   (if (< edit-idx 8)
       (let ((rect-shell (cl-call-next-method)))
@@ -305,12 +305,12 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
              (parent-cell (scxml-get-cell deep-clone parent-coord))
              (parent-rect (scxml---get-sub-rect deep-clone parent-coord divided-rect))
              (axis-vector (if (eq (scxml-axis parent-cell) 'scxml--horizontal)
-                              (scxml-point :x 1.0 :y 0.0)
-                            (scxml-point :x 0.0 :y 1.0)))
+                              (2dg-point :x 1.0 :y 0.0)
+                            (2dg-point :x 0.0 :y 1.0)))
              (parent-cell-span (if (eq (scxml-axis parent-cell) 'scxml--horizontal)
                                    (scxml-x-span parent-rect)
                                  (scxml-y-span parent-rect)))
-             (allowed-movement (scxml-dot-prod axis-vector move-vector))
+             (allowed-movement (2dg-dot-prod axis-vector move-vector))
              (relative-movement (/ allowed-movement (scxml-length parent-cell-span))))
         ;; determine the cell axis and bump (nth child-coord (scxml-divisions parent-cell))
         ;; by a tiny amount.
@@ -326,21 +326,21 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
                                  :axis (scxml-axis deep-clone)
                                  :cells (scxml-cells deep-clone)
                                  :divisions (scxml-divisions deep-clone))))))
-(cl-defmethod scxml-build-move-edited ((divided-rect scxml-drawing-nest-rect) (move-vector scxml-point) (viewport scxml-viewport))
+(cl-defmethod scxml-build-move-edited ((divided-rect scxml-drawing-nest-rect) (move-vector 2dg-point) (viewport scxml-viewport))
   ;; TODO- possibly this would work for *all* scxml-drawings?
-  (scxml-incf (clone divided-rect) move-vector))
+  (2dg-incf (clone divided-rect) move-vector))
 (cl-defmethod scxml-build-hint ((divided-rect scxml-drawing-nest-rect) (parent-canvas scxml-inner-canvas))
   "Build a hint for DIVIDED-RECT inside of PARENT-CANVAS."
   (scxml---drawing-nest-rect-hint
-   :relative-rect (scxml-relative-coordinates parent-canvas divided-rect)
+   :relative-rect (2dg-relative-coordinates parent-canvas divided-rect)
    :stripe (scxml---stripe-clone divided-rect)))
 (defun scxml---divided-rect-division-segments (divided-rect)
   "Get a list of segments to draw inside of DIVIDED-RECT."
   ;; first line in the one right below the header
   (with-slots (x-min x-max y-min (real-y-max y-max)) divided-rect
     (let ((y-max (- real-y-max scxml---divided-rect-header-height)))
-      (list (scxml-segment :start (scxml-point :x x-min :y y-max)
-                           :end (scxml-point :x x-max :y y-max))))))
+      (list (scxml-segment :start (2dg-point :x x-min :y y-max)
+                           :end (2dg-point :x x-max :y y-max))))))
 
 (provide 'scxml-drawing-divided-rect)
 ;;; scxml-drawing-divided-rect.el ends here

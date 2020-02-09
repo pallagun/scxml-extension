@@ -45,7 +45,7 @@ This should be the exact opposite of scxml-to-node-direction.")
 (defclass scxml-drawing-connector-dangling (scxml-drawing-connector-unconnected)
   ((dangling-point :initarg :point
                    :accessor scxml-dangling-point
-                   :type (or null scxml-point))
+                   :type (or null 2dg-point))
    (terminal-direction :initarg :terminal-direction
                        :initform 'up
                        :type symbol))
@@ -63,8 +63,8 @@ This should be the exact opposite of scxml-to-node-direction.")
   (oref connector terminal-direction))
 (cl-defmethod scxml-from-node-direction ((connector scxml-drawing-connector-unconnected))
   "Return an int :(, but is otherwise opposite of terminal-direction."
-  (scxml-reverse (oref connector terminal-direction)))
-(cl-defmethod scxml-set-point ((connector scxml-drawing-connector-dangling) (point scxml-point))
+  (2dg-reverse (oref connector terminal-direction)))
+(cl-defmethod scxml-set-point ((connector scxml-drawing-connector-dangling) (point 2dg-point))
   "Set the connection point of this dangling connector."
   (oset connector dangling-point point))
 (cl-defmethod scxml-set-to-node-direction ((connector scxml-drawing-connector-dangling) (direction symbol))
@@ -72,7 +72,7 @@ This should be the exact opposite of scxml-to-node-direction.")
   (unless (memq direction '(up down left right))
     (error "Invalid direction for this connector"))
   (oset connector terminal-direction direction))
-(cl-defmethod scxml-build-connector ((connector scxml-drawing-connector-dangling) (target-point scxml-point))
+(cl-defmethod scxml-build-connector ((connector scxml-drawing-connector-dangling) (target-point 2dg-point))
     "Build a brand new connector based off nudging CONNECTOR over to TARGET-POINT.
 
 Will return 'nil if the connector can't be built."
