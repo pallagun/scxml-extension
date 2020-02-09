@@ -597,8 +597,8 @@ Currently only able to zoom out when in viewport mode."
           (current-canvas (scxml-diagram-mode--canvas))
           (default-width (- (window-body-width) margin))
           (default-height (- (window-height nil 'floor) margin))
-          (current-width (round (scxml-width current-canvas)))
-          (current-height (round (scxml-height current-canvas)))
+          (current-width (round (2dg-width current-canvas)))
+          (current-height (round (2dg-height current-canvas)))
           (width-prompt (format "Width (current:%d, default:%d): " current-width default-width))
           (height-prompt (format "Height (current:%d, default:%d): " current-height default-height)))
      (list (read-string width-prompt nil nil default-width)
@@ -609,8 +609,8 @@ Currently only able to zoom out when in viewport mode."
   (when (not (numberp lines))
     (setq lines (string-to-number lines)))
   (let ((canvas (scxml-diagram-mode--canvas)))
-    (setf (scxml-x-max canvas) (+ columns (scxml-x-min canvas))
-          (scxml-y-max canvas) (+ lines (scxml-y-min canvas)))
+    (setf (2dg-x-max canvas) (+ columns (2dg-x-min canvas))
+          (2dg-y-max canvas) (+ lines (2dg-y-min canvas)))
     (scxml-diagram-mode--redraw)))
 
 (defun scxml-diagram-mode--unmark-all (&optional do-redraw)
@@ -1214,7 +1214,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
                             (scxml-diagram-root scxml-draw--diagram)
                             t))
 
-(cl-defgeneric scxml-diagram-mode--get-element ((selection-rect scxml-rect))
+(cl-defgeneric scxml-diagram-mode--get-element ((selection-rect 2dg-rect))
   "Return the element inside the SELECTION-RECT."
   (scxml-find-element-selection scxml-draw--diagram selection-rect))
 
@@ -1229,7 +1229,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
 (defun scxml-diagram-mode--debug-hint (element)
   (let ((hint (scxml--hint element)))
     (if hint
-        (cond ((or (scxml-rect-p hint)
+        (cond ((or (2dg-rect-p hint)
                    (scxml-arrow-hint-p hint)
                    (2dg-point-p hint))
                (scxml-print hint))
@@ -1242,6 +1242,9 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
                           "\n          ")))
 
       "nil")))
+(cl-defmethod scxml-print ((rect 2dg-rect))
+  "Apparently I need this here - TODO - find out why."
+  (2dg-pprint rect))
 (defun scxml-diagram-mode--debug-barf ()
   "Barf out a ton of debug info at the bottom of the diagram"
 
@@ -1264,18 +1267,18 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
           (insert
            (format "lastClik: %s\n" (if scxml-diagram-mode--last-click-pixel
                                         (format "%s -> %s -> %s{%s} -> %s/%s"
-                                                (scxml-print scxml-diagram-mode--last-click-pixel)
-                                                (scxml-print (scxml-get-scratch-coord (scxml-diagram-mode--viewport)
+                                                (2dg-pprint scxml-diagram-mode--last-click-pixel)
+                                                (2dg-pprint (scxml-get-scratch-coord (scxml-diagram-mode--viewport)
                                                                                       scxml-diagram-mode--last-click-pixel))
-                                                (scxml-print (scxml-get-coord (scxml-diagram-mode--viewport)
+                                                (2dg-pprint (scxml-get-coord (scxml-diagram-mode--viewport)
                                                                               scxml-diagram-mode--last-click-pixel))
-                                                (scxml-print (scxml-get-scratch-coord (scxml-diagram-mode--viewport)
-                                                                                      (scxml-BL (scxml-get-coord (scxml-diagram-mode--viewport)
+                                                (2dg-pprint (scxml-get-scratch-coord (scxml-diagram-mode--viewport)
+                                                                                      (2dg-BL (scxml-get-coord (scxml-diagram-mode--viewport)
                                                                                                                  scxml-diagram-mode--last-click-pixel))))
-                                                (scxml-print (scxml-get-pixel (scxml-diagram-mode--viewport)
-                                                                              (scxml-BL (scxml-get-coord (scxml-diagram-mode--viewport)
+                                                (2dg-pprint (scxml-get-pixel (scxml-diagram-mode--viewport)
+                                                                              (2dg-BL (scxml-get-coord (scxml-diagram-mode--viewport)
                                                                                                          scxml-diagram-mode--last-click-pixel))))
-                                                (scxml-print (scxml-get-pixel (scxml-diagram-mode--viewport)
+                                                (2dg-pprint (scxml-get-pixel (scxml-diagram-mode--viewport)
                                                                               (2dg-centroid (scxml-get-coord (scxml-diagram-mode--viewport)
                                                                                                                scxml-diagram-mode--last-click-pixel)))))
                                       "none"))

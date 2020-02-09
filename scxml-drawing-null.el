@@ -9,12 +9,14 @@
 (require 'scxml-drawing)
 (require 'scxml-geometry-rect)
 
-(defclass scxml-drawing-null (scxml-drawing scxml-rect)
+(defclass scxml-drawing-null (scxml-drawing 2dg-rect)
   ()
   :documentation "A drawing that can not be drawn but has a
 stable inner canvas.  Should serve as reference for other
 drawings.")
 
+(cl-defmethod scxml-print ((null-drawing scxml-drawing-null))
+  (2dg-pprint null-drawing))
 (cl-defgeneric scxml-build-drawing-null ((parent scxml-drawable-element) (canvas scxml-canvas))
   "Build a null drawing for PARENT in CANVAS.")
 (cl-defmethod  scxml-build-drawing-null ((parent scxml-drawable-element) (canvas scxml-canvas))

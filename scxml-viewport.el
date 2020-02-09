@@ -10,7 +10,7 @@
 (require 'scxml-geometry-pixel)
 (require 'scxml-canvas)
 
-(defclass scxml-viewport (scxml-rect)
+(defclass scxml-viewport (2dg-rect)
   ((scaling :initarg :scaling
             :accessor scxml-scaling
             :type 2dg-point
@@ -38,18 +38,18 @@ The scaling slot represents how that space should be scaled before rendering")
 (cl-defmethod scxml-build-viewport ((canvas scxml-canvas))
   "Build a viewport to cover the entire CANVAS with identity scaling"
   ;; TODO - this should really be ceiling, not 1+
-  (scxml-viewport :x-min (scxml-x-min canvas)
-                  :x-max (1+ (scxml-x-max canvas))
-                  :y-min (scxml-y-min canvas)
-                  :y-max (1+ (scxml-y-max canvas))))
-(cl-defmethod scxml-set-domain ((viewport scxml-viewport) (area scxml-rect))
+  (scxml-viewport :x-min (2dg-x-min canvas)
+                  :x-max (1+ (2dg-x-max canvas))
+                  :y-min (2dg-y-min canvas)
+                  :y-max (1+ (2dg-y-max canvas))))
+(cl-defmethod scxml-set-domain ((viewport scxml-viewport) (area 2dg-rect))
   "Set the domain of this VIEWPORT to match the CANVAS.
 
 Return the viewport after modification"
-  (setf (scxml-x-min viewport) (scxml-x-min area)
-        (scxml-x-max viewport) (float (ceiling (+ 2dg--almost-zero (scxml-x-max area))))
-        (scxml-y-min viewport) (scxml-y-min area)
-        (scxml-y-max viewport) (float (ceiling (+ 2dg--almost-zero (scxml-y-max area))))))
+  (setf (2dg-x-min viewport) (2dg-x-min area)
+        (2dg-x-max viewport) (float (ceiling (+ 2dg--almost-zero (2dg-x-max area))))
+        (2dg-y-min viewport) (2dg-y-min area)
+        (2dg-y-max viewport) (float (ceiling (+ 2dg--almost-zero (2dg-y-max area))))))
 (cl-defmethod scxml-zoom ((viewport scxml-viewport) (alpha number))
   "Zoom the VIEWPORT by ALPHA, modifies viewport, returns viewport.
 
@@ -57,8 +57,8 @@ Alpha > 1 zooms in.  Alpha < 1 zooms out."
   (when (<= alpha 0.0)
     (error "That's a crazy alpha"))
   (let ((centroid (2dg-centroid viewport))
-        (x-radius (/ (scxml-width viewport) 2.0 alpha))
-        (y-radius (/ (scxml-height viewport) 2.0 alpha)))
+        (x-radius (/ (2dg-width viewport) 2.0 alpha))
+        (y-radius (/ (2dg-height viewport) 2.0 alpha)))
     (oset viewport x-min (- (2dg-x centroid) x-radius))
     (oset viewport x-max (+ (2dg-x centroid) x-radius))
     (oset viewport y-min (- (2dg-y centroid) y-radius))
@@ -79,11 +79,11 @@ Uses drawing coordinate system."
 (cl-defmethod scxml-required-pixel-width ((viewport scxml-viewport))
   "How many pixels of width are required for this VIEWPORT to be fully visible."
   (ceiling (* (2dg-x (scxml-scaling viewport))
-              (2dg-length (scxml-x-span viewport)))))
+              (2dg-length (2dg-x-span viewport)))))
 (cl-defmethod scxml-required-pixel-height ((viewport scxml-viewport))
   "How many pixels of height are required for this VIEWPORT to be fully visible."
   (ceiling (* (2dg-y (scxml-scaling viewport))
-              (2dg-length (scxml-y-span viewport)))))
+              (2dg-length (2dg-y-span viewport)))))
 
 ;; Coordinate scheme conversions
 (cl-defmethod scxml-get-pixel-scaling ((viewport scxml-viewport))
@@ -169,7 +169,7 @@ Uses drawing coordinate system."
   (let* ((canvas (scxml-canvas :x-min 0.0 :x-max 10.0
                                :y-min 0.0 :y-max 10.0))
          (viewport (scxml-build-viewport canvas))
-         (focus (scxml-rect :x-min 2.0 :x-max 10.0
+         (focus (2dg-rect :x-min 2.0 :x-max 10.0
                             :y-min 2.0 :y-max 10.0)))
     (scxml-set-domain viewport focus)
     (let* ((height (scxml-required-pixel-height viewport))
@@ -194,7 +194,7 @@ Uses drawing coordinate system."
   ;; (let* ((canvas (scxml-canvas :x-min 0.0 :x-max 10.0
   ;;                              :y-min 0.0 :y-max 10.0))
   ;;        (viewport (scxml-build-viewport canvas))
-  ;;        (focus (scxml-rect :x-min 2.0 :x-max 10.0
+  ;;        (focus (2dg-rect :x-min 2.0 :x-max 10.0
   ;;                           :y-min 2.0 :y-max 10.0)))
   ;;   (scxml-set-domain viewport focus)
   ;;   (scxml-zoom viewport 2.0)
@@ -402,7 +402,7 @@ Uses drawing coordinate system."
     (let ((height (scxml-required-pixel-height viewport))
           (scale-x (/ 1.0 (2dg-x scaling)))
           (scale-y (/ 1.0 (2dg-y scaling))))
-      (scxml-rect :x-min (+ x-min (* scale-x (2dg-x pixel)))
+      (2dg-rect :x-min (+ x-min (* scale-x (2dg-x pixel)))
                   :x-max (+ x-min (* scale-x (1+ (2dg-x pixel))))
                   :y-max (+ y-min (* scale-y (- height (2dg-y pixel))))
                   :y-min (+ y-min (* scale-y (- height (1+ (2dg-y pixel)))))))))
@@ -415,11 +415,11 @@ Uses drawing coordinate system."
                                    :y-max 10.0)))
     (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 0 :y 0))
-             (scxml-rect :x-min 0.0 :x-max 1.0
+             (2dg-rect :x-min 0.0 :x-max 1.0
                          :y-min 9.0 :y-max 10.0)))
     (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))
-             (scxml-rect :x-min 1.0 :x-max 2.0
+             (2dg-rect :x-min 1.0 :x-max 2.0
                          :y-min 8.0 :y-max 9.0))))
 
   ;; offset a bit.
@@ -430,11 +430,11 @@ Uses drawing coordinate system."
                                    :y-max 10.0)))
     (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 0 :y 0))
-             (scxml-rect :x-min 2.0 :x-max 3.0
+             (2dg-rect :x-min 2.0 :x-max 3.0
                          :y-min 9.0 :y-max 10.0)))
     (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))
-             (scxml-rect :x-min 3.0 :x-max 4.0
+             (2dg-rect :x-min 3.0 :x-max 4.0
                          :y-min 8.0 :y-max 9.0))))
   ;; offset a bit and zoom in
   (let* ((viewport (scxml-viewport :scaling (2dg-point :x 2.0 :y 2.0)
@@ -444,11 +444,11 @@ Uses drawing coordinate system."
                                    :y-max 10.0)))
     (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 0 :y 0))
-             (scxml-rect :x-min 2.0 :x-max 2.5
+             (2dg-rect :x-min 2.0 :x-max 2.5
                          :y-min 9.5 :y-max 10.0)))
     (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))
-             (scxml-rect :x-min 2.5 :x-max 3.0
+             (2dg-rect :x-min 2.5 :x-max 3.0
                          :y-min 9.0 :y-max 9.5))))
   ;; offset a bit and zoom out
   (let* ((viewport (scxml-viewport :scaling (2dg-point :x 0.5 :y 0.5)
@@ -458,11 +458,11 @@ Uses drawing coordinate system."
                                    :y-max 10.0)))
     (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 0 :y 0))
-             (scxml-rect :x-min 2.0 :x-max 4.0
+             (2dg-rect :x-min 2.0 :x-max 4.0
                          :y-min 8.0 :y-max 10.0)))
     (should (2dg-almost-equal
              (scxml-get-coord viewport (scxml-pixel :x 1 :y 1))
-             (scxml-rect :x-min 4.0 :x-max 6.0
+             (2dg-rect :x-min 4.0 :x-max 6.0
                          :y-min 6.0 :y-max 8.0)))))
 
 (cl-defmethod scxml-get-scratch-coord ((viewport scxml-viewport) (pixel scxml-pixel))
@@ -524,11 +524,11 @@ Uses drawing coordinate system."
   "Return a cons cell of X and Y transformers that convert from drawing coordinates to scratch coordinates."
   (cons
    ;; X transformer
-   (let ((x-offset (scxml-x-min viewport))
+   (let ((x-offset (2dg-x-min viewport))
          (x-scale (2dg-x (scxml-scaling viewport))))
      (lambda (x-point) (* (- x-point x-offset) x-scale)))
    ;; Y transformer
-   (let ((y-offset (scxml-y-min viewport))
+   (let ((y-offset (2dg-y-min viewport))
          (y-scale (2dg-y (scxml-scaling viewport))))
      (lambda (y-point) (* (- y-point y-offset) y-scale)))))
 (cl-defmethod scxml-get-scratch-int-transformers ((viewport scxml-viewport))
@@ -538,11 +538,11 @@ for reasons that should be investigated, y must be floored.
 "
   (cons
    ;; X transformer
-   (let ((x-offset (scxml-x-min viewport))
+   (let ((x-offset (2dg-x-min viewport))
          (x-scale (2dg-x (scxml-scaling viewport))))
      (lambda (x-point) (floor (* (- x-point x-offset) x-scale))))
    ;; Y transformer
-   (let ((y-offset (scxml-y-min viewport))
+   (let ((y-offset (2dg-y-min viewport))
          (y-scale (2dg-y (scxml-scaling viewport))))
      (lambda (y-point) (floor (* (- y-point y-offset) y-scale))))))
 (ert-deftest scxml-get-scratch-transformers-match ()

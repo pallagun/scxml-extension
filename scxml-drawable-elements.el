@@ -75,10 +75,10 @@ consumes the entire canvas."
                            'scxml-drawing-rect)))
     (if (null hint)
         (funcall drawing-factory
-                 :x-min (scxml-x-min canvas)
-                 :y-min (scxml-y-min canvas)
-                 :x-max (scxml-x-max canvas)
-                 :y-max (scxml-y-max canvas)
+                 :x-min (2dg-x-min canvas)
+                 :y-min (2dg-y-min canvas)
+                 :x-max (2dg-x-max canvas)
+                 :y-max (2dg-y-max canvas)
                  :name label
                  :highlight highlight
                  :edit-idx edit-idx
@@ -202,10 +202,10 @@ When APPEND is nil NEW-CHILD will become the first child."
           ;; Generate the drawing (not based on a hint)
           (scxml---set-dividers
            (scxml--set-layout
-            (scxml-drawing-nest-rect :x-min (scxml-x-min canvas)
-                                     :y-min (scxml-y-min canvas)
-                                     :x-max (scxml-x-max canvas)
-                                     :y-max (scxml-y-max canvas)
+            (scxml-drawing-nest-rect :x-min (2dg-x-min canvas)
+                                     :y-min (2dg-y-min canvas)
+                                     :x-max (2dg-x-max canvas)
+                                     :y-max (2dg-y-max canvas)
                                      :name name
                                      :highlight highlight
                                      :edit-idx edit-idx
@@ -214,7 +214,7 @@ When APPEND is nil NEW-CHILD will become the first child."
             num-columns))
         ;; If the hint is just a simple rectangle hint, fine.  Upcast it.
         (when (and (not (scxml---drawing-nest-rect-hint-p hint))
-                   (object-of-class-p hint 'scxml-rect))
+                   (object-of-class-p hint '2dg-rect))
           (setq hint (scxml--build-empty-nest-rect-hint hint)))
         (let ((parent-drawing-canvas (scxml-get-parent-drawing-inner-canvas parallel)))
           (unless parent-drawing-canvas

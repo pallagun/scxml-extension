@@ -105,7 +105,7 @@ May return nil if PATH contains 1 or less points."
             (setq miss-match 't))
           (incf i))
         (not miss-match)))))
-(cl-defmethod scxml-segments ((path scxml-path))
+(cl-defmethod 2dg-segments ((path scxml-path))
   "Return an ordered list of scxml-segment objects describing PATH.
 
 May return nil if PATH has less than 2 points."
@@ -134,8 +134,8 @@ adding up the length of every segment."
   "Return non-nil if A pierces B at some point.
 
 End points are considered by their flags."
-  (let* ((a-segments (scxml-segments A))
-         (b-segments (scxml-segments B))
+  (let* ((a-segments (2dg-segments A))
+         (b-segments (2dg-segments B))
          (a-first (car a-segments))
          (a-last (last a-segments))
          (b-first (car b-segments))
@@ -163,16 +163,16 @@ End points are considered by their flags."
   "Return the minimum distance between PATH and POINT.
 
 The implementation is not efficient, use caution."
-  (cl-loop for segment in (scxml-segments path)
+  (cl-loop for segment in (2dg-segments path)
            for distance = (2dg-distance segment point)
            with best = 'nil
            do (when (or (null best) (< distance best))
                 (setq best distance))
            finally return best))
 
-(cl-defmethod 2dg-has-intersection ((rect scxml-rect) (path scxml-path) &optional evaluation-mode)
+(cl-defmethod 2dg-has-intersection ((rect 2dg-rect) (path scxml-path) &optional evaluation-mode)
   "Return non-nil if RECT intersects PATH using EVALUATION-MODE."
-  (cl-loop for segment in (scxml-segments path)
+  (cl-loop for segment in (2dg-segments path)
            when (2dg-has-intersection rect segment evaluation-mode)
            return t
            finally return nil))

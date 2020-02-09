@@ -201,7 +201,7 @@
   (scxml---scratch-factory (ceiling (scxml-required-pixel-width viewport))
                            (ceiling (scxml-required-pixel-height viewport))))
 (defun scxml--scratch-dividers (scratch viewport divider-list)
-  "Place DIVIDER-LIST of scxml-segments on to SCRATCH for VIEWPORT."
+  "Place DIVIDER-LIST of 2dg-segments on to SCRATCH for VIEWPORT."
   (let* ((transformers (scxml-get-scratch-int-transformers viewport))
          (x-transformer (car transformers))
          (y-transformer (cdr transformers)))
@@ -220,10 +220,10 @@
   (let* ((transformers (scxml-get-scratch-int-transformers viewport))
          (x-transformer (car transformers))
          (y-transformer (cdr transformers)))
-    (let ((x-min (funcall x-transformer (scxml-x-min rect)))
-          (x-max (funcall x-transformer (scxml-x-max rect)))
-          (y-min (funcall y-transformer (scxml-y-min rect)))
-          (y-max (funcall y-transformer (scxml-y-max rect)))
+    (let ((x-min (funcall x-transformer (2dg-x-min rect)))
+          (x-max (funcall x-transformer (2dg-x-max rect)))
+          (y-min (funcall y-transformer (2dg-y-min rect)))
+          (y-max (funcall y-transformer (2dg-y-max rect)))
           (highlight (scxml-drawing-highlight rect)))
       (when (or (null exclude-lines) highlight)
         (let ((style (if (scxml-drawing-highlight rect)

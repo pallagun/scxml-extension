@@ -74,7 +74,7 @@
   (with-slots (divisions cells) nest-rect
       (cons (if (eq idx 0) 0.0 (nth (1- idx) divisions))
             (if (eq idx (1- (length cells))) 1.0 (nth idx divisions)))))
-(cl-defmethod scxml---get-sub-rect ((stripe scxml---nest-stripe) (coordinate list) (rect scxml-rect))
+(cl-defmethod scxml---get-sub-rect ((stripe scxml---nest-stripe) (coordinate list) (rect 2dg-rect))
   "Get the rectangle describing the sub division @ coordinate."
   (if (null coordinate)
       rect
@@ -87,16 +87,16 @@
                ;; (start-parametric (if (eq idx 0) 0.0 (nth (1- idx) divisions)))
                ;; (end-parametric (if (eq idx (1- (length cells))) 1.0 (nth idx divisions)))
                (sub-rect (if (eq axis 'scxml--vertical)
-                             (let ((vertical-span (- (scxml-y-max rect) (scxml-y-min rect))))
-                               (scxml-rect :x-min (scxml-x-min rect)
-                                           :x-max (scxml-x-max rect)
-                                           :y-min (+ (scxml-y-min rect) (* start-parametric vertical-span))
-                                           :y-max (+ (scxml-y-min rect) (* end-parametric vertical-span))))
-                           (let ((horizontal-span (- (scxml-x-max rect) (scxml-x-min rect))))
-                             (scxml-rect :y-min (scxml-y-min rect)
-                                         :y-max (scxml-y-max rect)
-                                         :x-min (+ (scxml-x-min rect) (* start-parametric horizontal-span))
-                                         :x-max (+ (scxml-x-min rect) (* end-parametric horizontal-span))))))
+                             (let ((vertical-span (- (2dg-y-max rect) (2dg-y-min rect))))
+                               (2dg-rect :x-min (2dg-x-min rect)
+                                           :x-max (2dg-x-max rect)
+                                           :y-min (+ (2dg-y-min rect) (* start-parametric vertical-span))
+                                           :y-max (+ (2dg-y-min rect) (* end-parametric vertical-span))))
+                           (let ((horizontal-span (- (2dg-x-max rect) (2dg-x-min rect))))
+                             (2dg-rect :y-min (2dg-y-min rect)
+                                         :y-max (2dg-y-max rect)
+                                         :x-min (+ (2dg-x-min rect) (* start-parametric horizontal-span))
+                                         :x-max (+ (2dg-x-min rect) (* end-parametric horizontal-span))))))
                (cell (nth idx cells)))
           (when (and (eq cell 'undivided)
                      (not (null remaining-coord)))
@@ -104,7 +104,7 @@
           (if (null remaining-coord)
               sub-rect
             (scxml---get-sub-rect cell remaining-coord sub-rect)))))))
-(cl-defmethod scxml---get-divisions ((stripe scxml---nest-stripe) (rect scxml-rect) &optional prepend-coordinates)
+(cl-defmethod scxml---get-divisions ((stripe scxml---nest-stripe) (rect 2dg-rect) &optional prepend-coordinates)
   "Get out all the divisons in a list of (coordinate . rect) entries."
   (cl-loop for cell in (scxml-cells stripe)
            while cell
@@ -126,13 +126,13 @@
   "This doesn't seem ideal, seems like it could be done at the same time as
 the scxml---get-divisions call."
   (when (or (not (object-of-class-p stripe 'scxml---nest-stripe))
-            (not (object-of-class-p rect 'scxml-rect)))
+            (not (object-of-class-p rect '2dg-rect)))
     (error "Bleh"))
   ;; TODO: roll this into scxml---get-divisions?
   (cl-loop for cell in (scxml-cells stripe)
            with segment-fn = (if (eq (scxml-axis stripe) 'scxml--horizontal)
-                                 'scxml-left
-                               'scxml-bottom)
+                                 '2dg-left
+                               '2dg-bottom)
            with divider-segments = 'nil
            with cell-idx = 0
            for sub-rect = (scxml---get-sub-rect stripe (list cell-idx) rect)
@@ -144,7 +144,7 @@ the scxml---get-divisions call."
                       (scxml---get-dividers cell sub-rect)))
            do (incf cell-idx)
            finally return divider-segments))
-(cl-defmethod scxml---get-edit-points ((stripe scxml---nest-stripe) (rect scxml-rect))
+(cl-defmethod scxml---get-edit-points ((stripe scxml---nest-stripe) (rect 2dg-rect))
   "Get the relative edit idxs of this stripe and all its children."
   (mapcar 'car
         (scxml---get-edit-points-and-coordinates stripe rect)))
@@ -167,11 +167,11 @@ The coordinate returned is for the cell right before the division."
 
     (let ((point-producer (if (eq (scxml-axis stripe) 'scxml--horizontal)
                               (lambda (division-param)
-                                (2dg-point :x (2dg-parametric (scxml-x-span rect) division-param)
-                                             :y (/ (+ (scxml-y-min rect) (scxml-y-max rect)) 2.0)))
+                                (2dg-point :x (2dg-parametric (2dg-x-span rect) division-param)
+                                             :y (/ (+ (2dg-y-min rect) (2dg-y-max rect)) 2.0)))
                             (lambda (division-param)
-                              (2dg-point :x (/ (+ (scxml-x-min rect) (scxml-x-max rect)) 2.0)
-                                           :y (2dg-parametric (scxml-y-span rect) division-param))))))
+                              (2dg-point :x (/ (+ (2dg-x-min rect) (2dg-x-max rect)) 2.0)
+                                           :y (2dg-parametric (2dg-y-span rect) division-param))))))
       (cl-loop for division-param in (scxml-divisions stripe)
                for cell-idx = 0
                do (push (cons (funcall point-producer division-param)
@@ -249,7 +249,7 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
 (defclass scxml---drawing-nest-rect-hint ()
   ((relative-rect :initarg :relative-rect
                   :accessor scxml-relative-rect
-                  :type scxml-rect)
+                  :type 2dg-rect)
    (stripe-invalid :accessor scxml-stripe-invalid
                    :type (member t nil)
                    :initarg nil
@@ -258,7 +258,7 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
            :accessor scxml-stripe
            :type scxml---nest-stripe)))
 
-(cl-defmethod scxml--build-empty-nest-rect-hint ((relative-rect scxml-rect))
+(cl-defmethod scxml--build-empty-nest-rect-hint ((relative-rect 2dg-rect))
   "Build an empty parallel hint from only a rectangle."
   (scxml---drawing-nest-rect-hint :relative-rect relative-rect
                                   :stripe (scxml---stripe-build 1)))
@@ -269,7 +269,7 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
   (let ((inner-rect (scxml-get-inner-canvas divided-rect)))
     (oset divided-rect
           dividers
-          (cons (scxml-top inner-rect)
+          (cons (2dg-top inner-rect)
                 (scxml---get-dividers divided-rect inner-rect)))
     divided-rect))
 (cl-defmethod scxml-num-edit-idxs ((divided-rect scxml-drawing-nest-rect))
@@ -288,10 +288,10 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
   ;; This needs to be documented.
   (if (< edit-idx 8)
       (let ((rect-shell (cl-call-next-method)))
-        (scxml-drawing-nest-rect :x-min (scxml-x-min rect-shell)
-                                 :x-max (scxml-x-max rect-shell)
-                                 :y-min (scxml-y-min rect-shell)
-                                 :y-max (scxml-y-max rect-shell)
+        (scxml-drawing-nest-rect :x-min (2dg-x-min rect-shell)
+                                 :x-max (2dg-x-max rect-shell)
+                                 :y-min (2dg-y-min rect-shell)
+                                 :y-max (2dg-y-max rect-shell)
                                  :parent (scxml-parent rect-shell)
                                  :axis (scxml-axis divided-rect)
                                  :cells (scxml-cells divided-rect)
@@ -308,8 +308,8 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
                               (2dg-point :x 1.0 :y 0.0)
                             (2dg-point :x 0.0 :y 1.0)))
              (parent-cell-span (if (eq (scxml-axis parent-cell) 'scxml--horizontal)
-                                   (scxml-x-span parent-rect)
-                                 (scxml-y-span parent-rect)))
+                                   (2dg-x-span parent-rect)
+                                 (2dg-y-span parent-rect)))
              (allowed-movement (2dg-dot-prod axis-vector move-vector))
              (relative-movement (/ allowed-movement (2dg-length parent-cell-span))))
         ;; determine the cell axis and bump (nth child-coord (scxml-divisions parent-cell))
@@ -318,10 +318,10 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
         (setf (nth child-coord (scxml-divisions parent-cell))
               (+ relative-movement (nth child-coord (scxml-divisions parent-cell))))
 
-        (scxml-drawing-nest-rect :x-min (scxml-x-min divided-rect)
-                                 :x-max (scxml-x-max divided-rect)
-                                 :y-min (scxml-y-min divided-rect)
-                                 :y-max (scxml-y-max divided-rect)
+        (scxml-drawing-nest-rect :x-min (2dg-x-min divided-rect)
+                                 :x-max (2dg-x-max divided-rect)
+                                 :y-min (2dg-y-min divided-rect)
+                                 :y-max (2dg-y-max divided-rect)
                                  :parent (scxml-parent divided-rect)
                                  :axis (scxml-axis deep-clone)
                                  :cells (scxml-cells deep-clone)

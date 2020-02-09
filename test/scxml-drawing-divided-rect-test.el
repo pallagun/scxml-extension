@@ -12,13 +12,13 @@
               ;; cell rectangles need to be almost equal
               (2dg-almost-equal (cdr A) (cdr B)))))
     (let* ((stripe (scxml--set-layout (scxml---nest-stripe) 2 2))
-           (rect (scxml-rect :x-min 0.0 :y-min 0.0 :x-max 10.0 :y-max 10.0))
+           (rect (2dg-rect :x-min 0.0 :y-min 0.0 :x-max 10.0 :y-max 10.0))
            (divisions (scxml---get-divisions stripe rect)))
-      (let ((expected-BL (cons '(0 0) (scxml-rect :x-min 0.0
+      (let ((expected-BL (cons '(0 0) (2dg-rect :x-min 0.0
                                                   :x-max 5.0
                                                   :y-min 0.0
                                                   :y-max 5.0)))
-            (expected-BR (cons '(0 1) (scxml-rect :x-min 5.0
+            (expected-BR (cons '(0 1) (2dg-rect :x-min 5.0
                                                   :x-max 10.0
                                                   :y-min 0.0
                                                 :y-max 5.0))))

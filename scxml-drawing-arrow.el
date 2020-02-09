@@ -75,7 +75,7 @@
 (cl-defmethod scxml-build-connector-hint ((connector scxml-drawing-connector-rect))
   "Build a connector hint for this connector"
   (scxml-arrow-connector-rect-hint :edge (scxml-from-node-direction connector)
-                                   :parametric (scxml-edge-parametric connector)))
+                                   :parametric (2dg-edge-parametric connector)))
 (cl-defmethod scxml-build-connector-hint ((connector scxml-drawing-connector-point))
   "Build a connector hint for this connector"
   (scxml-arrow-connector-point-hint :exit-direction (scxml-from-node-direction connector)))
@@ -395,7 +395,7 @@ cases this function may return nil."
                                (or (eq unbiased-edit-idx 0)
                                    (eq unbiased-edit-idx (1- (length full-pts)))))))
 
-(cl-defmethod 2dg-has-intersection ((rect scxml-rect) (arrow scxml-arrow) &optional evaluation-mode)
+(cl-defmethod 2dg-has-intersection ((rect 2dg-rect) (arrow scxml-arrow) &optional evaluation-mode)
   "Return non-nil if RECT intersect with ARROW's path at any point."
   (2dg-has-intersection rect (scxml-path :points (scxml--full-path arrow)) evaluation-mode))
 (cl-defgeneric scxml--full-path ((arrow scxml-arrow) &optional offset)
@@ -586,7 +586,7 @@ been correctly set."
                         ;; you can make the connector handle this change.
                         (with-slots (edge parametric) correct-target-connector
                           (setf (scxml-from-node-direction target-connector) edge
-                                (scxml-edge-parametric target-connector) parametric))
+                                (2dg-edge-parametric target-connector) parametric))
                       ;; you _can't_ make the connector handle this change
                       ;; you must insert a jog.
                       ;; TODO: make the connector handle as much of the change
@@ -603,7 +603,7 @@ been correctly set."
                       ;; you can make the connector handle thisp change.
                       (with-slots (edge parametric) correct-source-connector
                         (setf (scxml-from-node-direction source-connector) edge
-                              (scxml-edge-parametric source-connector) parametric))
+                              (2dg-edge-parametric source-connector) parametric))
                     ;; you _can't_ make the connector handle this change
                     ;; you must insert a jog.
                     ;; TODO: make the connector handle as much of the change
@@ -656,9 +656,9 @@ been correctly set."
   ;; TODO - is this still used?
   (with-slots (source target path) arrow
     (scxml-arrow-hint :source-edge (scxml-from-node-direction source)
-                      :source-parametric (scxml-edge-parametric source)
+                      :source-parametric (2dg-edge-parametric source)
                       :target-edge (scxml-from-node-direction target)
-                      :target-parametric (scxml-edge-parametric target)
+                      :target-parametric (2dg-edge-parametric target)
                       :relative-points (scxml--full-path arrow))))
 (cl-defmethod scxml--generate-hint-old ((arrow scxml-arrow) (parent-canvas scxml-inner-canvas))
   "relative deltas as a plist"
@@ -667,9 +667,9 @@ been correctly set."
     (let* ((relative-rect (scxml--generate-hint-rect (scxml-node source)
                                                      (scxml-node target))))
       (scxml-arrow-hint :source-edge (scxml-from-node-direction source)
-                        :source-parametric (scxml-edge-parametric source)
+                        :source-parametric (2dg-edge-parametric source)
                         :target-edge (scxml-from-node-direction target)
-                        :target-parametric (scxml-edge-parametric target)
+                        :target-parametric (2dg-edge-parametric target)
                         :relative-points
                         (mapcar (lambda (pt)
                                   (2dg-relative-coordinates relative-rect pt))

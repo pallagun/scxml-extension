@@ -5,12 +5,14 @@
 (require 'scxml-drawing)
 (require 'scxml-geometry)
 
-(defclass scxml-drawing-rect (scxml-rect scxml-drawing)
+(defclass scxml-drawing-rect (2dg-rect scxml-drawing)
   ((name :initarg :name
          :accessor scxml-name
          :initform nil))
   :documentation "Represents a rectangle which can be drawn on a
 canvas.  It can optionally have a name.")
+(cl-defmethod scxml-print ((rect scxml-drawing-rect))
+  (2dg-pprint rect))
 
 (cl-defmethod scxml-num-edit-idxs ((rect scxml-drawing-rect))
   "How many edit idx points are there for this ARROW"
@@ -55,7 +57,7 @@ canvas.  It can optionally have a name.")
   "Given a RECT, and a MOVE-DIRECTION, move in one pixel in that direction."
   (2dg-incf (clone rect) move-vector))
 (cl-defmethod scxml-build-idx-edited ((rect scxml-drawing-rect) (edit-idx integer) (move-vector 2dg-point) (viewport scxml-viewport))
-  (let ((pts (scxml-bounding-pts rect))
+  (let ((pts (2dg-bounding-pts rect))
         (horizontal-pts 'nil)
         (vertical-pts 'nil))
     (cond ((equal 0 edit-idx)           ;bottom left
@@ -96,7 +98,7 @@ canvas.  It can optionally have a name.")
                         :edit-idx (scxml-drawing-edit-idx rect)
                         :name (scxml-name rect))))
 
-(cl-defmethod scxml-build-hint ((rect scxml-rect) (parent-canvas scxml-inner-canvas))
+(cl-defmethod scxml-build-hint ((rect 2dg-rect) (parent-canvas scxml-inner-canvas))
   "Build a hint for RECT inside of PARENT-CANVAS."
   (2dg-relative-coordinates parent-canvas rect))
 
@@ -116,8 +118,8 @@ Returned as one of 4 symbols: 'up, 'down, 'left, 'right."
   (let* ((centroid (2dg-centroid rect))
          (path (2dg-segment :start centroid :end pt))
          (char-vector (2dg-characteristic-vector path))
-         (to-tl (2dg-segment :start centroid :end (scxml-TL rect)))
-         (to-tr (2dg-segment :start centroid :end (scxml-TR rect)))
+         (to-tl (2dg-segment :start centroid :end (2dg-TL rect)))
+         (to-tr (2dg-segment :start centroid :end (2dg-TR rect)))
          (cross-tl (2dg-cross-prod char-vector (2dg-characteristic-vector to-tl)))
          (cross-tr (2dg-cross-prod char-vector (2dg-characteristic-vector to-tr))))
     (cond ((and (>= cross-tl 0.0) (>= cross-tr 0.0))

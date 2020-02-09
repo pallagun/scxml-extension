@@ -45,9 +45,9 @@
                     :type scxml-element
                     :documentation "Element to display (can be the root if you want)."))
   :documentation "Contains everything you'll need to render the diagram")
-(cl-defgeneric scxml-find-element-selection ((diagram scxml-diagram) (selection-rect scxml-rect))
+(cl-defgeneric scxml-find-element-selection ((diagram scxml-diagram) (selection-rect 2dg-rect))
   "Find the element in DIAGRAM in the SELECTION-RECT.")
-(cl-defmethod scxml-find-element-selection ((diagram scxml-diagram) (selection-rect scxml-rect))
+(cl-defmethod scxml-find-element-selection ((diagram scxml-diagram) (selection-rect 2dg-rect))
   "Find the element in DIAGRAM that is inside the SELECTION-RECT.
 
 Used to return and element when the user wants to do something like

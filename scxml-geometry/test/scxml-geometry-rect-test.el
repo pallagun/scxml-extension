@@ -3,20 +3,20 @@
 (require 'scxml-geometry-rect)
 
 (ert-deftest scxml-geometry-rect-segments-matches ()
-  (let* ((rect (scxml-rect :x-min 0.0 :x-max 5.0
+  (let* ((rect (2dg-rect :x-min 0.0 :x-max 5.0
                            :y-min 2.0 :y-max 7.0))
-         (segments (scxml-segments rect)))
+         (segments (2dg-segments rect)))
     (should (2dg-almost-equal (first segments)
-                                (scxml-bottom rect)))
+                                (2dg-bottom rect)))
     (should (2dg-almost-equal (second segments)
-                                (scxml-right rect)))
+                                (2dg-right rect)))
     (should (2dg-almost-equal (third segments)
-                                (scxml-top rect)))
+                                (2dg-top rect)))
     (should (2dg-almost-equal (fourth segments)
-                                (scxml-left rect)))))
+                                (2dg-left rect)))))
 
 (ert-deftest scxml-geometry-rect-contains-rect-point ()
-  (let ((rect (scxml-rect :x-min 44.0 :x-max 45.0
+  (let ((rect (2dg-rect :x-min 44.0 :x-max 45.0
                           :y-min 19.0 :y-max 20.0))
         (test-LL (2dg-point :x 44.0 :y 19.0))
         (test-LR (2dg-point :x 45.0 :y 19.0))

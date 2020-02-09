@@ -12,7 +12,7 @@
   ((edge :initarg :edge
          :type symbol)                  ;todo - validation here sould be chaneg to (member up down left right)
    (parametric :initarg :parametric
-               :accessor scxml-edge-parametric)))
+               :accessor 2dg-edge-parametric)))
 
 (cl-defmethod scxml-print ((connector scxml-drawing-connector-rect))
     "Return a stringified version of CONNECTOR for human eyes."
@@ -30,7 +30,7 @@
 (cl-defmethod scxml-connection-point ((connector scxml-drawing-connector-rect) &optional offset)
   "Get the point of this connector."
   (with-slots ((rect node) edge parametric) connector
-    (let ((raw-point (2dg-parametric (scxml-edge rect edge) parametric)))
+    (let ((raw-point (2dg-parametric (2dg-edge rect edge) parametric)))
       (if (null offset)
           raw-point
         (let ((offset-vec (2dg-vector-from-direction edge)))
@@ -60,7 +60,7 @@ Might return the connector right back to you if alreay snapped."
 (defun scxml---connector-parametric (connector target-point edge &optional tolerance)
   "Return a parametric if CONNECTOR can be moved to satisfy TARGET-POINT on EDGE-ENUMERATOR."
   ;; TODO - is this called directly?  Might be able to make it a letf
-  (let* ((edge-segment (scxml-edge (scxml-node connector) edge))
+  (let* ((edge-segment (2dg-edge (scxml-node connector) edge))
          (edge-parametric (2dg-get-parametric edge-segment target-point tolerance)))
     (when (and edge-parametric
                (<= 0 edge-parametric)
@@ -83,7 +83,7 @@ is still valid."
   (with-slots ((rect node) edge) connector
     (cl-loop with best-connection-set = nil
              for edge-candidate in '(up down left right)
-             for edge-segment = (scxml-edge rect edge-candidate)
+             for edge-segment = (2dg-edge rect edge-candidate)
              for edge-parametric = (2dg-get-closest-parametric edge-segment target-point t)
              for edge-point = (2dg-absolute-coordinates edge-segment edge-parametric)
              for distance-sq = (2dg-distance-sq edge-point target-point)

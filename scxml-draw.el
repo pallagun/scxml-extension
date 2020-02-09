@@ -199,8 +199,8 @@ Will throw if it can't move it. will not render!!"
                                            "<diagram>*scxml*"))))
         buffer)))
 
-(cl-defmethod scxml---get-canvas-divisions ((rectangle scxml-rect) (num-child-nodes integer))
-  "First arg is scxml-rect type to catch scxml-drawing-rect as well as scxml-drawing-null"
+(cl-defmethod scxml---get-canvas-divisions ((rectangle 2dg-rect) (num-child-nodes integer))
+  "First arg is 2dg-rect type to catch scxml-drawing-rect as well as scxml-drawing-null"
   ;; TODO - this should probably be moved to the rect drawing file?
   (let* ((num-columns (ceiling (sqrt num-child-nodes)))
          (num-rows (ceiling (/ (float num-child-nodes) (float num-columns)))))

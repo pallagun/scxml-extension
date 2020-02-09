@@ -12,7 +12,7 @@
 (defvar scxml-draw--default-canvas-height 40.0
   "Default height of the main canvas.")
 
-(defclass scxml-canvas (scxml-rect)
+(defclass scxml-canvas (2dg-rect)
   ()
   :documentation "A container for a canvas, a place where scxml things can be drawn")
 (defclass scxml-inner-canvas (scxml-canvas)
@@ -22,6 +22,8 @@
             ;; scxml-inner-canvas-drawing.
             :type scxml-drawing))
   :documentation "A canvas _inside_ some drawable element.")
+(cl-defmethod scxml-print ((canvas scxml-canvas))
+  (2dg-pprint canvas))
 
 (defun scxml-canvas--relative (parent-canvas x-size y-size x-offset y-offset)
   "Return a canvas relative to the PARENT-CANVAS.
@@ -68,9 +70,9 @@ CANVAS will be devided into a grid having ROWS rows and COLUMNS columns."
     ;; But I'm going to be pushing them - so opposite that.
     (cl-loop for row-idx from 0 to (1- num-rows)
              with cells = 'nil
-             with cell-x-size = (/ (- (scxml-width canvas) (* (1- num-columns) x-spacing))
+             with cell-x-size = (/ (- (2dg-width canvas) (* (1- num-columns) x-spacing))
                                    num-columns)
-             with cell-y-size = (/ (- (scxml-height canvas) (* (1- num-rows) y-spacing))
+             with cell-y-size = (/ (- (2dg-height canvas) (* (1- num-rows) y-spacing))
                                    num-rows)
              with cell-x-offset = (+ cell-x-size x-spacing)
              with cell-y-offset = (+ cell-y-size y-spacing)

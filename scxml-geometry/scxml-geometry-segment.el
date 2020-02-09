@@ -17,13 +17,13 @@
         :accessor 2dg-end
         :type 2dg-point))
   :documentation "2d Line segment that can go in any direction (omnidirectional)")
-(cl-defmethod scxml-print ((segment 2dg-segment))
+(cl-defmethod 2dg-pprint ((segment 2dg-segment))
   "Return a stringified version of SPAN for human eyes."
   (with-slots (start end) segment
-    (format "s[%s -> %s]" (scxml-print start) (scxml-print end))))
+    (format "s[%s -> %s]" (2dg-pprint start) (2dg-pprint end))))
 (cl-defmethod cl-print-object ((segment 2dg-segment) stream)
   "This seems to be used only for edebug sessions."
-  (princ (scxml-print segment) stream))
+  (princ (2dg-pprint segment) stream))
 (cl-defmethod 2dg-characteristic-vector ((segment 2dg-segment))
   "Return the characteristic vector of SEGMENT.
 
@@ -160,10 +160,10 @@ This is returned as (cons a-parametric b-parametric)."
                          (* -1.0 Bdx Ady))))
     (if (2dg-almost-zero determinant)
         (error "Segments are parallel: [start:%s dir:%s], [start:%s dir:%s]"
-               (scxml-print A-start)
-               (scxml-print A-char-vec)
-               (scxml-print B-start)
-               (scxml-print B-char-vec))
+               (2dg-pprint A-start)
+               (2dg-pprint A-char-vec)
+               (2dg-pprint B-start)
+               (2dg-pprint B-char-vec))
 
       ;; matrix inverse =
       ;; a b => d -b
@@ -378,7 +378,7 @@ Output is bounded to be between [0, 1] inclusive when BOUNDED is t."
 (cl-defmethod 2dg-get-parametric ((segment 2dg-segment) (pt 2dg-point) &optional distance-tolerance)
   "Get the parametric coordinate of PT along SEGMENT.
 
-Note: this is similar to scxml-relative-coordinate but as it
+Note: this is similar to 2dg-relative-coordinate but as it
 could return a nil value it's differentiated with the
 -get-parametric name."
   ;; TODO -replace the first few let clauses with a call to 2dg-get-closest-parametric?
