@@ -309,7 +309,7 @@ Currently only able to zoom out when in viewport mode."
   (if (eq scxml-diagram-mode--mouse-mode 'viewport)
       ;; You're in viewport mode, modify the viewport.
       (let ((flipped (2dg-additive-inverse move-vector)))
-        (scxml-diagram-mode--pan (scxml-x flipped) (scxml-y flipped)))
+        (scxml-diagram-mode--pan (2dg-x flipped) (2dg-y flipped)))
     ;; else, normal view/edit mode.
     (when scxml-diagram-mode--marked-element
       (unless (2dg-point-p move-vector)
@@ -471,11 +471,11 @@ Currently only able to zoom out when in viewport mode."
                         (if (eq scxml-diagram-mode--mouse-mode 'viewport)
                             ;; viewport mode can pan or zoom
                             (cond ((eq event-type 'down-mouse-1)
-                                   (scxml-diagram-mode--pan (* -1 (scxml-x delta))
-                                                            (* -1 (scxml-y delta))))
+                                   (scxml-diagram-mode--pan (* -1 (2dg-x delta))
+                                                            (* -1 (2dg-y delta))))
                                   ((eq event-type 'down-mouse-3)
-                                   (when (>= (abs (scxml-y delta)) (abs (scxml-x delta)))
-                                     (scxml-diagram-mode--zoom (if (> (scxml-y delta) 0)
+                                   (when (>= (abs (2dg-y delta)) (abs (2dg-x delta)))
+                                     (scxml-diagram-mode--zoom (if (> (2dg-y delta) 0)
                                                                    0.95
                                                                  1.05))))
                                   (t

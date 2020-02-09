@@ -311,7 +311,7 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
                                    (scxml-x-span parent-rect)
                                  (scxml-y-span parent-rect)))
              (allowed-movement (2dg-dot-prod axis-vector move-vector))
-             (relative-movement (/ allowed-movement (scxml-length parent-cell-span))))
+             (relative-movement (/ allowed-movement (2dg-length parent-cell-span))))
         ;; determine the cell axis and bump (nth child-coord (scxml-divisions parent-cell))
         ;; by a tiny amount.
         ;; Not sure if this should clone or modify, cloning now.

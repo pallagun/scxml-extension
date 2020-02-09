@@ -10,10 +10,10 @@
 
 (defclass scxml-pixel ()
   ((x :initarg :x
-      :accessor scxml-x
+      :accessor 2dg-x
       :type integer)
    (y :initarg :y
-      :accessor scxml-y
+      :accessor 2dg-y
       :type integer))
   :documentation "A 2d pixel using standard 'image' coordinate system")
 (cl-defmethod scxml-print ((px scxml-pixel))
@@ -25,8 +25,8 @@
   (princ (scxml-print object) stream))
 (cl-defmethod scxml-equal ((A scxml-pixel) (B scxml-pixel))
   "Return non-nil if A and B are the same pixel."
-  (and (equal (scxml-x A) (scxml-x B))
-       (equal (scxml-y A) (scxml-y B))))
+  (and (equal (2dg-x A) (2dg-x B))
+       (equal (2dg-y A) (2dg-y B))))
 (cl-defmethod 2dg-almost-equal ((A scxml-pixel) (B scxml-pixel))
   "Return non-nil if A nd B are almost the same pixel.
 
@@ -37,8 +37,8 @@ bother with almost equality checking."
   "Return the result of pixel A - pixel B.
 
 Note: the coordinate system is that of pixels."
-  (scxml-pixel :x (- (scxml-x A) (scxml-x B))
-               :y (- (scxml-y A) (scxml-y B))))
+  (scxml-pixel :x (- (2dg-x A) (2dg-x B))
+               :y (- (2dg-y A) (2dg-y B))))
 (cl-defmethod 2dg-coarse-direction ((vector scxml-pixel))
   "Return the closest cardinal direction of a vector as a symbol.
 

@@ -208,10 +208,10 @@
     (mapc (lambda (divider-segment)
             (with-slots (start end) divider-segment
               (scxml---scratch-line scratch
-                                    (funcall x-transformer (scxml-x start))
-                                    (funcall y-transformer (scxml-y start))
-                                    (funcall x-transformer (scxml-x end))
-                                    (funcall y-transformer (scxml-y end))
+                                    (funcall x-transformer (2dg-x start))
+                                    (funcall y-transformer (2dg-y start))
+                                    (funcall x-transformer (2dg-x end))
+                                    (funcall y-transformer (2dg-y end))
                                     scxml---divider)))
           divider-list)))
 (defun scxml--scratch-rect (scratch viewport rect &optional exclude-lines)
@@ -236,8 +236,8 @@
         (when (scxml-drawing-edit-idx rect)
           (cl-loop for point in (scxml-edit-idx-points rect)
                    for char in scxml---scratch-rect-edit-point-bytes
-                   for x = (funcall x-transformer (scxml-x point))
-                   for y = (funcall y-transformer (scxml-y point))
+                   for x = (funcall x-transformer (2dg-x point))
+                   for y = (funcall y-transformer (2dg-y point))
                    do (scxml---scratch-set scratch
                                            x
                                            y
@@ -263,8 +263,8 @@ Right now this only properly works with single character labels."
     (let ((x-transformer (car transformers))
           (y-transformer (cdr transformers)))
       (scxml---scratch-label scratch
-                             (funcall x-transformer (scxml-x pt-label))
-                             (funcall y-transformer (scxml-y pt-label))
+                             (funcall x-transformer (2dg-x pt-label))
+                             (funcall y-transformer (2dg-y pt-label))
                              (scxml-label pt-label)
                              style))))
 (defun scxml--scratch-arrow (scratch viewport arrow)
@@ -279,13 +279,13 @@ Right now this only properly works with single character labels."
         (transformers (scxml-get-scratch-int-transformers viewport)))
     (let ((x-transformer (car transformers))
           (y-transformer (cdr transformers)))
-      (let ((last-pt-x (funcall x-transformer (scxml-x (first points))))
-            (last-pt-y (funcall y-transformer (scxml-y (first points))))
+      (let ((last-pt-x (funcall x-transformer (2dg-x (first points))))
+            (last-pt-y (funcall y-transformer (2dg-y (first points))))
             (double-pt-x 'nil)
             (double-pt-y 'nil))
         (cl-loop for pt in (cdr points)
-                 do (let ((pt-x (funcall x-transformer (scxml-x pt)))
-                          (pt-y (funcall y-transformer (scxml-y pt))))
+                 do (let ((pt-x (funcall x-transformer (2dg-x pt)))
+                          (pt-y (funcall y-transformer (2dg-y pt))))
                       (scxml---scratch-line scratch
                                             last-pt-x
                                             last-pt-y
@@ -339,8 +339,8 @@ Right now this only properly works with single character labels."
         ;; now handle the edit-points if they're supposed to be visible
         (when (scxml-drawing-edit-idx arrow)
           (cl-loop for point in (scxml-edit-idx-points arrow)
-                   for x = (funcall x-transformer (scxml-x point))
-                   for y = (funcall y-transformer (scxml-y point))
+                   for x = (funcall x-transformer (2dg-x point))
+                   for y = (funcall y-transformer (2dg-y point))
                    when (scxml---scratch-coord-valid-p scratch x y)
                    do (scxml---scratch-set scratch
                                            x

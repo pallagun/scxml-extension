@@ -42,11 +42,11 @@ PARAMETRIC-COORD of 0 will yield the start point, 1 will yield
 the end point and 0.5 will yield the mid point."
   (let ((char-vec (scxml-characteristic-vector segment))
         (start (scxml-start segment)))
-    (2dg-point :x (+ (scxml-x start)
-                       (* parametric-coord (scxml-x char-vec)))
-                 :y (+ (scxml-y start)
-                       (* parametric-coord (scxml-y char-vec))))))
-(cl-defmethod scxml-length ((segment scxml-segment))
+    (2dg-point :x (+ (2dg-x start)
+                       (* parametric-coord (2dg-x char-vec)))
+                 :y (+ (2dg-y start)
+                       (* parametric-coord (2dg-y char-vec))))))
+(cl-defmethod 2dg-length ((segment scxml-segment))
   "Return the length of SEGMENT."
   (with-slots (start end) segment
     (2dg-distance start end)))
@@ -67,8 +67,8 @@ square which could contain this SEGMENT."
 (cl-defmethod 2dg-centroid ((segment scxml-segment))
   "Return the midpoint of SEGMENT."
   (with-slots (start end) segment
-    (2dg-point :x (/ (+ (scxml-x start) (scxml-x end)) 2.0)
-                 :y (/ (+ (scxml-y start) (scxml-y end)) 2.0))))
+    (2dg-point :x (/ (+ (2dg-x start) (2dg-x end)) 2.0)
+                 :y (/ (+ (2dg-y start) (2dg-y end)) 2.0))))
 (cl-defmethod scxml---distance-parallel-parametrics ((A scxml-segment) (B scxml-segment))
   "Determine parametric coordinates for two parallel lines where they are closest.
 
@@ -77,21 +77,21 @@ It is assumed that you made sure A and B are parallel before calling."
   ;; get the distance along A to B.start and B.end
   ;; get the distance along B to A.start and B.end
   (let ((A-norm (2dg-normalized (scxml-characteristic-vector A)))
-        (A-length (scxml-length A))
+        (A-length (2dg-length A))
         (A-start-to-B-start (2dg-subtract (scxml-start B) (scxml-start A)))
         (A-start-to-B-end (2dg-subtract (scxml-end B) (scxml-start A)))
         (B-norm (2dg-normalized (scxml-characteristic-vector B)))
-        (B-length (scxml-length B))
+        (B-length (2dg-length B))
         (B-start-to-A-start (2dg-subtract (scxml-start A) (scxml-start B)))
         (B-start-to-A-end (2dg-subtract (scxml-end A) (scxml-start B))))
     (list
      ;; A-parametrics
-     (scxml-inverse-scaled
+     (2dg-inverse-scaled
       (scxml-span :start (2dg-dot-prod A-norm A-start-to-B-start)
                   :end (2dg-dot-prod A-norm A-start-to-B-end))
       A-length)
      ;; B-parametrics
-     (scxml-inverse-scaled
+     (2dg-inverse-scaled
       (scxml-span :start (2dg-dot-prod B-norm B-start-to-A-start)
                   :end (2dg-dot-prod B-norm B-start-to-A-end))
       B-length))))
@@ -149,12 +149,12 @@ This is returned as (cons a-parametric b-parametric)."
   ;; -------------------------------------------
   (let* ((As A-start)
          (Ad A-char-vec)
-         (Adx (scxml-x Ad))
-         (Ady (scxml-y Ad))
+         (Adx (2dg-x Ad))
+         (Ady (2dg-y Ad))
          (Bs B-start)
          (Bd B-char-vec)
-         (Bdx (scxml-x Bd))
-         (Bdy (scxml-y Bd))
+         (Bdx (2dg-x Bd))
+         (Bdy (2dg-y Bd))
          (determinant (- (* Adx -1.0 Bdy)
                          (* -1.0 Bdx Ady))))
     (if (2dg-almost-zero determinant)
@@ -170,8 +170,8 @@ This is returned as (cons a-parametric b-parametric)."
       ;; ---------------------------
       ;; Adx -Bdx => -Bdy Bdx
       ;; Ady -Bdy => -Ady Adx
-      (let* ((S1 (- (scxml-x Bs) (scxml-x As)))
-             (S2 (- (scxml-y Bs) (scxml-y As)))
+      (let* ((S1 (- (2dg-x Bs) (2dg-x As)))
+             (S2 (- (2dg-y Bs) (2dg-y As)))
              (a-parametric (/ (+ (* -1.0 Bdy S1) (* Bdx S2)) determinant))
              (b-parametric (/ (+ (* -1.0 Ady S1) (* Adx S2)) determinant)))
         (cons a-parametric b-parametric)))))
@@ -227,7 +227,7 @@ returned as one of: 'start, 'end or 'middle (of A-SEGMENT)."
          (A-char-vec (scxml-characteristic-vector A-segment))
          (A-parametric (2dg-dot-prod (2dg-normalized A-char-vec)
                                        A-start-to-B))
-         (A-length (scxml-length A-segment)))
+         (A-length (2dg-length A-segment)))
     (cond ((<= A-parametric 0)
            (cons (2dg-distance (scxml-start A-segment) B-point)
                  'start))
@@ -362,7 +362,7 @@ Output is bounded to be between [0, 1] inclusive when BOUNDED is t."
            (char-vec (scxml-characteristic-vector segment))
            (parametric (/ (2dg-dot-prod (2dg-normalized char-vec)
                                           seg-start-to-pt)
-                          (scxml-length segment))))
+                          (2dg-length segment))))
       (if bounded
           (min (max parametric 0.0) 1.0)
         parametric))))
@@ -386,7 +386,7 @@ could return a nil value it's differentiated with the
            (char-vec (scxml-characteristic-vector segment))
            (parametric (/ (2dg-dot-prod (2dg-normalized char-vec)
                                           seg-start-to-pt)
-                          (scxml-length segment)))
+                          (2dg-length segment)))
            (ideal-pt (2dg-add start (2dg-scaled char-vec parametric)))
            (distance-sq (2dg-distance-sq ideal-pt pt))
            (distance-tolerance (if (numberp distance-tolerance) distance-tolerance 2dg--almost-zero)))

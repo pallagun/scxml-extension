@@ -27,8 +27,8 @@
   "Given a PT-DRAWING and a MOVE-VECTOR, apply the movement."
   ;; TODO - this can probabyl just be a clone and incf.
   (let ((new-pt (2dg-add pt-drawing move-vector)))
-    (scxml-drawing-point :x (scxml-x new-pt)
-                         :y (scxml-y new-pt)
+    (scxml-drawing-point :x (2dg-x new-pt)
+                         :y (2dg-y new-pt)
                          :label (scxml-label pt-drawing)
                          :parent (scxml-parent pt-drawing))))
 (cl-defmethod scxml-build-idx-edited ((pt-drawing scxml-drawing-point) (edit-idx integer) (move-vector 2dg-point) (viewport scxml-viewport))

@@ -42,8 +42,8 @@ This function will always return a valid connector.  Like the scxml-build-connec
   ;; (unless (or (scxml-point-p offset) (numberp offset) (not offset))
   ;;   (error "Offset must be a number of scxml-point"))
   (with-slots ((point node) exit-direction) connector
-    (let ((x (scxml-x point))
-          (y (scxml-y point)))
+    (let ((x (2dg-x point))
+          (y (2dg-y point)))
       (if (null offset)
           (2dg-point :x x :y y)
         (let* ((offset-unit-vec (2dg-vector-from-direction exit-direction))

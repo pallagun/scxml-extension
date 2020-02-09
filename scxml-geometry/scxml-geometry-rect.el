@@ -130,7 +130,7 @@ proceeding counterclockwise around the rectangle."
        (2dg-almost-equal (scxml-x-max A) (scxml-x-max B) tolerance)
        (2dg-almost-equal (scxml-y-min A) (scxml-y-min B) tolerance)
        (2dg-almost-equal (scxml-y-max A) (scxml-y-max B) tolerance)))
-;; TODO - this should be scxml-x but it messes with the setf (scxml-x <scxml-point>)
+;; TODO - this should be 2dg-x but it messes with the setf (2dg-x <scxml-point>)
 ;; figure that out and address it.  Same for teh y.
 (cl-defmethod scxml-x-span ((rect scxml-rect))
   "Return the x component of this RECT as a span."
@@ -142,8 +142,8 @@ proceeding counterclockwise around the rectangle."
     (scxml-span :start y-min :end y-max)))
 (cl-defmethod 2dg-contains ((container scxml-rect) (containee 2dg-point) &optional evaluation-mode)
   "Return non-nil if the CONTAINER contains CONTAINEE using EVALUATION-MODE."
-  (and (2dg-contains (scxml-x-span container) (scxml-x containee) evaluation-mode)
-       (2dg-contains (scxml-y-span container) (scxml-y containee) evaluation-mode)))
+  (and (2dg-contains (scxml-x-span container) (2dg-x containee) evaluation-mode)
+       (2dg-contains (scxml-y-span container) (2dg-y containee) evaluation-mode)))
 (cl-defmethod 2dg-contains ((container scxml-rect) (containee scxml-rect) &optional evaluation-mode)
   "Return non-nil if the CONTAINER contains CONTAINEE using EVALUATION-MODE."
   (and (2dg-contains (scxml-x-span container) (scxml-x-span containee) evaluation-mode)

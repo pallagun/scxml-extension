@@ -9,10 +9,10 @@
 
 (defclass 2dg-point ()
   ((x :initarg :x
-      :accessor scxml-x
+      :accessor 2dg-x
       :type float)
    (y :initarg :y
-      :accessor scxml-y
+      :accessor 2dg-y
       :type float)))
 
 (defun 2dg-point- (x y)
@@ -30,40 +30,40 @@ to spare a bit of typing."
   (princ (scxml-print object) stream))
 (cl-defmethod 2dg-cross-prod ((A 2dg-point) (B 2dg-point))
   "Cross product: A cross B."
-  (- (* (scxml-x A) (scxml-y B))
-     (* (scxml-y A) (scxml-x B))))
+  (- (* (2dg-x A) (2dg-y B))
+     (* (2dg-y A) (2dg-x B))))
 (cl-defmethod 2dg-dot-prod ((A 2dg-point) (B 2dg-point))
   "Dot product: A dot B."
-  (+ (* (scxml-x A) (scxml-x B))
-     (* (scxml-y A) (scxml-y B))))
+  (+ (* (2dg-x A) (2dg-x B))
+     (* (2dg-y A) (2dg-y B))))
 (cl-defmethod 2dg-magnitude ((vector 2dg-point))
   "Vector magnitude of VECTOR."
-  (let ((x (scxml-x vector))
-        (y (scxml-y vector)))
+  (let ((x (2dg-x vector))
+        (y (2dg-y vector)))
     (sqrt (+ (* x x) (* y y)))))
 (cl-defmethod 2dg-box-magnitude ((vector 2dg-point))
   "Box magnitude - how big is a square that can hold VECTOR."
-  (max (abs (scxml-x vector))
-       (abs (scxml-y vector))))
+  (max (abs (2dg-x vector))
+       (abs (2dg-y vector))))
 (cl-defmethod 2dg-subtract ((A 2dg-point) (B 2dg-point))
   "Subtraction: A - B."
-  (2dg-point :x (- (scxml-x A) (scxml-x B))
-               :y (- (scxml-y A) (scxml-y B))))
+  (2dg-point :x (- (2dg-x A) (2dg-x B))
+               :y (- (2dg-y A) (2dg-y B))))
 (cl-defmethod 2dg-distance-sq ((A 2dg-point) (B 2dg-point))
   "Cartesian distance squared between A and B."
-  (let ((del-x (- (scxml-x A) (scxml-x B)))
-        (del-y (- (scxml-y A) (scxml-y B))))
+  (let ((del-x (- (2dg-x A) (2dg-x B)))
+        (del-y (- (2dg-y A) (2dg-y B))))
     (+ (* del-x del-x) (* del-y del-y))))
 (cl-defmethod 2dg-distance ((A 2dg-point) (B 2dg-point))
   "Cartesian distance between A and B."
-  (let ((del-x (- (scxml-x A) (scxml-x B)))
-        (del-y (- (scxml-y A) (scxml-y B))))
+  (let ((del-x (- (2dg-x A) (2dg-x B)))
+        (del-y (- (2dg-y A) (2dg-y B))))
     (sqrt (+ (* del-x del-x) (* del-y del-y)))))
 (cl-defmethod 2dg-normalized ((vector 2dg-point))
   "Build a normalized (magnitude = 1) vector from VECTOR."
   (let ((mag (2dg-magnitude vector)))
-    (2dg-point :x (/ (scxml-x vector) mag)
-                 :y (/ (scxml-y vector) mag))))
+    (2dg-point :x (/ (2dg-x vector) mag)
+                 :y (/ (2dg-y vector) mag))))
 (cl-defmethod 2dg-rotate-90 ((vec 2dg-point) &optional z-rotation-direction)
   "Build a rotated vector 90 degrees in + or - z RHR rotation.
 
@@ -71,35 +71,35 @@ RHR => Right Hand Rule."
   (if (> (if z-rotation-direction z-rotation-direction 1)
          0)
       ;; rotate +1, CCW
-      (2dg-point :x (scxml-y vec)
-                   :y (* -1.0 (scxml-x vec)))
-    (2dg-point :x (* -1.0 (scxml-y vec))
-                 :y (scxml-x vec))))
+      (2dg-point :x (2dg-y vec)
+                   :y (* -1.0 (2dg-x vec)))
+    (2dg-point :x (* -1.0 (2dg-y vec))
+                 :y (2dg-x vec))))
 (cl-defmethod 2dg-additive-inverse ((vector 2dg-point))
   "Get the additive inverse of VECTOR."
-  (2dg-point :x (* -1.0 (scxml-x vector))
-               :y (* -1.0 (scxml-y vector))))
+  (2dg-point :x (* -1.0 (2dg-x vector))
+               :y (* -1.0 (2dg-y vector))))
 (cl-defmethod 2dg-add ((A 2dg-point) (B 2dg-point))
   "Summation of points A and B."
-  (2dg-point :x (+ (scxml-x A) (scxml-x B))
-               :y (+ (scxml-y A) (scxml-y B))))
+  (2dg-point :x (+ (2dg-x A) (2dg-x B))
+               :y (+ (2dg-y A) (2dg-y B))))
 (cl-defmethod 2dg-incf ((A 2dg-point) (B 2dg-point))
   "In place modification of A to be A + B returning A."
-  (oset A x (+ (scxml-x A) (scxml-x B)))
-  (oset A y (+ (scxml-y A) (scxml-y B)))
+  (oset A x (+ (2dg-x A) (2dg-x B)))
+  (oset A y (+ (2dg-y A) (2dg-y B)))
   A)
 (cl-defmethod 2dg-scaled ((A 2dg-point) alpha)
   "Return A scaled by ALPHA."
-  (2dg-point :x (* alpha (scxml-x A))
-               :y (* alpha (scxml-y A))))
+  (2dg-point :x (* alpha (2dg-x A))
+               :y (* alpha (2dg-y A))))
 (cl-defmethod 2dg-scaled ((A 2dg-point) (per-dimension-alpha 2dg-point))
   "Scale A by PER-DIMENSION-ALPHA (scale x by x and y by y)."
-  (2dg-point :x (* (scxml-x A) (scxml-x per-dimension-alpha))
-               :y (* (scxml-y A) (scxml-y per-dimension-alpha))))
+  (2dg-point :x (* (2dg-x A) (2dg-x per-dimension-alpha))
+               :y (* (2dg-y A) (2dg-y per-dimension-alpha))))
 (cl-defmethod 2dg-almost-equal ((A 2dg-point) (B 2dg-point) &optional tolerance)
   "Are A and B within TOLERANCE box distance of eachother"
-  (and (2dg-almost-equal (scxml-x A) (scxml-x B) tolerance)
-       (2dg-almost-equal (scxml-y A) (scxml-y B) tolerance)))
+  (and (2dg-almost-equal (2dg-x A) (2dg-x B) tolerance)
+       (2dg-almost-equal (2dg-y A) (2dg-y B) tolerance)))
 (cl-defmethod 2dg-cardinal-direction-vector-p ((A 2dg-point))
   "Return non-nil if A is vertical or horizontal (but not zero)."
   (with-slots (x y) A

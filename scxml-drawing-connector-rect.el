@@ -42,8 +42,8 @@
 Might return the connector right back to you if alreay snapped."
   (let* ((point (scxml-connection-point connector))
          (snapped-point (scxml-snap point)))
-    (if (and (equal (scxml-x point) (scxml-x snapped-point))
-             (equal (scxml-y point) (scxml-y snapped-point)))
+    (if (and (equal (2dg-x point) (2dg-x snapped-point))
+             (equal (2dg-y point) (2dg-y snapped-point)))
         ;; connector already on snap point
         connector
       (progn

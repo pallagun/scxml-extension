@@ -117,7 +117,7 @@ May return nil if PATH has less than 2 points."
                 (setq last-point pt)
                 segment))
             (cdr points))))
-(cl-defmethod scxml-length ((path scxml-path))
+(cl-defmethod 2dg-length ((path scxml-path))
   "Return the length of the path (Not the displacement or number of points).
 
 Not to be confused with scxml-num-points.  This is the same as
@@ -270,12 +270,12 @@ joining start and end, recursing until it joins them."
                ;; this collision can only happen at one of two points.
                ;; (2dg-point :x from A-pt and :y from B-pt)
                ;; (2dg-point :x from B-pt and :y from A-pt)
-               (if (equal (scxml-x A-dir) 0.0)
+               (if (equal (2dg-x A-dir) 0.0)
                    ;; A-dir is vertical, therefore your intersection must be at A-pt's X
                    ;; determine if the collision is at A or B's Y coordinates
-                   (2dg-point :x (scxml-x A-pt) :y (scxml-y B-pt))
+                   (2dg-point :x (2dg-x A-pt) :y (2dg-y B-pt))
                  ;; A-dir is horizontal, therefore your intersection must be at A-pt's Y
-                 (2dg-point :x (scxml-x B-pt) :y (scxml-y A-pt)))))
+                 (2dg-point :x (2dg-x B-pt) :y (2dg-y A-pt)))))
       (cond
        ;; Vectors are heading in perpendicular directions.  If possible join them
        ;; otherwise turn the best candidate towards a future collision.
@@ -493,15 +493,15 @@ have the desired start and end points."
                                              with last-pt = (first points)
                                              for pt in (cdr points)
                                              for delta = (2dg-subtract pt last-pt)
-                                             do (setf x-free (or x-free (not (equal (scxml-x delta) 0.0)))
-                                                      y-free (or y-free (not (equal (scxml-y delta) 0.0))))
+                                             do (setf x-free (or x-free (not (equal (2dg-x delta) 0.0)))
+                                                      y-free (or y-free (not (equal (2dg-y delta) 0.0))))
                                              when (and x-free y-free)
                                              return 't
                                              do (setq last-pt pt)
                                              finally return 'nil)))
 
-      (let ((scale-x (get-scale (scxml-x force-displacement) (scxml-x old-displacement)))
-            (scale-y (get-scale (scxml-y force-displacement) (scxml-y old-displacement))))
+      (let ((scale-x (get-scale (2dg-x force-displacement) (2dg-x old-displacement)))
+            (scale-y (get-scale (2dg-y force-displacement) (2dg-y old-displacement))))
         (if (and scale-x scale-y)
             ;; both scalings are valid, apply them and finish
             (let ((scale (2dg-point :x scale-x :y scale-y)))
@@ -526,21 +526,21 @@ have the desired start and end points."
                   (vertical-deltas 'nil)
                   (horizontal-deltas 'nil))
               (cl-loop for delta in deltas
-                       do (when (not (equal (scxml-x delta) 0.0))
+                       do (when (not (equal (2dg-x delta) 0.0))
                             (push delta horizontal-deltas))
-                       do (when (not (equal (scxml-y delta) 0.0))
+                       do (when (not (equal (2dg-y delta) 0.0))
                             (push delta vertical-deltas)))
               ;; modify deltas
-              (unless (equal (scxml-x additional-displacement) 0.0)
-                (let ((additional-horizontal (/ (scxml-x additional-displacement)
+              (unless (equal (2dg-x additional-displacement) 0.0)
+                (let ((additional-horizontal (/ (2dg-x additional-displacement)
                                                 (float (length horizontal-deltas)))))
                   (cl-loop for delta in horizontal-deltas
-                           do (oset delta x (+ (scxml-x delta) additional-horizontal)))))
-              (unless (equal (scxml-y additional-displacement) 0.0)
-                (let ((additional-vertical (/ (scxml-y additional-displacement)
+                           do (oset delta x (+ (2dg-x delta) additional-horizontal)))))
+              (unless (equal (2dg-y additional-displacement) 0.0)
+                (let ((additional-vertical (/ (2dg-y additional-displacement)
                                               (float (length vertical-deltas)))))
                   (cl-loop for delta in vertical-deltas
-                           do (oset delta y (+ (scxml-y delta) additional-vertical)))))
+                           do (oset delta y (+ (2dg-y delta) additional-vertical)))))
                 (scxml--path-from-deltas deltas force-start))))))))
 
 (defun scxml---nudge-path-start (points move-vector)

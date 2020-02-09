@@ -138,8 +138,8 @@ Note: there should only be one child and it should be a transition."
         (centroid (2dg-centroid canvas)))
     (if (null hint)
         ;; Generate the drawing (not based on a hint)
-        (scxml-drawing-point :x (scxml-x centroid)
-                             :y (scxml-y centroid)
+        (scxml-drawing-point :x (2dg-x centroid)
+                             :y (2dg-y centroid)
                              :label label
                              :highlight highlight
                              :edit-idx nil
@@ -148,8 +148,8 @@ Note: there should only be one child and it should be a transition."
         (unless parent-drawing-canvas
           (error "Unable to build drawing without an already drawn parent."))
         (let ((placement (2dg-absolute-coordinates parent-drawing-canvas hint)))
-          (scxml-drawing-point :x (scxml-x placement)
-                               :y (scxml-y placement)
+          (scxml-drawing-point :x (2dg-x placement)
+                               :y (2dg-y placement)
                                :label label
                                :highlight highlight
                                :edit-idx nil

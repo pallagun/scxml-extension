@@ -243,7 +243,7 @@ path (target-point))."))
                      (let ((first-segment (scxml-segment :start (first new-pts)
                                                          :end (second new-pts)))
                            (required-vector (2dg-vector-from-direction (scxml-from-node-direction new-source))))
-                       (when (or (2dg-almost-zero (scxml-length first-segment))
+                       (when (or (2dg-almost-zero (2dg-length first-segment))
                                  (<= (2dg-dot-prod
                                       (scxml-characteristic-vector first-segment)
                                       required-vector)
@@ -260,7 +260,7 @@ path (target-point))."))
                                                         :end last-path-point))
                            (required-vector (2dg-vector-from-direction
                                              (scxml-from-node-direction new-target))))
-                       (when (or (2dg-almost-zero (scxml-length last-segment))
+                       (when (or (2dg-almost-zero (2dg-length last-segment))
                                  (<=  (2dg-dot-prod
                                        (scxml-characteristic-vector last-segment)
                                        required-vector)
@@ -562,19 +562,19 @@ been correctly set."
           (cl-flet ((build-connection-path
                      (source-pt target-pt connection-axis)
                      (if (eq connection-axis 'scxml--vertical)
-                         (let ((mid-x (/ (+ (scxml-x source-pt) (scxml-x target-pt)) 2.0)))
-                           (list (2dg-point :x mid-x :y (scxml-y source-pt))
-                                 (2dg-point :x mid-x :y (scxml-y target-pt))))
-                       (let ((mid-y (/ (+ (scxml-y source-pt) (scxml-y target-pt)) 2.0)))
-                         (list (2dg-point :x (scxml-x source-pt) :y mid-y)
-                               (2dg-point :x (scxml-x target-pt) :y mid-y))))))
+                         (let ((mid-x (/ (+ (2dg-x source-pt) (2dg-x target-pt)) 2.0)))
+                           (list (2dg-point :x mid-x :y (2dg-y source-pt))
+                                 (2dg-point :x mid-x :y (2dg-y target-pt))))
+                       (let ((mid-y (/ (+ (2dg-y source-pt) (2dg-y target-pt)) 2.0)))
+                         (list (2dg-point :x (2dg-x source-pt) :y mid-y)
+                               (2dg-point :x (2dg-x target-pt) :y mid-y))))))
             ;; this is no longer a cardinal direction vector, adjust the end points if possible
             ;; and if not, insert a jog to the middle of the points.
             (let* ((corrected-delta (if (eq last-move-axis 'scxml--vertical)
-                                        (scxml-vector :x (scxml-x delta)
+                                        (scxml-vector :x (2dg-x delta)
                                                       :y 0.0)
                                       (scxml-vector :x 0.0
-                                                    :y (scxml-y delta)))))
+                                                    :y (2dg-y delta)))))
               (if (eq last-move-connector 'source)
                   ;; source was last to move, so move the target connector to satisfy
                   (let* ((correct-target-point (2dg-add source-point corrected-delta))
@@ -712,8 +712,8 @@ The arrow factory when building from a hint is smart enough to sort it all out."
         (compacted-pts (list (first full-path-pts))))
     (cl-loop for real-pt in (cdr full-path-pts)
              for delta = (2dg-subtract real-pt last-compacted-pt)
-             for abs-delta-x = (abs (scxml-x delta))
-             for abs-delta-y = (abs (scxml-y delta))
+             for abs-delta-x = (abs (2dg-x delta))
+             for abs-delta-y = (abs (2dg-y delta))
              ;; if you went through either slack add a new point with the slack
              ;; that went over.
              do (cond ((>= abs-delta-x slack-allowance-x)
@@ -722,13 +722,13 @@ The arrow factory when building from a hint is smart enough to sort it all out."
                            ;; X and Y went over allowance.
                            (push real-pt compacted-pts)
                          ;; X went over but Y did not.
-                         (push (2dg-point :x (scxml-x real-pt) :y (scxml-y last-compacted-pt))
+                         (push (2dg-point :x (2dg-x real-pt) :y (2dg-y last-compacted-pt))
                                compacted-pts))
                        (incf num-compacted-pts)
                        (setq last-compacted-pt (first compacted-pts)))
                       ((>= abs-delta-y slack-allowance-y)
                        ;; Y went over but X did not
-                       (push (2dg-point :x (scxml-x last-compacted-pt) :y (scxml-y real-pt))
+                       (push (2dg-point :x (2dg-x last-compacted-pt) :y (2dg-y real-pt))
                              compacted-pts)
                        (setq last-compacted-pt (first compacted-pts))
                        (incf num-compacted-pts)))
@@ -779,8 +779,8 @@ The arrow factory when building from a hint is smart enough to sort it all out."
     (let* ((full-path-pts (scxml--full-path arrow))
            (slack (scxml-get-point-scaling viewport))
            (simplified (scxml--arrow-path-simplify full-path-pts
-                                                   (scxml-x slack)
-                                                   (scxml-y slack)))
+                                                   (2dg-x slack)
+                                                   (2dg-y slack)))
            ;; TODO - the path-simplify should do this for me,
            ;; modify it do do so on each pt evaluation.
            (simplified-reduced (and simplified (scxml-simplified simplified))))
