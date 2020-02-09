@@ -50,34 +50,6 @@ Generally filters out symbols that start with 'scxml---'."
   (let ((prop-name (downcase (symbol-name key))))
     (or (< (length prop-name) (1+ (length "scxml---")))
         (not (equal (substring prop-name 0 8) "scxml---")))))
-(cl-defmethod scxml-xml-string ((element scxml-element) &optional exclude-children)
-  "Get a string holding the XML for ELEMENT.
-
-Normally all child elements will be rendered to xml and output as
-well.  When EXCLUDE-CHILDREN is true then no child elements will
-be included in the output."
-  (let ((xml-name (scxml-xml-element-name element)))
-    (if (null xml-name)
-        ""
-      (let ((children (and (not exclude-children) (scxml-children element)))
-            (attribute-list (mapcar (lambda (name-value)
-                                      (format "%s=\"%s\"" (car name-value) (cdr name-value)))
-                                    (seq-filter 'cdr
-                                                (scxml-xml-attributes element)))))
-        (let ((start-tag (format "<%s" xml-name))
-              (attribute-string (if attribute-list
-                                    (format " %s" (mapconcat 'identity attribute-list " "))
-                                  ""))
-              (start-tag-ending (if children ">" " />"))
-              (children-xml (mapconcat 'scxml-xml-string children ""))
-              (end-tag (when children (format "</%s>" xml-name))))
-          (mapconcat 'identity
-                     (list start-tag
-                           attribute-string
-                           start-tag-ending
-                           children-xml
-                           end-tag)
-                     ""))))))
 (cl-defgeneric scxml-children ((element scxml-element))
   "Return the children of ELEMENT.")
 (cl-defmethod scxml-children ((element scxml-element))
