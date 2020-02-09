@@ -130,7 +130,7 @@ proceeding counterclockwise around the rectangle."
        (2dg-almost-equal (2dg-x-max A) (2dg-x-max B) tolerance)
        (2dg-almost-equal (2dg-y-min A) (2dg-y-min B) tolerance)
        (2dg-almost-equal (2dg-y-max A) (2dg-y-max B) tolerance)))
-;; TODO - this should be 2dg-x but it messes with the setf (2dg-x <scxml-point>)
+;; TODO - this should be 2dg-x but it messes with the setf (2dg-x <2dg-point>)
 ;; figure that out and address it.  Same for teh y.
 (cl-defmethod 2dg-x-span ((rect 2dg-rect))
   "Return the x component of this RECT as a span."

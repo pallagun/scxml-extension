@@ -13,7 +13,7 @@
                 (scxml-path :points (list (2dg-point- 30.5 22.0)
                                           (2dg-point- 30.500000000001 17.0))))))
     (mapcar (lambda (path)
-              (should (scxml---is-cardinal-path? (scxml-points path))))
+              (should (2dg---is-cardinal-path-p (scxml-points path))))
             paths)))
 
 (ert-deftest scxml-geometry-path-cardinal ()

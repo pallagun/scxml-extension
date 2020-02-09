@@ -1245,6 +1245,9 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
 (cl-defmethod scxml-print ((rect 2dg-rect))
   "Apparently I need this here - TODO - find out why."
   (2dg-pprint rect))
+(cl-defmethod scxml-print ((path scxml-path))
+  "Another one that needs to be fixed."
+  (2dg-pprint path))
 (defun scxml-diagram-mode--debug-barf ()
   "Barf out a ton of debug info at the bottom of the diagram"
 

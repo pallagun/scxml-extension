@@ -173,11 +173,11 @@ path (target-point))."))
       (incf idx))
      (if (eq idx 0)                      ;start connector
          (scxml-connection-point source)
-       (let ((num-path-pts (scxml-num-points path)))
+       (let ((num-path-pts (2dg-num-points path)))
          ;; [0 1 2 3] -> #2
          (if (< (1- idx) num-path-pts)
              ;; return the (- idx 2)'th path point
-             (scxml-nth path (1- idx))
+             (2dg-nth path (1- idx))
            ;; return the last point if it's returnable.
            (if (and (eq idx (1+ num-path-pts))
                     (not (scxml--arrow-target-locked arrow)))
@@ -194,7 +194,7 @@ path (target-point))."))
 (cl-defmethod scxml-num-edit-idxs ((arrow scxml-arrow))
   "Return the number of edit-idxs in ARROW."
   ;; connectors to points are not editable.
-  (+ (scxml-num-points (scxml-arrow-path arrow))
+  (+ (2dg-num-points (scxml-arrow-path arrow))
      (if (scxml--arrow-source-locked arrow) 0 1)
      (if (scxml--arrow-target-locked arrow) 0 1)))
 
@@ -499,7 +499,7 @@ points."
                                                  (2dg-vector-from-direction (2dg-reverse (scxml-from-node-direction target)))
                                                  ;; TODO: this shouldn't be 1.0 - it should be a defconst
                                                  (or offset scxml-arrow-connector-offset)))
-           (middle-path (if (> (scxml-num-points full-path) 2)
+           (middle-path (if (> (2dg-num-points full-path) 2)
                             (cdr (nbutlast (scxml-points full-path)))
                           'nil)))
       (oset arrow path (scxml-cardinal-path :points middle-path)))
