@@ -27,7 +27,7 @@ to spare a bit of typing."
     (format "p(%g, %g)" x y)))
 (cl-defmethod cl-print-object ((object 2dg-point) stream)
   "This seems to be used only for edebug sessions."
-  (princ (scxml-print object) stream))
+  (princ (2dg-pprint object) stream))
 (cl-defmethod 2dg-cross-prod ((A 2dg-point) (B 2dg-point))
   "Cross product: A cross B."
   (- (* (2dg-x A) (2dg-y B))
@@ -148,7 +148,7 @@ Symbols will be one of: 'up, 'down, 'left, 'right."
 
 This can be viewed as:
 
-(scxml-vector-from-diretion
+(2dg-vector-from-diretion
     (2dg-coarse-direction VECTOR))."
   (with-slots (x y) vector
     (let ((abs-x (abs x))

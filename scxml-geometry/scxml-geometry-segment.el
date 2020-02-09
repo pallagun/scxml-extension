@@ -11,10 +11,10 @@
 
 (defclass scxml-segment ()
   ((start :initarg :start
-          :accessor scxml-start
+          :accessor 2dg-start
           :type 2dg-point)
    (end :initarg :end
-        :accessor scxml-end
+        :accessor 2dg-end
         :type 2dg-point))
   :documentation "2d Line segment that can go in any direction (omnidirectional)")
 (cl-defmethod scxml-print ((segment scxml-segment))
@@ -41,7 +41,7 @@ Valid parametric coordinates range from 0 to 1, inclusive.  A
 PARAMETRIC-COORD of 0 will yield the start point, 1 will yield
 the end point and 0.5 will yield the mid point."
   (let ((char-vec (scxml-characteristic-vector segment))
-        (start (scxml-start segment)))
+        (start (2dg-start segment)))
     (2dg-point :x (+ (2dg-x start)
                        (* parametric-coord (2dg-x char-vec)))
                  :y (+ (2dg-y start)
@@ -58,8 +58,8 @@ square which could contain this SEGMENT."
   (2dg-box-magnitude (scxml-characteristic-vector segment)))
 (cl-defmethod 2dg-almost-equal ((A scxml-segment) (B scxml-segment) &optional tolerance)
   "Return non-nil if A and B almost equal within a TOLERANCE"
-  (and (2dg-almost-equal (scxml-start A) (scxml-start B) tolerance)
-       (2dg-almost-equal (scxml-end A) (scxml-end B) tolerance)))
+  (and (2dg-almost-equal (2dg-start A) (2dg-start B) tolerance)
+       (2dg-almost-equal (2dg-end A) (2dg-end B) tolerance)))
 (cl-defmethod scxml-flipped ((segment scxml-segment))
   "Return a new segment having reversed start and end of SEGMENT."
   (with-slots (start end) segment
@@ -78,21 +78,21 @@ It is assumed that you made sure A and B are parallel before calling."
   ;; get the distance along B to A.start and B.end
   (let ((A-norm (2dg-normalized (scxml-characteristic-vector A)))
         (A-length (2dg-length A))
-        (A-start-to-B-start (2dg-subtract (scxml-start B) (scxml-start A)))
-        (A-start-to-B-end (2dg-subtract (scxml-end B) (scxml-start A)))
+        (A-start-to-B-start (2dg-subtract (2dg-start B) (2dg-start A)))
+        (A-start-to-B-end (2dg-subtract (2dg-end B) (2dg-start A)))
         (B-norm (2dg-normalized (scxml-characteristic-vector B)))
         (B-length (2dg-length B))
-        (B-start-to-A-start (2dg-subtract (scxml-start A) (scxml-start B)))
-        (B-start-to-A-end (2dg-subtract (scxml-end A) (scxml-start B))))
+        (B-start-to-A-start (2dg-subtract (2dg-start A) (2dg-start B)))
+        (B-start-to-A-end (2dg-subtract (2dg-end A) (2dg-start B))))
     (list
      ;; A-parametrics
      (2dg-inverse-scaled
-      (scxml-span :start (2dg-dot-prod A-norm A-start-to-B-start)
+      (2dg-span :start (2dg-dot-prod A-norm A-start-to-B-start)
                   :end (2dg-dot-prod A-norm A-start-to-B-end))
       A-length)
      ;; B-parametrics
      (2dg-inverse-scaled
-      (scxml-span :start (2dg-dot-prod B-norm B-start-to-A-start)
+      (2dg-span :start (2dg-dot-prod B-norm B-start-to-A-start)
                   :end (2dg-dot-prod B-norm B-start-to-A-end))
       B-length))))
 (cl-defmethod scxml---distance-parallel ((A scxml-segment) (B scxml-segment))
@@ -106,30 +106,30 @@ It is assumed you made sure A and B are parallel before calling."
          (B-parametric (cadr parametrics)))
     (cond
      ;; segment A, voronoi region of start
-     ((< (scxml-end A-parametric) 0.0)
-      (2dg-distance B (scxml-start A)))
+     ((< (2dg-end A-parametric) 0.0)
+      (2dg-distance B (2dg-start A)))
      ;; segment A, voronoi region of end
-     ((> (scxml-start A-parametric) 1.0)
-      (2dg-distance B (scxml-end A)))
+     ((> (2dg-start A-parametric) 1.0)
+      (2dg-distance B (2dg-end A)))
      ;; else, it's in the voronoi region of A's line segment.
      ;; segment B, voronoi regino of start
-     ((< (scxml-end B-parametric) 0.0)
-      (2dg-distance A (scxml-start B)))
+     ((< (2dg-end B-parametric) 0.0)
+      (2dg-distance A (2dg-start B)))
      ;; segment B, voronoi region of end
-     ((> (scxml-start B-parametric) 1.0)
-      (2dg-distance A (scxml-end B)))
+     ((> (2dg-start B-parametric) 1.0)
+      (2dg-distance A (2dg-end B)))
      ;; ok, line to line perpendicular distance - no segment ends involved.
      ('t
-      (let ((A-start-to-B-start (2dg-subtract (scxml-start B) (scxml-start A)))
+      (let ((A-start-to-B-start (2dg-subtract (2dg-start B) (2dg-start A)))
             (A-norm (scxml-unit-vector A)))
         (abs (2dg-dot-prod A-start-to-B-start
                              (2dg-rotate-90 A-norm 1))))))))
 (cl-defmethod scxml---segment-collision-parametrics ((A scxml-segment) (B scxml-segment))
   "Find the per-segment parametric coordinates where these two
 segments hit (non-parallel segments)."
-  (let* ((A-start (scxml-start A))
+  (let* ((A-start (2dg-start A))
          (A-char-vec (scxml-characteristic-vector A))
-         (B-start (scxml-start B))
+         (B-start (2dg-start B))
          (B-char-vec (scxml-characteristic-vector B)))
     (scxml---segment-collision-parametrics-vectorized A-start A-char-vec B-start B-char-vec)))
 (cl-defmethod scxml---segment-collision-parametrics-vectorized ((A-start 2dg-point) (A-char-vec 2dg-point) (B-start 2dg-point) (B-char-vec 2dg-point))
@@ -186,34 +186,34 @@ This is returned as (cons a-parametric b-parametric)."
       (cond
        ;; B-start voronoi region
        ((< b-parametric 0.0)
-        (2dg-distance (scxml-start A) (scxml-start B)))
+        (2dg-distance (2dg-start A) (2dg-start B)))
        ;; B-end voronoi region
        ((> b-parametric 1.0)
-        (2dg-distance (scxml-start A) (scxml-end B)))
+        (2dg-distance (2dg-start A) (2dg-end B)))
        ;; B-segment voronoi region
        ('t
-        (2dg-distance B (scxml-start A)))))
+        (2dg-distance B (2dg-start A)))))
      ;; A-end voronoi region
      ((> a-parametric 1.0)
       (cond
        ;; B-start voronoi region
        ((< b-parametric 0.0)
-        (2dg-distance (scxml-end A) (scxml-start B)))
+        (2dg-distance (2dg-end A) (2dg-start B)))
        ;; B-end voronoi region
        ((> b-parametric 1.0)
-        (2dg-distance (scxml-end A) (scxml-end B)))
+        (2dg-distance (2dg-end A) (2dg-end B)))
        ;; b-segment voronoi region
        ('t
-        (2dg-distance B (scxml-end A)))))
+        (2dg-distance B (2dg-end A)))))
      ;; A-segment voronoi region
      ('t
       (cond
        ;; B-start voronoi region
        ((< b-parametric 0.0)
-        (2dg-distance A (scxml-start B)))
+        (2dg-distance A (2dg-start B)))
        ;; B-end voronoi region
        ((> b-parametric 1.0)
-        (2dg-distance A (scxml-end B)))
+        (2dg-distance A (2dg-end B)))
        ;; B-segment voronoi region - special case - they touch
        ('t
         0.0))))))
@@ -223,16 +223,16 @@ This is returned as (cons a-parametric b-parametric)."
 Return the actual distance as well as the voronoi zone of A in
 the form of (cons distance voronoi-zone).  Voronoi zone will be
 returned as one of: 'start, 'end or 'middle (of A-SEGMENT)."
-  (let* ((A-start-to-B (2dg-subtract B-point (scxml-start A-segment)))
+  (let* ((A-start-to-B (2dg-subtract B-point (2dg-start A-segment)))
          (A-char-vec (scxml-characteristic-vector A-segment))
          (A-parametric (2dg-dot-prod (2dg-normalized A-char-vec)
                                        A-start-to-B))
          (A-length (2dg-length A-segment)))
     (cond ((<= A-parametric 0)
-           (cons (2dg-distance (scxml-start A-segment) B-point)
+           (cons (2dg-distance (2dg-start A-segment) B-point)
                  'start))
           ((>= A-parametric A-length)
-           (cons (2dg-distance (scxml-end A-segment) B-point)
+           (cons (2dg-distance (2dg-end A-segment) B-point)
                  'end))
 
           ('t                           ;; not in an end point voronoi zone
@@ -252,12 +252,12 @@ It only has to be within an almost-zero distance."
          (voronoi-region (cdr distance-info)))
     (cond ((eq evaluation-mode 'strict)   ; don't allow either end point of A
            (and (eq voronoi-region 'middle)
-                (let ((start-distance (2dg-distance (scxml-start A) B))
-                      (end-distance (2dg-distance (scxml-end A) B)))
+                (let ((start-distance (2dg-distance (2dg-start A) B))
+                      (end-distance (2dg-distance (2dg-end A) B)))
                   (< distance (max start-distance end-distance) 2dg--almost-zero))))
           ((eq evaluation-mode 'stacked)  ; don't allow the 'end' end point of A
            (and (not (eq voronoi-region 'end))
-                (let ((end-distance (2dg-distance (scxml-end A) B)))
+                (let ((end-distance (2dg-distance (2dg-end A) B)))
                   (< distance end-distance 2dg--almost-zero))))
           (t                            ; allow any part of A or B.
            (2dg-almost-zero distance)))))
@@ -312,19 +312,19 @@ That should be sorted out before calling this."
     ;; are the segments parallel?
     (if (< (abs norm-cross-prod) 2dg--almost-zero)
         (let ((perp-distance (2dg-dot-prod (2dg-rotate-90 a-norm-vec)
-                                             (2dg-subtract (scxml-start B)
-                                                             (scxml-start A)))))
+                                             (2dg-subtract (2dg-start B)
+                                                             (2dg-start A)))))
           (if (>= (abs perp-distance) 2dg--almost-zero)
               ;; too far away to touch
               'nil
             (let* ((parametrics (scxml---distance-parallel-parametrics A B))
                    (a-parametric (car parametrics))
                    (b-parametric (cadr parametrics))
-                   (start-range (scxml-span :start (* -1.0 2dg--almost-zero)
+                   (start-range (2dg-span :start (* -1.0 2dg--almost-zero)
                                             :end 2dg--almost-zero))
-                   (end-range (scxml-span :start (- 1.0 2dg--almost-zero)
+                   (end-range (2dg-span :start (- 1.0 2dg--almost-zero)
                                           :end (+ 1.0 2dg--almost-zero)))
-                   (mid-range (scxml-span :start 2dg--almost-zero
+                   (mid-range (2dg-span :start 2dg--almost-zero
                                           :end (- 1.0 2dg--almost-zero))))
               ;; parallel, colinear segments that could touch...
               ;; and now for a giant conditional statement.

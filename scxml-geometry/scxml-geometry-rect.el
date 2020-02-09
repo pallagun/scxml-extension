@@ -135,11 +135,11 @@ proceeding counterclockwise around the rectangle."
 (cl-defmethod scxml-x-span ((rect scxml-rect))
   "Return the x component of this RECT as a span."
   (with-slots (x-min x-max) rect
-    (scxml-span :start x-min :end x-max)))
+    (2dg-span :start x-min :end x-max)))
 (cl-defmethod scxml-y-span ((rect scxml-rect))
   "Return the y component of this RECT as a span."
   (with-slots (y-min y-max) rect
-    (scxml-span :start y-min :end y-max)))
+    (2dg-span :start y-min :end y-max)))
 (cl-defmethod 2dg-contains ((container scxml-rect) (containee 2dg-point) &optional evaluation-mode)
   "Return non-nil if the CONTAINER contains CONTAINEE using EVALUATION-MODE."
   (and (2dg-contains (scxml-x-span container) (2dg-x containee) evaluation-mode)
@@ -152,10 +152,10 @@ proceeding counterclockwise around the rectangle."
   "Return the coordinates of RECT relative to BASE-RECT."
   (let ((x-span (2dg-relative-coordinates (scxml-x-span base-rect) (scxml-x-span rect)))
         (y-span (2dg-relative-coordinates (scxml-y-span base-rect) (scxml-y-span rect))))
-    (scxml-rect :x-min (scxml-start x-span)
-                :x-max (scxml-end x-span)
-                :y-min (scxml-start y-span)
-                :y-max (scxml-end y-span))))
+    (scxml-rect :x-min (2dg-start x-span)
+                :x-max (2dg-end x-span)
+                :y-min (2dg-start y-span)
+                :y-max (2dg-end y-span))))
 (cl-defmethod 2dg-relative-coordinates ((base-rect scxml-rect) (point 2dg-point))
   "Return the coordinates of POINT relative to BASE-RECT."
   (with-slots (x y) point
@@ -172,10 +172,10 @@ proceeding counterclockwise around the rectangle."
                                             (scxml-x-span relative-rect)))
         (y-span (2dg-absolute-coordinates (scxml-y-span base-rect)
                                             (scxml-y-span relative-rect))))
-    (scxml-rect :x-min (scxml-start x-span)
-                :x-max (scxml-end x-span)
-                :y-min (scxml-start y-span)
-                :y-max (scxml-end y-span))))
+    (scxml-rect :x-min (2dg-start x-span)
+                :x-max (2dg-end x-span)
+                :y-min (2dg-start y-span)
+                :y-max (2dg-end y-span))))
 (cl-defmethod 2dg-intersection ((A 2dg-point) (B scxml-rect))
   "Return the intersection of A and B."
   (when (2dg-contains B A)
@@ -191,10 +191,10 @@ proceeding counterclockwise around the rectangle."
         (y-range (2dg-intersection (scxml-y-span A)
                                      (scxml-y-span B))))
     (if (and x-range y-range)
-        (scxml-rect :x-min (scxml-start x-range)
-                    :x-max (scxml-end x-range)
-                    :y-min (scxml-start y-range)
-                    :y-max (scxml-end y-range))
+        (scxml-rect :x-min (2dg-start x-range)
+                    :x-max (2dg-end x-range)
+                    :y-min (2dg-start y-range)
+                    :y-max (2dg-end y-range))
       'nil)))
 (cl-defmethod 2dg-has-intersection ((A scxml-rect) (B 2dg-point) &optional evaluation-mode)
   "Return non-nil if A and B intersect."
@@ -204,8 +204,8 @@ proceeding counterclockwise around the rectangle."
 
 You have an intersection if A contains any end point of B or
 if any bounding segment of A intersects B."
-  (or (2dg-contains A (scxml-start B) evaluation-mode)
-      (2dg-contains A (scxml-end B) evaluation-mode)
+  (or (2dg-contains A (2dg-start B) evaluation-mode)
+      (2dg-contains A (2dg-end B) evaluation-mode)
       (cond ((eq evaluation-mode 'strict) ;; must hit two segments
              (cl-loop for rect-segment in (scxml-segments A)
                       with num-hits = 0
