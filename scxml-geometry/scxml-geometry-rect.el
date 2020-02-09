@@ -84,19 +84,19 @@ counterclockwise traversal of the rectangle's outer edge."
          (error "Invalid edge enumerator"))))
 (cl-defmethod scxml-top ((rect scxml-rect))
   "Top (a.k.a. up) edge CCW spin"
-  (scxml-segment :start (scxml-TR rect)
+  (2dg-segment :start (scxml-TR rect)
                  :end (scxml-TL rect)))
 (cl-defmethod scxml-left ((rect scxml-rect))
   "Left edge CCW spin"
-  (scxml-segment :start (scxml-TL rect)
+  (2dg-segment :start (scxml-TL rect)
                  :end (scxml-BL rect)))
 (cl-defmethod scxml-bottom ((rect scxml-rect))
   "Bottom (a.k.a. down) edge CCW spin"
-  (scxml-segment :start (scxml-BL rect)
+  (2dg-segment :start (scxml-BL rect)
                  :end (scxml-BR rect)))
 (cl-defmethod scxml-right ((rect scxml-rect))
   "Right edge CCW spin"
-  (scxml-segment :start (scxml-BR rect)
+  (2dg-segment :start (scxml-BR rect)
                  :end (scxml-TR rect)))
 (cl-defmethod scxml-segments ((rect scxml-rect))
   "Return a list of 4 segments representing the boundary of RECT.
@@ -104,13 +104,13 @@ counterclockwise traversal of the rectangle's outer edge."
 The segments will be return starting at the bottom left and
 proceeding counterclockwise around the rectangle."
   (with-slots (x-min x-max y-min y-max) rect
-    (list (scxml-segment :start (2dg-point :x x-min :y y-min)
+    (list (2dg-segment :start (2dg-point :x x-min :y y-min)
                          :end (2dg-point :x x-max :y y-min))
-          (scxml-segment :start (2dg-point :x x-max :y y-min)
+          (2dg-segment :start (2dg-point :x x-max :y y-min)
                          :end (2dg-point :x x-max :y y-max))
-          (scxml-segment :start (2dg-point :x x-max :y y-max)
+          (2dg-segment :start (2dg-point :x x-max :y y-max)
                          :end (2dg-point :x x-min :y y-max))
-          (scxml-segment :start (2dg-point :x x-min :y y-max)
+          (2dg-segment :start (2dg-point :x x-min :y y-max)
                          :end (2dg-point :x x-min :y y-min)))))
 (cl-defmethod scxml-width ((rect scxml-rect))
   "Return the width (x-size) of RECT as a scalar."
@@ -199,7 +199,7 @@ proceeding counterclockwise around the rectangle."
 (cl-defmethod 2dg-has-intersection ((A scxml-rect) (B 2dg-point) &optional evaluation-mode)
   "Return non-nil if A and B intersect."
   (2dg-contains A B evaluation-mode))
-(cl-defmethod 2dg-has-intersection ((A scxml-rect) (B scxml-segment) &optional evaluation-mode)
+(cl-defmethod 2dg-has-intersection ((A scxml-rect) (B 2dg-segment) &optional evaluation-mode)
   "Return non-nil if A and B intersect.
 
 You have an intersection if A contains any end point of B or
@@ -215,7 +215,7 @@ if any bounding segment of A intersects B."
                       return t))
             ((eq evaluation-mode 'stacked) ;; must hit two segments OR Left OR bottom segment
              (or (2dg-has-intersection (scxml-bottom A) B 'stacked) ;the bottom edge excluding BR
-                 (2dg-has-intersection (scxml-flipped (scxml-left A)) B 'stacked) ;the left edge excluding TL
+                 (2dg-has-intersection (2dg-flipped (scxml-left A)) B 'stacked) ;the left edge excluding TL
                  (and (2dg-has-intersection (scxml-right A) B 'strict) ;the right side without the ends
                       (2dg-has-intersection (scxml-top A) B 'stacked)))) ;the top edge excluding TR
             (t                          ;any hit anywhere is ok.

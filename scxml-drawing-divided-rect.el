@@ -15,7 +15,7 @@
              :accessor scxml-dividers
              :initform nil
              :type list
-             :documentation "A list of all dividers in this rect as scxml-segments.  This is really only used for rendering."))
+             :documentation "A list of all dividers in this rect as 2dg-segments.  This is really only used for rendering."))
   :abstract 't
   :documentation "Represents a rectangle which can be drawn with divisions")
 (defun scxml-drawing-divided-rect-class-p (any)
@@ -339,7 +339,7 @@ usage: (scxml---nest-stripe :axis (scxml-axis thing)
   ;; first line in the one right below the header
   (with-slots (x-min x-max y-min (real-y-max y-max)) divided-rect
     (let ((y-max (- real-y-max scxml---divided-rect-header-height)))
-      (list (scxml-segment :start (2dg-point :x x-min :y y-max)
+      (list (2dg-segment :start (2dg-point :x x-min :y y-max)
                            :end (2dg-point :x x-max :y y-max))))))
 
 (provide 'scxml-drawing-divided-rect)

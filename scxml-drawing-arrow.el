@@ -240,12 +240,12 @@ path (target-point))."))
                                   (scxml-from-node-direction new-source)))
                      ;; this is an end poind move and the source jumped edges.
                      ;; Source connect has jumped edges, ensure there is a perpendicular start.
-                     (let ((first-segment (scxml-segment :start (first new-pts)
+                     (let ((first-segment (2dg-segment :start (first new-pts)
                                                          :end (second new-pts)))
                            (required-vector (2dg-vector-from-direction (scxml-from-node-direction new-source))))
                        (when (or (2dg-almost-zero (2dg-length first-segment))
                                  (<= (2dg-dot-prod
-                                      (scxml-characteristic-vector first-segment)
+                                      (2dg-characteristic-vector first-segment)
                                       required-vector)
                                      2dg--almost-zero))
                          (push (2dg-subtract first-path-point
@@ -256,13 +256,13 @@ path (target-point))."))
                                   (scxml-from-node-direction new-target)))
                      ;; this is an end point move and the target jumped edges
                      ;; target connect has jumped edges, ensure there is a perpendicular end.
-                     (let ((last-segment (scxml-segment :start (car last-path-links)
+                     (let ((last-segment (2dg-segment :start (car last-path-links)
                                                         :end last-path-point))
                            (required-vector (2dg-vector-from-direction
                                              (scxml-from-node-direction new-target))))
                        (when (or (2dg-almost-zero (2dg-length last-segment))
                                  (<=  (2dg-dot-prod
-                                       (scxml-characteristic-vector last-segment)
+                                       (2dg-characteristic-vector last-segment)
                                        required-vector)
                                       2dg--almost-zero))
                          (setq new-pts (append
@@ -480,7 +480,7 @@ start point of the arrow."
       (cl-loop with last-pt = (scxml-connection-point target-connector)
                for pt in rev-points
                unless (2dg-almost-equal pt last-pt)
-                 do (cl-return (scxml-segment :start pt :end last-pt))
+                 do (cl-return (2dg-segment :start pt :end last-pt))
                do (setq last-pt pt)
                finally return nil))))
 (cl-defmethod scxml--arrow-set-default-path ((arrow scxml-arrow) &optional offset)

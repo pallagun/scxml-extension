@@ -61,7 +61,7 @@ Might return the connector right back to you if alreay snapped."
   "Return a parametric if CONNECTOR can be moved to satisfy TARGET-POINT on EDGE-ENUMERATOR."
   ;; TODO - is this called directly?  Might be able to make it a letf
   (let* ((edge-segment (scxml-edge (scxml-node connector) edge))
-         (edge-parametric (scxml-get-parametric edge-segment target-point tolerance)))
+         (edge-parametric (2dg-get-parametric edge-segment target-point tolerance)))
     (when (and edge-parametric
                (<= 0 edge-parametric)
                (<= edge-parametric 1.0))
@@ -84,7 +84,7 @@ is still valid."
     (cl-loop with best-connection-set = nil
              for edge-candidate in '(up down left right)
              for edge-segment = (scxml-edge rect edge-candidate)
-             for edge-parametric = (scxml-get-closest-parametric edge-segment target-point t)
+             for edge-parametric = (2dg-get-closest-parametric edge-segment target-point t)
              for edge-point = (2dg-absolute-coordinates edge-segment edge-parametric)
              for distance-sq = (2dg-distance-sq edge-point target-point)
              if (null best-connection-set)

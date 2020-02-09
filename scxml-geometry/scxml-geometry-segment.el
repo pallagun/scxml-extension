@@ -1,15 +1,15 @@
-;;; scxml-geometry-segment.el --- scxml geometry segment helpers -*- lexical-binding: t -*-
+;;; 2dg-geometry-segment.el --- scxml geometry segment helpers -*- lexical-binding: t -*-
 
 ;;; Commentary:
-;; scxml-segment is a line segment that connects two points
-;; It is directional, starting at START and ending at END.
+;; 2dg-segment is a line segment that connects two points
+;; It has a direction, starting at START and ending at END.
 
 ;;; Code:
 (require 'eieio)
 (require 'scxml-geometry-point)
 (require 'scxml-geometry-span)
 
-(defclass scxml-segment ()
+(defclass 2dg-segment ()
   ((start :initarg :start
           :accessor 2dg-start
           :type 2dg-point)
@@ -17,70 +17,70 @@
         :accessor 2dg-end
         :type 2dg-point))
   :documentation "2d Line segment that can go in any direction (omnidirectional)")
-(cl-defmethod scxml-print ((segment scxml-segment))
+(cl-defmethod scxml-print ((segment 2dg-segment))
   "Return a stringified version of SPAN for human eyes."
   (with-slots (start end) segment
     (format "s[%s -> %s]" (scxml-print start) (scxml-print end))))
-(cl-defmethod cl-print-object ((segment scxml-segment) stream)
+(cl-defmethod cl-print-object ((segment 2dg-segment) stream)
   "This seems to be used only for edebug sessions."
   (princ (scxml-print segment) stream))
-(cl-defmethod scxml-characteristic-vector ((segment scxml-segment))
+(cl-defmethod 2dg-characteristic-vector ((segment 2dg-segment))
   "Return the characteristic vector of SEGMENT.
 
 Characteristic vector is:
   (SEGMENT end) - (SEGMENT start)."
   (with-slots (start end) segment
     (2dg-subtract end start)))
-(cl-defmethod scxml-unit-vector ((segment scxml-segment))
+(cl-defmethod 2dg-unit-vector ((segment 2dg-segment))
   "Return a normalized characteristic vector."
-  (2dg-normalized (scxml-characteristic-vector segment)))
-(cl-defmethod 2dg-parametric ((segment scxml-segment) parametric-coord)
+  (2dg-normalized (2dg-characteristic-vector segment)))
+(cl-defmethod 2dg-parametric ((segment 2dg-segment) parametric-coord)
   "Return the point at PARAMETRIC-COORD along SEGMENT.
 
 Valid parametric coordinates range from 0 to 1, inclusive.  A
 PARAMETRIC-COORD of 0 will yield the start point, 1 will yield
 the end point and 0.5 will yield the mid point."
-  (let ((char-vec (scxml-characteristic-vector segment))
+  (let ((char-vec (2dg-characteristic-vector segment))
         (start (2dg-start segment)))
     (2dg-point :x (+ (2dg-x start)
                        (* parametric-coord (2dg-x char-vec)))
                  :y (+ (2dg-y start)
                        (* parametric-coord (2dg-y char-vec))))))
-(cl-defmethod 2dg-length ((segment scxml-segment))
+(cl-defmethod 2dg-length ((segment 2dg-segment))
   "Return the length of SEGMENT."
   (with-slots (start end) segment
     (2dg-distance start end)))
-(cl-defmethod 2dg-box-magnitude ((segment scxml-segment))
+(cl-defmethod 2dg-box-magnitude ((segment 2dg-segment))
   "Return the box magnitude of SEGMENT.
 
 Box magnitude is defined as the edge length of the smallest
 square which could contain this SEGMENT."
-  (2dg-box-magnitude (scxml-characteristic-vector segment)))
-(cl-defmethod 2dg-almost-equal ((A scxml-segment) (B scxml-segment) &optional tolerance)
+  (2dg-box-magnitude (2dg-characteristic-vector segment)))
+(cl-defmethod 2dg-almost-equal ((A 2dg-segment) (B 2dg-segment) &optional tolerance)
   "Return non-nil if A and B almost equal within a TOLERANCE"
   (and (2dg-almost-equal (2dg-start A) (2dg-start B) tolerance)
        (2dg-almost-equal (2dg-end A) (2dg-end B) tolerance)))
-(cl-defmethod scxml-flipped ((segment scxml-segment))
+(cl-defmethod 2dg-flipped ((segment 2dg-segment))
   "Return a new segment having reversed start and end of SEGMENT."
   (with-slots (start end) segment
-    (scxml-segment :start end :end start)))
-(cl-defmethod 2dg-centroid ((segment scxml-segment))
+    (2dg-segment :start end :end start)))
+(cl-defmethod 2dg-centroid ((segment 2dg-segment))
   "Return the midpoint of SEGMENT."
   (with-slots (start end) segment
     (2dg-point :x (/ (+ (2dg-x start) (2dg-x end)) 2.0)
                  :y (/ (+ (2dg-y start) (2dg-y end)) 2.0))))
-(cl-defmethod scxml---distance-parallel-parametrics ((A scxml-segment) (B scxml-segment))
+(defun 2dg---distance-parallel-parametrics (A B)
   "Determine parametric coordinates for two parallel lines where they are closest.
 
 Returns a list consisting of '(A-parametric-range B-parmetric-range).
 It is assumed that you made sure A and B are parallel before calling."
   ;; get the distance along A to B.start and B.end
   ;; get the distance along B to A.start and B.end
-  (let ((A-norm (2dg-normalized (scxml-characteristic-vector A)))
+  (let ((A-norm (2dg-normalized (2dg-characteristic-vector A)))
         (A-length (2dg-length A))
         (A-start-to-B-start (2dg-subtract (2dg-start B) (2dg-start A)))
         (A-start-to-B-end (2dg-subtract (2dg-end B) (2dg-start A)))
-        (B-norm (2dg-normalized (scxml-characteristic-vector B)))
+        (B-norm (2dg-normalized (2dg-characteristic-vector B)))
         (B-length (2dg-length B))
         (B-start-to-A-start (2dg-subtract (2dg-start A) (2dg-start B)))
         (B-start-to-A-end (2dg-subtract (2dg-end A) (2dg-start B))))
@@ -95,13 +95,13 @@ It is assumed that you made sure A and B are parallel before calling."
       (2dg-span :start (2dg-dot-prod B-norm B-start-to-A-start)
                   :end (2dg-dot-prod B-norm B-start-to-A-end))
       B-length))))
-(cl-defmethod scxml---distance-parallel ((A scxml-segment) (B scxml-segment))
+(defun 2dg---distance-parallel (A B)
   "Return the minimum distance between two parallel segments.
 
 It is assumed you made sure A and B are parallel before calling."
   ;; get the distance along A to B.start and B.end
   ;; get the distance along B to A.start and B.end
-  (let* ((parametrics (scxml---distance-parallel-parametrics A B))
+  (let* ((parametrics (2dg---distance-parallel-parametrics A B))
          (A-parametric (car parametrics))
          (B-parametric (cadr parametrics)))
     (cond
@@ -121,18 +121,19 @@ It is assumed you made sure A and B are parallel before calling."
      ;; ok, line to line perpendicular distance - no segment ends involved.
      ('t
       (let ((A-start-to-B-start (2dg-subtract (2dg-start B) (2dg-start A)))
-            (A-norm (scxml-unit-vector A)))
+            (A-norm (2dg-unit-vector A)))
         (abs (2dg-dot-prod A-start-to-B-start
                              (2dg-rotate-90 A-norm 1))))))))
-(cl-defmethod scxml---segment-collision-parametrics ((A scxml-segment) (B scxml-segment))
+(defun 2dg---segment-collision-parametrics (A B)
   "Find the per-segment parametric coordinates where these two
 segments hit (non-parallel segments)."
   (let* ((A-start (2dg-start A))
-         (A-char-vec (scxml-characteristic-vector A))
+         (A-char-vec (2dg-characteristic-vector A))
          (B-start (2dg-start B))
-         (B-char-vec (scxml-characteristic-vector B)))
-    (scxml---segment-collision-parametrics-vectorized A-start A-char-vec B-start B-char-vec)))
-(cl-defmethod scxml---segment-collision-parametrics-vectorized ((A-start 2dg-point) (A-char-vec 2dg-point) (B-start 2dg-point) (B-char-vec 2dg-point))
+         (B-char-vec (2dg-characteristic-vector B)))
+    (2dg---segment-collision-parametrics-vectorized A-start A-char-vec B-start B-char-vec)))
+(defun 2dg---segment-collision-parametrics-vectorized (A-start A-char-vec B-start B-char-vec)
+  ;; (cl-defmethod 2dg---segment-collision-parametrics-vectorized ((A-start 2dg-point) (A-char-vec 2dg-point) (B-start 2dg-point) (B-char-vec 2dg-point))
   "Find the per-segment parametric coordinates where these two segments hit (non-parallel segments).
 
 This is returned as (cons a-parametric b-parametric)."
@@ -175,9 +176,9 @@ This is returned as (cons a-parametric b-parametric)."
              (a-parametric (/ (+ (* -1.0 Bdy S1) (* Bdx S2)) determinant))
              (b-parametric (/ (+ (* -1.0 Ady S1) (* Adx S2)) determinant)))
         (cons a-parametric b-parametric)))))
-(cl-defmethod 2dg-distance ((A scxml-segment) (B scxml-segment))
+(cl-defmethod 2dg-distance ((A 2dg-segment) (B 2dg-segment))
   "Return  the minimum distances between A and B"
-  (let* ((parametrics (scxml---segment-collision-parametrics A B))
+  (let* ((parametrics (2dg---segment-collision-parametrics A B))
          (a-parametric (car parametrics))
          (b-parametric (cdr parametrics)))
     (cond
@@ -217,14 +218,14 @@ This is returned as (cons a-parametric b-parametric)."
        ;; B-segment voronoi region - special case - they touch
        ('t
         0.0))))))
-(cl-defmethod scxml---segment-point-distance (A-segment B-point)
+(defun 2dg---segment-point-distance (A-segment B-point)
   "Return the distance information for A-SEGMENT and B-POINT.
 
 Return the actual distance as well as the voronoi zone of A in
 the form of (cons distance voronoi-zone).  Voronoi zone will be
 returned as one of: 'start, 'end or 'middle (of A-SEGMENT)."
   (let* ((A-start-to-B (2dg-subtract B-point (2dg-start A-segment)))
-         (A-char-vec (scxml-characteristic-vector A-segment))
+         (A-char-vec (2dg-characteristic-vector A-segment))
          (A-parametric (2dg-dot-prod (2dg-normalized A-char-vec)
                                        A-start-to-B))
          (A-length (2dg-length A-segment)))
@@ -239,15 +240,15 @@ returned as one of: 'start, 'end or 'middle (of A-SEGMENT)."
            (cons (abs (2dg-dot-prod A-start-to-B
                                       (2dg-rotate-90 (2dg-normalized A-char-vec) 1)))
                  'middle)))))
-(cl-defmethod 2dg-distance ((A scxml-segment) (B 2dg-point))
+(cl-defmethod 2dg-distance ((A 2dg-segment) (B 2dg-point))
   "distance between a line and a point."
-  (car (scxml---segment-point-distance A B)))
-(cl-defmethod 2dg-has-intersection ((A scxml-segment) (B 2dg-point) &optional evaluation-mode)
+  (car (2dg---segment-point-distance A B)))
+(cl-defmethod 2dg-has-intersection ((A 2dg-segment) (B 2dg-point) &optional evaluation-mode)
   "Does A ever intersect B.
 
 Because B is a point, it doesn't have to be an exact intersection.
 It only has to be within an almost-zero distance."
-  (let* ((distance-info (scxml---segment-point-distance A B))
+  (let* ((distance-info (2dg---segment-point-distance A B))
          (distance (car distance-info))
          (voronoi-region (cdr distance-info)))
     (cond ((eq evaluation-mode 'strict)   ; don't allow either end point of A
@@ -261,15 +262,15 @@ It only has to be within an almost-zero distance."
                   (< distance end-distance 2dg--almost-zero))))
           (t                            ; allow any part of A or B.
            (2dg-almost-zero distance)))))
-(cl-defmethod 2dg-has-intersection ((A scxml-segment) (B scxml-segment) &optional evaluation-mode)
+(cl-defmethod 2dg-has-intersection ((A 2dg-segment) (B 2dg-segment) &optional evaluation-mode)
   "Does A ever intersect B."
-  (scxml-pierced? A B
+  (2dg-pierced-p A B
                   (not (eq evaluation-mode 'strict))
                   (not (or (eq evaluation-mode 'strict)
                            (eq evaluation-mode 'stacked)))
                   t
                   t))
-(cl-defmethod scxml-pierced? ((A scxml-segment) (B scxml-segment) &optional allow-A-start allow-A-end allow-B-start allow-B-end)
+(cl-defmethod 2dg-pierced-p ((A 2dg-segment) (B 2dg-segment) &optional allow-A-start allow-A-end allow-B-start allow-B-end)
   "Does A pierce B at some point (not_ at end points, unless specified)."
   (let ((A-is-point (2dg-almost-zero (2dg-box-magnitude A)))
         (B-is-point (2dg-almost-zero (2dg-box-magnitude B))))
@@ -277,7 +278,7 @@ It only has to be within an almost-zero distance."
     ;; then the strategy needs to be altered.
     (if (not (or A-is-point B-is-point))
         ;; normal collision!
-        (scxml---unsafe-pierced? A B allow-A-start allow-A-end allow-B-start allow-B-end)
+        (2dg---unsafe-pierced-p A B allow-A-start allow-A-end allow-B-start allow-B-end)
       ;; segment->point or point->point collision.
       (let ((corrected-A (cond ((not A-is-point) A)
                                ((and allow-A-start allow-A-end) (2dg-centroid A))
@@ -286,18 +287,18 @@ It only has to be within an almost-zero distance."
                                ((and allow-B-start allow-B-end) (2dg-centroid B))
                                (t nil))))
         (if (and corrected-A corrected-B)
-            (if (scxml-segment-p corrected-A)
+            (if (2dg-segment-p corrected-A)
                 (if (not (and allow-A-start allow-A-end))
                     (2dg-has-intersection corrected-A corrected-B 'strict)
                   (error "Need to program this for A"))
-              (if (scxml-segment-p corrected-B)
+              (if (2dg-segment-p corrected-B)
                   (if (not (and allow-B-start allow-B-end))
                       (2dg-has-intersection corrected-B corrected-A 'strict)
                     (error "Need to program this for B"))
                 ;; they're both points... so... :shrug:
                 (2dg-almost-equal corrected-A corrected-B))))))))
-
-(cl-defmethod scxml---unsafe-pierced? ((A scxml-segment) (B scxml-segment) &optional allow-A-start allow-A-end allow-B-start allow-B-end)
+(defun 2dg---unsafe-pierced-p (A B  &optional allow-A-start allow-A-end allow-B-start allow-B-end)
+  ;; (cl-defmethod 2dg---unsafe-pierced-p ((A 2dg-segment) (B 2dg-segment) &optional allow-A-start allow-A-end allow-B-start allow-B-end)
   "Does A pierce B at some point (_not_ at end points, unless specified).
 
 Neither A nor B should be near-zero length segments OR parallel.
@@ -306,8 +307,8 @@ That should be sorted out before calling this."
          (a-max (if allow-A-end (+ 1.0 2dg--almost-zero) (- 1.0 2dg--almost-zero)))
          (b-min (if allow-B-start (* -1.0 2dg--almost-zero) 2dg--almost-zero))
          (b-max (if allow-B-end (+ 1.0 2dg--almost-zero) (- 1.0 2dg--almost-zero)))
-         (a-norm-vec (2dg-normalized (scxml-characteristic-vector A)))
-         (b-norm-vec (2dg-normalized (scxml-characteristic-vector B)))
+         (a-norm-vec (2dg-normalized (2dg-characteristic-vector A)))
+         (b-norm-vec (2dg-normalized (2dg-characteristic-vector B)))
          (norm-cross-prod (2dg-cross-prod a-norm-vec b-norm-vec)))
     ;; are the segments parallel?
     (if (< (abs norm-cross-prod) 2dg--almost-zero)
@@ -317,7 +318,7 @@ That should be sorted out before calling this."
           (if (>= (abs perp-distance) 2dg--almost-zero)
               ;; too far away to touch
               'nil
-            (let* ((parametrics (scxml---distance-parallel-parametrics A B))
+            (let* ((parametrics (2dg---distance-parallel-parametrics A B))
                    (a-parametric (car parametrics))
                    (b-parametric (cadr parametrics))
                    (start-range (2dg-span :start (* -1.0 2dg--almost-zero)
@@ -341,7 +342,7 @@ That should be sorted out before calling this."
                         (2dg-intersection start-range b-parametric))
                    (and allow-B-end
                         (2dg-intersection end-range b-parametric)))))))
-      (let* ((parametrics (scxml---segment-collision-parametrics A B))
+      (let* ((parametrics (2dg---segment-collision-parametrics A B))
              (a-parametric (car parametrics))
              (b-parametric (cdr parametrics)))
         (if (and (> a-parametric a-min)
@@ -350,16 +351,16 @@ That should be sorted out before calling this."
                  (< b-parametric b-max))
             't
           'nil)))))
-(cl-defmethod 2dg-coarse-direction ((segment scxml-segment))
-  (2dg-coarse-direction (scxml-characteristic-vector segment)))
+(cl-defmethod 2dg-coarse-direction ((segment 2dg-segment))
+  (2dg-coarse-direction (2dg-characteristic-vector segment)))
 
-(cl-defmethod scxml-get-closest-parametric ((segment scxml-segment) (pt 2dg-point) &optional bounded)
+(cl-defmethod 2dg-get-closest-parametric ((segment 2dg-segment) (pt 2dg-point) &optional bounded)
   "Get the parametric coordinate of the closest point along SEGMENT to PT.
 
 Output is bounded to be between [0, 1] inclusive when BOUNDED is t."
   (with-slots (start) segment
     (let* ((seg-start-to-pt (2dg-subtract pt start))
-           (char-vec (scxml-characteristic-vector segment))
+           (char-vec (2dg-characteristic-vector segment))
            (parametric (/ (2dg-dot-prod (2dg-normalized char-vec)
                                           seg-start-to-pt)
                           (2dg-length segment))))
@@ -367,23 +368,23 @@ Output is bounded to be between [0, 1] inclusive when BOUNDED is t."
           (min (max parametric 0.0) 1.0)
         parametric))))
 
-(cl-defmethod 2dg-absolute-coordinates ((base-segment scxml-segment) (coordinate number))
+(cl-defmethod 2dg-absolute-coordinates ((base-segment 2dg-segment) (coordinate number))
   "Return the point along BASE-SEGMENT at the segments parametric COORDINATE."
   (with-slots (start) base-segment
     (2dg-add start
-               (2dg-scaled (scxml-characteristic-vector base-segment)
+               (2dg-scaled (2dg-characteristic-vector base-segment)
                              coordinate))))
 
-(cl-defmethod scxml-get-parametric ((segment scxml-segment) (pt 2dg-point) &optional distance-tolerance)
+(cl-defmethod 2dg-get-parametric ((segment 2dg-segment) (pt 2dg-point) &optional distance-tolerance)
   "Get the parametric coordinate of PT along SEGMENT.
 
 Note: this is similar to scxml-relative-coordinate but as it
 could return a nil value it's differentiated with the
 -get-parametric name."
-  ;; TODO -replace the first few let clauses with a call to scxml-get-closest-parametric?
+  ;; TODO -replace the first few let clauses with a call to 2dg-get-closest-parametric?
   (with-slots (start) segment
     (let* ((seg-start-to-pt (2dg-subtract pt start))
-           (char-vec (scxml-characteristic-vector segment))
+           (char-vec (2dg-characteristic-vector segment))
            (parametric (/ (2dg-dot-prod (2dg-normalized char-vec)
                                           seg-start-to-pt)
                           (2dg-length segment)))

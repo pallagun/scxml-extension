@@ -112,7 +112,7 @@ May return nil if PATH has less than 2 points."
   (let* ((points (scxml-points path))
          (last-point (car points)))
     (mapcar (lambda (pt)
-              (let ((segment (scxml-segment :start last-point
+              (let ((segment (2dg-segment :start last-point
                                             :end pt)))
                 (setq last-point pt)
                 segment))
@@ -130,7 +130,7 @@ adding up the length of every segment."
               (setq last-pt pt))
             (cdr points))
       len)))
-(cl-defmethod scxml-pierced? ((A scxml-path) (B scxml-path) &optional allow-A-start allow-A-end allow-B-start allow-B-end)
+(cl-defmethod 2dg-pierced-p ((A scxml-path) (B scxml-path) &optional allow-A-start allow-A-end allow-B-start allow-B-end)
   "Return non-nil if A pierces B at some point.
 
 End points are considered by their flags."
@@ -149,7 +149,7 @@ End points are considered by their flags."
             (lambda (b-segment)
               (let ((allow-sb-min (or allow-B-start (not (eq b-first b-segment))))
                     (allow-sb-max (or allow-B-end (not (eq b-last b-segment)))))
-                (when (scxml-pierced? a-segment
+                (when (2dg-pierced-p a-segment
                                       b-segment
                                       allow-sa-min
                                       allow-sa-max

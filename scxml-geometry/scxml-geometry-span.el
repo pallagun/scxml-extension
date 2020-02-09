@@ -23,7 +23,7 @@
           (2dg-end span)))
 (cl-defmethod cl-print-object ((object 2dg-span) stream)
   "This seems to be used only for edebug sessions."
-  (princ (scxml-print object) stream))
+  (princ (2dg-print object) stream))
 (cl-defmethod 2dg-scaled ((span 2dg-span) alpha)
   "Return a span of SPAN scaled by ALPHA."
   (2dg-span :start (* alpha (2dg-start span))
