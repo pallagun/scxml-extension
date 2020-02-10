@@ -1,11 +1,11 @@
-;;; 2dg-geometry-point.el --- geometry helpers for points -*- lexical-binding: t -*-
+;;; 2dg-point.el --- geometry helpers for points -*- lexical-binding: t -*-
 
 ;;; Commentary:
 ;; A 2dg-point represents a coordinate/point in 2d space.
 
 ;;; Code:
 (require 'eieio)
-(require 'scxml-geometry-core)
+(require '2dg-core)
 
 (defclass 2dg-point ()
   ((x :initarg :x
@@ -159,5 +159,5 @@ This can be viewed as:
             ((> abs-y abs-x) (2dg-point :x 0.0 :y -1.0))
             ('t 'nil)))))
 
-(provide 'scxml-geometry-point)
-;;; scxml-geometry-point.el ends here
+(provide '2dg-point)
+;;; 2dg-point.el ends here

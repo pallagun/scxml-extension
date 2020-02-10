@@ -94,7 +94,7 @@
    (original-path :initarg :original-path
                   :accessor scxml-original-path
                   :initform 'nil
-                  :type (or null scxml-cardinal-path))
+                  :type (or null 2dg-cardinal-path))
    (original-points :initarg :original-points
                   :accessor scxml-original-points
                   :initform 'nil
@@ -142,7 +142,7 @@
    (path :initarg :path
          :accessor scxml-arrow-path
          :initform nil
-         :type (or null scxml-cardinal-path)
+         :type (or null 2dg-cardinal-path)
          :documentation
          "These are the points that make up the _middle_ of the
 path. The full path uses the start and end points from the
@@ -271,14 +271,15 @@ path (target-point))."))
                                                               (2dg-scaled required-vector
                                                                             connector-offset))))))))
                    ;; Build the path by stretching.
-                   (let* ((full-path (scxml---path-stretch new-pts
-                                                           new-source-point
-                                                           new-target-point)))
+                   ;; TODO - I shouldn't be calling 2dg---path-stretch here, some other function should be used that's not triple hyphen.
+                   (let* ((full-path (2dg---path-stretch new-pts
+                                                         new-source-point
+                                                         new-target-point)))
                      (funcall set-last-connector-direction
                               (scxml-arrow :source new-source
                                            :target new-target
                                            :parent (scxml-parent arrow)
-                                           :path (scxml-cardinal-path :points
+                                           :path (2dg-cardinal-path :points
                                                                       (nbutlast (cdr full-path)))))))
                   ((and is-endpoint-move (not any-end-point-moved))
                    ;; this is specifically and end point move but neither end point moved.
@@ -297,7 +298,7 @@ path (target-point))."))
                             (scxml-arrow :source new-source
                                          :target new-target
                                          :parent (scxml-parent arrow)
-                                         :path (scxml-cardinal-path :points
+                                         :path (2dg-cardinal-path :points
                                                                     (nbutlast (cdr new-pts))))))
                   ((or (and (not source-point-moved) (not source-point-match))
                        (and (not target-point-moved) (not target-point-match)))
@@ -307,14 +308,14 @@ path (target-point))."))
                   (t
                    ;; At least one of your end points moved, but not enough.  neither
                    ;; end point changed edges.
-                   (let* ((full-path (scxml---path-stretch new-pts
+                   (let* ((full-path (2dg---path-stretch new-pts
                                                            new-source-point
                                                            new-target-point)))
                      (funcall set-last-connector-direction
                               (scxml-arrow :source new-source
                                            :target new-target
                                            :parent (scxml-parent arrow)
-                                           :path (scxml-cardinal-path :points
+                                           :path (2dg-cardinal-path :points
                                                                       (nbutlast (cdr full-path)))))))))
         ;; Unable to get new-source or new-target, fail.
         nil))))
@@ -334,7 +335,7 @@ path (target-point))."))
 ;;     (if (and new-source-connector new-target-connector)
 ;;         (let ((new-arrow (scxml-arrow :source new-source-connector
 ;;                                       :target new-target-connector
-;;                                       :path (scxml-cardinal-path :points
+;;                                       :path (2dg-cardinal-path :points
 ;;                                                                  (nbutlast (cdr new-pts)))
 ;;                                       :parent (scxml-parent arrow))))
 
@@ -385,7 +386,7 @@ cases this function may return nil."
          ;; ... this does not seem like a great way to handle that but...
          (unbiased-edit-idx (+ (if (scxml--arrow-source-locked arrow) 1 0)
                                        edit-idx))
-         (new-pts (scxml-nudge-path full-pts
+         (new-pts (2dg-nudge-path full-pts
                                     unbiased-edit-idx
                                     move-vector)))
     ;; (scxml---build-path-if-valid arrow new-pts)
@@ -397,7 +398,7 @@ cases this function may return nil."
 
 (cl-defmethod 2dg-has-intersection ((rect 2dg-rect) (arrow scxml-arrow) &optional evaluation-mode)
   "Return non-nil if RECT intersect with ARROW's path at any point."
-  (2dg-has-intersection rect (scxml-path :points (scxml--full-path arrow)) evaluation-mode))
+  (2dg-has-intersection rect (2dg-path :points (scxml--full-path arrow)) evaluation-mode))
 (cl-defgeneric scxml--full-path ((arrow scxml-arrow) &optional offset)
   "Get the full path of the ARROW with optional start/end OFFSET from ends.
 
@@ -420,7 +421,7 @@ is always cardinal."
   ;; establish if I nede clone and if there should be some convention
   ;; for a function's return.
   (let* ((path (scxml-arrow-path arrow))
-         (path-pts (when path (scxml-points path))))
+         (path-pts (when path (2dg-points path))))
     (if (null offset)
         (append (cons (scxml--start-point arrow) path-pts)
                 (list (scxml--end-point arrow)))
@@ -440,7 +441,7 @@ is always cardinal."
                   (path-end (car (last path-pts))))
               (if (2dg-cardinal-displacement-p start path-start)
                   (setq path-pts (cons start path-pts))
-                (let ((start-path (scxml---path-stretch
+                (let ((start-path (2dg---path-stretch
                                    (list start-original path-start)
                                    start
                                    path-start)))
@@ -449,14 +450,14 @@ is always cardinal."
               (if (2dg-cardinal-displacement-p path-end end)
                   (append path-pts (list end))
                 (append path-pts
-                        (scxml---path-stretch
+                        (2dg---path-stretch
                          (list path-end end-original)
                          path-end
                          end))))
           ;; no inner points.  stretch the originals if needed
           (if (2dg-cardinal-displacement-p start end)
               (list start end)
-            (scxml---path-stretch (list start-original end-original)
+            (2dg---path-stretch (list start-original end-original)
                                     start
                                     end)))))))
 (cl-defmethod scxml--start-point ((arrow scxml-arrow) &optional offset)
@@ -476,7 +477,7 @@ segments.
 TODO: BUG: this function will not, currently, consider the first
 start point of the arrow."
   (with-slots ((target-connector target) (inner-path path)) arrow
-    (let* ((rev-points (reverse (scxml-points inner-path))))
+    (let* ((rev-points (reverse (2dg-points inner-path))))
       (cl-loop with last-pt = (scxml-connection-point target-connector)
                for pt in rev-points
                unless (2dg-almost-equal pt last-pt)
@@ -500,9 +501,9 @@ points."
                                                  ;; TODO: this shouldn't be 1.0 - it should be a defconst
                                                  (or offset scxml-arrow-connector-offset)))
            (middle-path (if (> (2dg-num-points full-path) 2)
-                            (cdr (nbutlast (scxml-points full-path)))
+                            (cdr (nbutlast (2dg-points full-path)))
                           'nil)))
-      (oset arrow path (scxml-cardinal-path :points middle-path)))
+      (oset arrow path (2dg-cardinal-path :points middle-path)))
     (scxml--drawing-logger "scxml--arrow-set-default-path: %s s"
                             (- (float-time) start-time ))))
 (cl-defgeneric scxml--set-path-from-hint ((arrow scxml-arrow) (hint scxml-arrow-hint))
@@ -512,10 +513,10 @@ This function assumes that the arrow's connectors (source and target) have alrea
 been correctly set."
   (oset arrow
         path
-        (scxml-cardinal-path :points
+        (2dg-cardinal-path :points
                              (nbutlast
                               (cdr
-                               (scxml---path-stretch (scxml-original-points hint)
+                               (2dg---path-stretch (scxml-original-points hint)
                                                      (scxml--start-point arrow)
                                                      (scxml--end-point arrow))))))
   ;; (error "fix me scxml--set-path-from-hint")
@@ -532,7 +533,7 @@ been correctly set."
 
   ;;   (oset arrow
   ;;         path
-  ;;         (scxml-path :points (cdr (nbutlast full-path)))))
+  ;;         (2dg-path :points (cdr (nbutlast full-path)))))
   )
 (cl-defmethod scxml--build-drawing-from-hint ((hint scxml-arrow-hint) (source scxml-drawing-rect) (target scxml-drawing-rect))
   "Given a moving SOURCE or TARGET drawing, correct any errors in HINT and return a valid drawing."
@@ -611,7 +612,7 @@ been correctly set."
                     (setf points (build-connection-path source-point target-point last-move-axis))))))))))
     (scxml-arrow :source source-connector
                  :target target-connector
-                 :path (scxml-path :points points)))
+                 :path (2dg-path :points points)))
   )
 (cl-defmethod scxml--build-move-edited ((arrow scxml-arrow) move-direction)
   "Given a rect, and a move direction, move in one pixel in that direction"
@@ -673,7 +674,7 @@ been correctly set."
                         :relative-points
                         (mapcar (lambda (pt)
                                   (2dg-relative-coordinates relative-rect pt))
-                                (scxml-points path))))))
+                                (2dg-points path))))))
 
 (cl-defmethod scxml-build-hint ((arrow scxml-arrow) (parent-canvas scxml-inner-canvas))
   "Right now it's just the original points.
@@ -766,7 +767,7 @@ The arrow factory when building from a hint is smart enough to sort it all out."
                      ;; in the required direction.
                      do (unless (2dg-almost-zero (2dg-dot-prod required-unit-vec segment-unit-vec))
                           (cl-return)))
-            (scxml-simplified (if failure
+            (2dg-simplified (if failure
                                 full-path-pts
                               (nreverse compacted-pts))))
         ;; Only 2 points or less in the path. do not attepmt correction
@@ -783,11 +784,11 @@ The arrow factory when building from a hint is smart enough to sort it all out."
                                                    (2dg-y slack)))
            ;; TODO - the path-simplify should do this for me,
            ;; modify it do do so on each pt evaluation.
-           (simplified-reduced (and simplified (scxml-simplified simplified))))
+           (simplified-reduced (and simplified (2dg-simplified simplified))))
       (when simplified-reduced
         (scxml-arrow :source source
                      :target target
-                     :path (scxml-cardinal-path :points
+                     :path (2dg-cardinal-path :points
                                                 (nbutlast (cdr simplified-reduced))))))))
 
 (provide 'scxml-drawing-arrow)

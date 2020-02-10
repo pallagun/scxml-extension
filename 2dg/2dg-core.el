@@ -1,4 +1,4 @@
-;;; 2dg-geometry-core.el --- 2d geometry core/common components -*- lexical-binding: t -*-
+;;; 2dg-core.el --- 2d geometry core/common components -*- lexical-binding: t -*-
 
 ;;; Commentary:
 ;; Coordinate system is a normal cartesian 2d X,Y.
@@ -104,5 +104,5 @@ used.  This is the default implementation."
   (2dg-almost-equal A 0.0 tolerance))
 
 
-(provide 'scxml-geometry-core)
-;;; scxml-geometry-core.el ends here
+(provide '2dg-core)
+;;; 2dg-core.el ends here

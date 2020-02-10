@@ -175,7 +175,7 @@ Will throw if it can't move it. will not render!!"
     'nil))
 
 ;; primitive functions for pixel related movement/info
-(cl-defmethod scxml-draw--goto-pixel ((pixel scxml-pixel))
+(cl-defmethod scxml-draw--goto-pixel ((pixel 2dg-pixel))
   "Go to PIXEL location on the screen."
   (goto-char (point-min))
   (with-slots (x y) pixel
@@ -183,13 +183,13 @@ Will throw if it can't move it. will not render!!"
       (when (> additional-lines 0)
         (insert (mapconcat 'identity (make-list additional-lines "\n") ""))))
     (move-to-column x 't)))
-(cl-defmethod scxml-draw--point-at-pixel ((pixel scxml-pixel))
+(cl-defmethod scxml-draw--point-at-pixel ((pixel 2dg-pixel))
   "Go to X Y and return buffer point."
   (scxml-draw--goto-pixel pixel)
   (point))
 (defun scxml-draw--get-pixel-at-point ()
   "Return the pixel at the current point in the buffer."
-  (scxml-pixel :x (current-column)
+  (2dg-pixel :x (current-column)
                :y (- (line-number-at-pos) 1)))
 (defun scxml-draw--get-buffer (&optional source-name)
   "Get the drawing buffer, if it doesn't exist then make it."

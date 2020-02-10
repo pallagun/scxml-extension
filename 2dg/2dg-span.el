@@ -1,4 +1,4 @@
-;;; 2dg-geometry-span.el --- geometry span helper -*- lexical-binding: t -*-
+;;; 2dg-span.el --- geometry span helper -*- lexical-binding: t -*-
 
 ;;; Commentary:
 ;; A 'span' represents an ordered start and end scalar value set in a
@@ -23,7 +23,7 @@
           (2dg-end span)))
 (cl-defmethod cl-print-object ((object 2dg-span) stream)
   "This seems to be used only for edebug sessions."
-  (princ (2dg-print object) stream))
+  (princ (2dg-pprint object) stream))
 (cl-defmethod 2dg-scaled ((span 2dg-span) alpha)
   "Return a span of SPAN scaled by ALPHA."
   (2dg-span :start (* alpha (2dg-start span))
@@ -136,5 +136,5 @@ Result will be ordered."
       (2dg-span :start (+ start (* (float (2dg-start relative-span)) width))
                   :end (+ start (* (float (2dg-end relative-span)) width))))))
 
-(provide 'scxml-geometry-span)
-;;; scxml-geometry-span.el ends here
+(provide '2dg-span)
+;;; 2dg-span.el ends here

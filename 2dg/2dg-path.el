@@ -1,4 +1,4 @@
-;;; 2dg-geometry-path.el --- geometry path helpers -*- lexical-binding: t -*-
+;;; 2dg-path.el --- geometry path helpers -*- lexical-binding: t -*-
 
 ;;; Commentary:
 ;; A 2dg-path represents an ordered collection of contiguous segments
@@ -12,21 +12,21 @@
 
 ;;; Code:
 (require 'eieio)
-(require 'scxml-geometry-point)
-(require 'scxml-geometry-segment)
+(require '2dg-point)
+(require '2dg-segment)
 
-(defclass scxml-path ()
+(defclass 2dg-path ()
   ((points :initarg :points
-           :accessor scxml-points
+           :accessor 2dg-points
            :initform '()
            :type (or null list)))
   ;; TODO - Should there be a make-instance for this class which
   ;; validates that all things in the points slot are actually points?
   ;; If so, would there be some way to circumvent that check when it's
   ;; called by a trustworthy source such as the make-instance for
-  ;; scxml-cardinal-path?
+  ;; 2dg-cardinal-path?
 )
-(defclass scxml-cardinal-path (scxml-path)
+(defclass 2dg-cardinal-path (2dg-path)
   ())
 (defun 2dg---is-cardinal-path-p (points-list)
   "Return non-nil if POINTS-LIST contains a list of cardinal path points."
@@ -38,49 +38,49 @@
            do (setq last-pt pt)
            until (not is-cardinal)
            finally return is-cardinal))
-(cl-defmethod make-instance ((class (subclass scxml-cardinal-path)) &rest slots)
+(cl-defmethod make-instance ((class (subclass 2dg-cardinal-path)) &rest slots)
   "Ensure the points provided are truly a cardinal path before making the instance."
   ;; TODO - add a toggle here to skip the check from trustworthy callers
   ;; TODO - should this be a :before method?
   (let ((points (plist-get slots :points)))
     (unless (or (null points)
                 (2dg---is-cardinal-path-p points))
-      (error "An scxml-cardinal-path must have only vertical or horizontal segments")))
+      (error "An 2dg-cardinal-path must have only vertical or horizontal segments")))
   (cl-call-next-method))
 
-(cl-defmethod 2dg-pprint ((path scxml-path))
+(cl-defmethod 2dg-pprint ((path 2dg-path))
   "Return a stringified version of PATH for human eyes."
   (with-slots (points) path
     (format "%s[%s]"
-            (if (scxml-cardinal-path-p path)
+            (if (2dg-cardinal-path-p path)
                 "cp"
               "p")
             (mapconcat (lambda (pt) (scxml-print pt))
                        points
                        ", "))))
-(cl-defmethod cl-print-object ((object scxml-path) stream)
+(cl-defmethod cl-print-object ((object 2dg-path) stream)
   "Pretty print the OBJECT to STREAM."
   (princ (scxml-print object) stream))
-(cl-defmethod 2dg-num-points ((path scxml-path))
+(cl-defmethod 2dg-num-points ((path 2dg-path))
   "Return the number of points that make up PATH."
   (length (oref path points)))
-(cl-defmethod 2dg-nth ((path scxml-path) (N number))
+(cl-defmethod 2dg-nth ((path 2dg-path) (N number))
   "Return the N-th point from PATH."
   (nth N (oref path points)))
-(cl-defmethod 2dg-end ((path scxml-path))
+(cl-defmethod 2dg-end ((path 2dg-path))
   "Return the last point in PATH."
   (2dg-nth path (1- (2dg-num-points path))))
-(cl-defmethod 2dg-start ((path scxml-path))
+(cl-defmethod 2dg-start ((path 2dg-path))
   "Return the first point in PATH."
   (2dg-nth path 0))
-(cl-defmethod 2dg-start-vector ((path scxml-path))
+(cl-defmethod 2dg-start-vector ((path 2dg-path))
   "Return a characteristic-vector of PATH's first segment.
 
 May return nil if PATH contains 1 or less points."
   (let ((second (2dg-nth path 1)))
     (when second
       (2dg-subtract second (2dg-nth path 0)))))
-(cl-defmethod 2dg-end-vector ((path scxml-path))
+(cl-defmethod 2dg-end-vector ((path 2dg-path))
   "Return a characteristic-vector of PATH's last segment.
 
 May return nil if PATH contains 1 or less points."
@@ -88,10 +88,10 @@ May return nil if PATH contains 1 or less points."
     (when (> num-pts 2)
       (2dg-subtract (2dg-nth path (1- num-pts))
                       (2dg-nth path (- num-pts 2))))))
-(cl-defmethod 2dg-push ((path scxml-path) (pt 2dg-point))
+(cl-defmethod 2dg-push ((path 2dg-path) (pt 2dg-point))
   "Modify PATH by pushing PT on to the start."
-  (push pt (scxml-points path)))
-(cl-defmethod 2dg-almost-equal ((A scxml-path) (B scxml-path) &optional tolerance)
+  (push pt (2dg-points path)))
+(cl-defmethod 2dg-almost-equal ((A 2dg-path) (B 2dg-path) &optional tolerance)
   "Return non-nil if A and B are equal within TOLERANCE."
   (let ((a-len (2dg-num-points A))
         (b-len (2dg-num-points B)))
@@ -107,11 +107,11 @@ May return nil if PATH contains 1 or less points."
             (setq miss-match 't))
           (incf i))
         (not miss-match)))))
-(cl-defmethod 2dg-segments ((path scxml-path))
+(cl-defmethod 2dg-segments ((path 2dg-path))
   "Return an ordered list of scxml-segment objects describing PATH.
 
 May return nil if PATH has less than 2 points."
-  (let* ((points (scxml-points path))
+  (let* ((points (2dg-points path))
          (last-point (car points)))
     (mapcar (lambda (pt)
               (let ((segment (2dg-segment :start last-point
@@ -119,7 +119,7 @@ May return nil if PATH has less than 2 points."
                 (setq last-point pt)
                 segment))
             (cdr points))))
-(cl-defmethod 2dg-length ((path scxml-path))
+(cl-defmethod 2dg-length ((path 2dg-path))
   "Return the length of the path (Not the displacement or number of points).
 
 Not to be confused with 2dg-num-points.  This is the same as
@@ -132,7 +132,7 @@ adding up the length of every segment."
               (setq last-pt pt))
             (cdr points))
       len)))
-(cl-defmethod 2dg-pierced-p ((A scxml-path) (B scxml-path) &optional allow-A-start allow-A-end allow-B-start allow-B-end)
+(cl-defmethod 2dg-pierced-p ((A 2dg-path) (B 2dg-path) &optional allow-A-start allow-A-end allow-B-start allow-B-end)
   "Return non-nil if A pierces B at some point.
 
 End points are considered by their flags."
@@ -161,7 +161,7 @@ End points are considered by their flags."
             b-segments)))
        a-segments)
       'nil)))
-(cl-defmethod 2dg-distance ((path scxml-path) (point 2dg-point))
+(cl-defmethod 2dg-distance ((path 2dg-path) (point 2dg-point))
   "Return the minimum distance between PATH and POINT.
 
 The implementation is not efficient, use caution."
@@ -172,24 +172,24 @@ The implementation is not efficient, use caution."
                 (setq best distance))
            finally return best))
 
-(cl-defmethod 2dg-has-intersection ((rect 2dg-rect) (path scxml-path) &optional evaluation-mode)
+(cl-defmethod 2dg-has-intersection ((rect 2dg-rect) (path 2dg-path) &optional evaluation-mode)
   "Return non-nil if RECT intersects PATH using EVALUATION-MODE."
   (cl-loop for segment in (2dg-segments path)
            when (2dg-has-intersection rect segment evaluation-mode)
            return t
            finally return nil))
-(cl-defmethod 2dg-simplify ((path scxml-path))
+(cl-defmethod 2dg-simplify ((path 2dg-path))
   "Return a simplified version of the PATH.
 
 Removes duplicates and colinear points."
   (with-slots (points) path
-    (scxml-path :points (scxml-simplified points))))
-(cl-defmethod 2dg-simplify ((path scxml-cardinal-path))
+    (2dg-path :points (2dg-simplified points))))
+(cl-defmethod 2dg-simplify ((path 2dg-cardinal-path))
   "Return a simplified version of the PATH.
 
 Removes duplicates and colinear points."
   (with-slots (points) path
-    (scxml-cardinal-path :points (scxml-simplified points))))
+    (2dg-cardinal-path :points (2dg-simplified points))))
 
 (defun 2dg---path-get-deltas (points)
   "Given a POINTS (a *list* of points), return a list of deltas between the points.
@@ -217,14 +217,14 @@ Something of the opposite of 2dg---path-get-deltas."
     (nreverse points)))
 
 ;; Path *building* functions:
-(cl-defmethod scxml-build-path-straight-line ((start 2dg-point) (end 2dg-point))
+(cl-defmethod 2dg-build-path-straight-line ((start 2dg-point) (end 2dg-point))
   "Make a path which is a single straight line from START to END.
 
-This might be an scxml-path or an scxml-cardinal-path."
+This might be an 2dg-path or an 2dg-cardinal-path."
   (condition-case nil
-      (scxml-cardinal-path :points `(,start ,end))
-    (error (scxml-path :points `(,start ,end)))))
-(defun scxml---path-cardinal-direction (start-pt entry-direction destination-pt)
+      (2dg-cardinal-path :points `(,start ,end))
+    (error (2dg-path :points `(,start ,end)))))
+(defun 2dg---path-cardinal-direction (start-pt entry-direction destination-pt)
   "Given a START-PT point coming from ENTRY-DIRECTION find a vector to get closer to DESTINATION-PT.
 
 This is a helper function for the cardinal direction path
@@ -245,7 +245,7 @@ generator."
      ;; just keep going?
      ('t
       unit-direction))))
-(defun scxml---path-cardinal (start end entry-vector exit-vector min-segment-distance &optional strict-min-segment-distance)
+(defun 2dg---path-cardinal (start end entry-vector exit-vector min-segment-distance &optional strict-min-segment-distance)
   "Build a cardinal direction path between START and END.
 
 Function will ensure that the path does not conflict with
@@ -264,10 +264,10 @@ being able to join in the middle and will attach a segment to it
 to take a step closer to intersectionthe next time this function
 is called.  This function will continue to take steps towards
 joining start and end, recursing until it joins them."
-  (let ((start-vec (scxml---path-cardinal-direction start
+  (let ((start-vec (2dg---path-cardinal-direction start
                                                     entry-vector
                                                     end))
-        (reverse-end-vec (scxml---path-cardinal-direction end
+        (reverse-end-vec (2dg---path-cardinal-direction end
                                                          (2dg-additive-inverse exit-vector)
                                                          start)))
     (cl-flet ((perpendicular-vectors?
@@ -307,7 +307,7 @@ joining start and end, recursing until it joins them."
                 ;; start goes zero distance, end goes min distance, try again.
                 (let ((pre-end (2dg-add end (2dg-scaled reverse-end-vec
                                                             min-segment-distance))))
-                  (append (scxml---path-cardinal start
+                  (append (2dg---path-cardinal start
                                                pre-end
                                                entry-vector
                                                (2dg-additive-inverse reverse-end-vec)
@@ -321,7 +321,7 @@ joining start and end, recursing until it joins them."
                                              (2dg-scaled start-vec
                                                            min-segment-distance))))
                   (cons start
-                        (scxml---path-cardinal post-start
+                        (2dg---path-cardinal post-start
                                              end
                                              start-vec
                                              exit-vector
@@ -335,7 +335,7 @@ joining start and end, recursing until it joins them."
                                         (2dg-scaled reverse-end-vec
                                                       min-segment-distance))))
                 (cons start
-                      (append (scxml---path-cardinal post-start
+                      (append (2dg---path-cardinal post-start
                                                      pre-end
                                                      start-vec
                                                      (2dg-additive-inverse reverse-end-vec)
@@ -365,7 +365,7 @@ joining start and end, recursing until it joins them."
             (let ((post-start (2dg-add start
                                          (2dg-scaled start-vec min-segment-distance))))
               (cons start
-                    (scxml---path-cardinal post-start
+                    (2dg---path-cardinal post-start
                                          end
                                          start-vec
                                          exit-vector
@@ -402,7 +402,7 @@ joining start and end, recursing until it joins them."
               ;;end is further 'ahead'
               (let ((pre-end (2dg-add end
                                         (2dg-scaled reverse-end-vec min-segment-distance))))
-                (append (scxml---path-cardinal start
+                (append (2dg---path-cardinal start
                                              pre-end
                                              entry-vector
                                              (2dg-additive-inverse reverse-end-vec)
@@ -412,7 +412,7 @@ joining start and end, recursing until it joins them."
             (let ((post-start (2dg-add start
                                          (2dg-scaled start-vec min-segment-distance))))
               (cons start
-                    (scxml---path-cardinal post-start
+                    (2dg---path-cardinal post-start
                                          end
                                          start-vec
                                          exit-vector
@@ -433,9 +433,9 @@ parameter.  No promises are made.
   (when (or (not (null min-start-segment-distance))
             (not (null min-end-segment-distance)))
     (error "Write this part, that will handle min start and end segment distances"))
-  (let ((points (scxml---path-cardinal start end entry-vector exit-vector min-segment-distance)))
-    (scxml-cardinal-path :points points)))
-(defun scxml-simplified (&rest n-path-pts)
+  (let ((points (2dg---path-cardinal start end entry-vector exit-vector min-segment-distance)))
+    (2dg-cardinal-path :points points)))
+(defun 2dg-simplified (&rest n-path-pts)
   "Take all points from N-PATH-PTS lists-of-points and simplify them.
 
 Remove duplicate points.
@@ -471,7 +471,7 @@ Remove colinear intermediary points."
      (if (2dg-almost-equal last-point (first rev-s-points))
                  rev-s-points
                (push last-point rev-s-points)))))
-(defun scxml---path-stretch (points force-start force-end)
+(defun 2dg---path-stretch (points force-start force-end)
   "Return a path (list) from FORCE-START to FORCE-END which 'feels' like POINTS.
 
 The typical use case is when there was formerly a path
@@ -521,7 +521,7 @@ have the desired start and end points."
           ;; one scaling or the other is not applicable, must jog or offset things.
           (if (not (path-stretch-freedom points))
               ;; there is no freedom in this path, just insert a jog.
-              (scxml---path-cardinal force-start
+              (2dg---path-cardinal force-start
                                      force-end
                                      (2dg-subtract (second points)
                                                      (first points))
@@ -552,7 +552,7 @@ have the desired start and end points."
                            do (oset delta y (+ (2dg-y delta) additional-vertical)))))
                 (2dg---path-from-deltas deltas force-start))))))))
 
-(defun scxml---nudge-path-start (points move-vector)
+(defun 2dg---nudge-path-start (points move-vector)
   "Move the first element of POINTS by MOVE-VECTOR and update subsequent points."
   (unless points
     (error "Must provide at least one point for nudge-path-start"))
@@ -586,8 +586,8 @@ have the desired start and end points."
           ;; move your first point by move-vec and append to
           ;; recursion with (cdr path) and perpendicular-move
           (cons (2dg-add first-point move-vector)
-                (scxml---nudge-path-start (cdr points) perpendicular-move)))))))
-(cl-defmethod scxml-nudge-path ((path list) (point-idx integer) (move-vector 2dg-point))
+                (2dg---nudge-path-start (cdr points) perpendicular-move)))))))
+(cl-defmethod 2dg-nudge-path ((path list) (point-idx integer) (move-vector 2dg-point))
   "Nudge POINT-IDX point in PATH by MOVE-VECTOR and update surrounding points."
   (when (or (< point-idx 0) (>= point-idx (length path)))
     (error "Error: point-idx must be < path length"))
@@ -596,8 +596,8 @@ have the desired start and end points."
     (dotimes (idx point-idx)
       (setq after-path (cdr after-path))
       (setq before-path (cons (first after-path) before-path)))
-    (append (reverse (scxml---nudge-path-start before-path move-vector))
-            (cdr (scxml---nudge-path-start after-path move-vector)))))
+    (append (reverse (2dg---nudge-path-start before-path move-vector))
+            (cdr (2dg---nudge-path-start after-path move-vector)))))
 
-(provide 'scxml-geometry-path)
-;;; scxml-geometry-path.el ends here
+(provide '2dg-path)
+;;; 2dg-path.el ends here

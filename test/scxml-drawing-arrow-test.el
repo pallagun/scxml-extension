@@ -13,5 +13,5 @@
           (expected-path (list (2dg-point- 39 19)
                                (2dg-point- 39 27)
                                (2dg-point- 55 27))))
-      (should (2dg-almost-equal (scxml-path :points output-path)
-                                  (scxml-path :points expected-path))))))
+      (should (2dg-almost-equal (2dg-path :points output-path)
+                                  (2dg-path :points expected-path))))))

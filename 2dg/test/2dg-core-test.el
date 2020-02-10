@@ -1,9 +1,9 @@
 ;; core testing
 
 (require 'ert)
-(require 'scxml-geometry-core)
+(require '2dg-core)
 
-(ert-deftest scxml-geometry-core-almost-equal ()
+(ert-deftest 2dg-core-almost-equal ()
 
   ;; default threshold for almost-equal should be 1E-5
   (should (2dg-almost-equal 1 1.0))
@@ -18,7 +18,7 @@
   (should-not (2dg-almost-equal 10 12 2))
   (should-not (2dg-almost-equal 10 12 1)))
 
-(ert-deftest scxml-geometry-core-reverse ()
+(ert-deftest 2dg-core-reverse ()
   (should (eq (2dg-reverse 'up) 'down))
   (should (eq (2dg-reverse 'down) 'up))
   (should (eq (2dg-reverse 'left) 'right))
@@ -26,4 +26,4 @@
   (should-error (2dg-reverse 'other))
   (should-error (2dg-reverse 12)))
 
-(provide 'scxml-geometry-core-test)
+(provide '2dg-core-test)

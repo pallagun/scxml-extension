@@ -1,8 +1,8 @@
 (require 'ert)
 
-(require 'scxml-geometry-segment)
+(require '2dg-segment)
 
-(ert-deftest scxml-geometry-segment-distance-parallel-segment-segment ()
+(ert-deftest 2dg-segment-distance-parallel-segment-segment ()
   "test distance between two segments given they are parallel"
   (let ((base-segment (2dg-segment :start (2dg-point- 0 0)
                                      :end (2dg-point- 10 0)))
@@ -88,7 +88,7 @@
                          0.0)
       )))
 
-(ert-deftest scxml-geometry-segment-distance-segment-segment ()
+(ert-deftest 2dg-segment-distance-segment-segment ()
   "tests for segment to segment distance where they are not parallel"
   (cl-flet ((should-all-combos
              (A B distance)
@@ -150,7 +150,7 @@
                        (sqrt 2.0))
     ))
 
-(ert-deftest scxml-geometry-segment-distance-segment-point ()
+(ert-deftest 2dg-segment-distance-segment-point ()
   "tests for segment to point distance"
   (let ((horzontal-segment (2dg-segment :start (2dg-point :x 0.0 :y 0.0)
                                           :end (2dg-point :x 10.0 :y 0.0)))
@@ -199,7 +199,7 @@
              (2dg-distance diagonal-segment (2dg-point :x -9.0 :y -10.0))
              (/ (sqrt 2.0) 2.0)))))
 
-(ert-deftest scxml-geometry-segment-pierced? ()
+(ert-deftest 2dg-segment-pierced? ()
   (let ((test-segment (2dg-segment :start (2dg-point- 1 1)
                                      :end (2dg-point- 2 1))))
 
@@ -435,4 +435,4 @@
       (should (2dg-pierced-p piercer test-segment t t t t)))
     ))
 
-(provide 'scxml-geometry-segment-test)
+(provide '2dg-segment-test)

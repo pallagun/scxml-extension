@@ -1,4 +1,4 @@
-;;; 2dg-geometry-segment.el --- scxml geometry segment helpers -*- lexical-binding: t -*-
+;;; 2dg-segment.el --- scxml geometry segment helpers -*- lexical-binding: t -*-
 
 ;;; Commentary:
 ;; 2dg-segment is a line segment that connects two points
@@ -6,8 +6,8 @@
 
 ;;; Code:
 (require 'eieio)
-(require 'scxml-geometry-point)
-(require 'scxml-geometry-span)
+(require '2dg-point)
+(require '2dg-span)
 
 (defclass 2dg-segment ()
   ((start :initarg :start
@@ -395,5 +395,5 @@ could return a nil value it's differentiated with the
           'nil
         parametric))))
 
-(provide 'scxml-geometry-segment)
-;;; scxml-geometry-segment.el ends here
+(provide '2dg-segment)
+;;; 2dg-segment.el ends here

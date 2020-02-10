@@ -1,8 +1,8 @@
 (require 'ert)
 
-(require 'scxml-geometry-span)
+(require '2dg-span)
 
-(ert-deftest scxml-geometry-span-contains-scalar ()
+(ert-deftest 2dg-span-contains-scalar ()
   (let ((span (2dg-span :start 1.0 :end 2.0))
         (left 1.0)
         (right 2.0)
@@ -22,7 +22,7 @@
     (should-not (2dg-contains span right 'stacked))
     (should-not (2dg-contains span right 'strict))))
 
-(ert-deftest scxml-geometry-span-contains-span ()
+(ert-deftest 2dg-span-contains-span ()
   (let ((span (2dg-span :start 1.0 :end 2.0)))
     (let ((inside (2dg-span :start 1.1 :end 1.9)))
       (should (2dg-contains span inside))
@@ -45,4 +45,4 @@
       (should (2dg-contains span not-strict-flipped 'stacked))
       (should-not (2dg-contains span not-strict-flipped 'strict)))))
 
-(provide 'scxml-geometry-span-test)
+(provide '2dg-span-test)

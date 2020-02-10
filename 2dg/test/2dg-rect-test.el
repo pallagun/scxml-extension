@@ -1,8 +1,8 @@
 (require 'ert)
 
-(require 'scxml-geometry-rect)
+(require '2dg-rect)
 
-(ert-deftest scxml-geometry-rect-segments-matches ()
+(ert-deftest 2dg-rect-segments-matches ()
   (let* ((rect (2dg-rect :x-min 0.0 :x-max 5.0
                            :y-min 2.0 :y-max 7.0))
          (segments (2dg-segments rect)))
@@ -15,7 +15,7 @@
     (should (2dg-almost-equal (fourth segments)
                                 (2dg-left rect)))))
 
-(ert-deftest scxml-geometry-rect-contains-rect-point ()
+(ert-deftest 2dg-rect-contains-rect-point ()
   (let ((rect (2dg-rect :x-min 44.0 :x-max 45.0
                           :y-min 19.0 :y-max 20.0))
         (test-LL (2dg-point :x 44.0 :y 19.0))
@@ -42,4 +42,4 @@
     (should-not (2dg-contains rect test-TL 'stacked))
     (should-not (2dg-contains rect test-TL 'strict))))
 
-(provide 'scxml-geometry-rect-test)
+(provide '2dg-rect-test)

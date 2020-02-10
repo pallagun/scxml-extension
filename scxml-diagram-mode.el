@@ -369,7 +369,7 @@ Currently only able to zoom out when in viewport mode."
                ;; If you're not in the current window (where the event was started), do not produce a pixel.
                (when (eq (first (second event)) current-window)
                  (let ((col-row-cell (first (nthcdr 6 (second event)))))
-                   (scxml-pixel :x (car col-row-cell)
+                   (2dg-pixel :x (car col-row-cell)
                                 :y (cdr col-row-cell))))))
       (let ((event-type (car event)))
         ;; mouse down handlers
@@ -1245,7 +1245,7 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
 (cl-defmethod scxml-print ((rect 2dg-rect))
   "Apparently I need this here - TODO - find out why."
   (2dg-pprint rect))
-(cl-defmethod scxml-print ((path scxml-path))
+(cl-defmethod scxml-print ((path 2dg-path))
   "Another one that needs to be fixed."
   (2dg-pprint path))
 (defun scxml-diagram-mode--debug-barf ()
@@ -1253,11 +1253,11 @@ If you're a human you probably want to call the interactive scxml-diagram-mode--
 
   (save-excursion
     (scxml-draw--goto-pixel
-     (scxml-pixel :x 0
+     (2dg-pixel :x 0
                   :y (round (+ 2 (scxml-required-pixel-height (scxml-diagram-mode--viewport))))))
     (delete-region (point) (point-max))
     (scxml-draw--goto-pixel
-     (scxml-pixel :x 0
+     (2dg-pixel :x 0
                   :y (round(+ 3 (scxml-required-pixel-height (scxml-diagram-mode--viewport))))))
 
     (insert

@@ -1,4 +1,4 @@
-;;; scxml-geometry-rect.el --- scxml geometry rectangle helpers -*- lexical-binding: t -*-
+;;; 2dg-rect.el --- 2dg-rectangle helpers -*- lexical-binding: t -*-
 
 ;;; Commentary:
 ;; An 2dg-rect represents a rectangle in 2d space.  The rectangle is
@@ -6,9 +6,9 @@
 
 ;;; Code:
 (require 'eieio)
-(require 'scxml-geometry-point)
-(require 'scxml-geometry-span)
-(require 'scxml-geometry-segment)
+(require '2dg-point)
+(require '2dg-span)
+(require '2dg-segment)
 
 (defclass 2dg-rect ()
   ((x-min :initarg :x-min
@@ -237,5 +237,5 @@ bottom left."
           (2dg-point :x x-max :y y-max)
           (2dg-point :x x-min :y y-max))))
 
-(provide 'scxml-geometry-rect)
-;;; scxml-geometry-rect.el ends here
+(provide '2dg-rect)
+;;; 2dg-rect.el ends here

@@ -1,4 +1,4 @@
-;;; scxml-geometry-pixel.el --- scxml geometry pixel helpers -*- lexical-binding: t -*-
+;;; 2dg-pixel.el --- gpixel helpers -*- lexical-binding: t -*-
 
 ;;; Commentary:
 ;; Pixel coordinate system is different from cartesian coordinates.
@@ -8,7 +8,7 @@
 ;;; Code:
 (require 'eieio)
 
-(defclass scxml-pixel ()
+(defclass 2dg-pixel ()
   ((x :initarg :x
       :accessor 2dg-x
       :type integer)
@@ -16,30 +16,30 @@
       :accessor 2dg-y
       :type integer))
   :documentation "A 2d pixel using standard 'image' coordinate system")
-(cl-defmethod scxml-print ((px scxml-pixel))
+(cl-defmethod 2dg-pprint ((px 2dg-pixel))
   "Return a stringified version of PX for human eyes."
   (with-slots (x y) px
     (format "px(%d,%d)" x y)))
-(cl-defmethod cl-print-object ((object scxml-pixel) stream)
+(cl-defmethod cl-print-object ((object 2dg-pixel) stream)
   "Pretty print the OBJECT to STREAM."
-  (princ (scxml-print object) stream))
-(cl-defmethod scxml-equal ((A scxml-pixel) (B scxml-pixel))
+  (princ (2dg-pprint object) stream))
+(cl-defmethod 2dg-equal ((A 2dg-pixel) (B 2dg-pixel))
   "Return non-nil if A and B are the same pixel."
   (and (equal (2dg-x A) (2dg-x B))
        (equal (2dg-y A) (2dg-y B))))
-(cl-defmethod 2dg-almost-equal ((A scxml-pixel) (B scxml-pixel))
+(cl-defmethod 2dg-almost-equal ((A 2dg-pixel) (B 2dg-pixel))
   "Return non-nil if A nd B are almost the same pixel.
 
-Note: this just calls scxml-equal as pixels are far too coarse to
+Note: this just calls 2dg-equal as pixels are far too coarse to
 bother with almost equality checking."
-  (scxml-equal A B))
-(cl-defmethod 2dg-subtract ((A scxml-pixel) (B scxml-pixel))
+  (2dg-equal A B))
+(cl-defmethod 2dg-subtract ((A 2dg-pixel) (B 2dg-pixel))
   "Return the result of pixel A - pixel B.
 
 Note: the coordinate system is that of pixels."
-  (scxml-pixel :x (- (2dg-x A) (2dg-x B))
+  (2dg-pixel :x (- (2dg-x A) (2dg-x B))
                :y (- (2dg-y A) (2dg-y B))))
-(cl-defmethod 2dg-coarse-direction ((vector scxml-pixel))
+(cl-defmethod 2dg-coarse-direction ((vector 2dg-pixel))
   "Return the closest cardinal direction of a vector as a symbol.
 
 Symbols will be one of: 'up, 'down, 'left, 'right.
@@ -54,5 +54,5 @@ Note: the coordinate system is that of pixels."
             ((>= abs-y abs-x) 'up)
             ('t (error "Unable to determine coarse direction"))))))
 
-(provide 'scxml-geometry-pixel)
-;;; scxml-geometry-pixel.el ends here
+(provide '2dg-pixel)
+;;; 2dg-pixel.el ends here
