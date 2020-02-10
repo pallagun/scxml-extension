@@ -3,7 +3,7 @@
 
 ;;; Code:
 (require 'scxml-drawing)
-(require 'scxml-geometry)
+(require '2dg)
 
 (defclass scxml-drawing-rect (2dg-rect scxml-drawing)
   ((name :initarg :name

@@ -5,7 +5,7 @@
 
 ;;; Code:
 (require 'scxml-drawing)
-(require 'scxml-geometry)
+(require '2dg)
 (require 'scxml-drawing-rect)
 (require 'scxml-element)
 

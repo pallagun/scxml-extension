@@ -14,7 +14,7 @@
 ;;; Code:
 (require 'scxml-element)
 (require 'scxml-drawable-element)
-(require 'scxml-geometry)
+(require '2dg)
 (require 'scxml-canvas)
 (require 'scxml-drawing-null)
 (require 'scxml-drawing-rect)

@@ -10,7 +10,7 @@
 
 ;;; Code:
 
-(require 'scxml-geometry)
+(require '2dg)
 
 (defface scxml-highlight
   '((t :foreground "yellow"))

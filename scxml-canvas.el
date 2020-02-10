@@ -5,7 +5,7 @@
 ;; painted/rendered.
 
 ;;; Code:
-(require 'scxml-geometry)
+(require '2dg)
 
 (defvar scxml-draw--default-canvas-width 100.0
   "Default width of the main canvas.")

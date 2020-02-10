@@ -4,7 +4,7 @@
 
 ;;; Code:
 (require 'scxml-drawing)
-(require 'scxml-geometry-point)
+(require '2dg-point)
 
 (defclass scxml-drawing-point (2dg-point scxml-drawing)
   ((label :initarg :label

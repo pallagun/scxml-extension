@@ -7,7 +7,7 @@
 
 ;;; Code:
 (require 'scxml-drawing)
-(require 'scxml-geometry-rect)
+(require '2dg-rect)
 
 (defclass scxml-drawing-null (scxml-drawing 2dg-rect)
   ()

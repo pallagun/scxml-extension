@@ -7,7 +7,7 @@
 
 (require 'scxml-element)
 (require 'scxml-drawing)
-(require 'scxml-geometry)
+(require '2dg)
 
 ;;; Code:
 (defclass scxml-drawing-connector ()

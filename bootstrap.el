@@ -20,12 +20,6 @@
   (cd original-dir))
 
 (let ((original-dir default-directory))
-  (cd (format "%sscxml-geometry" original-dir))
-  (load (format "%sscxml-geometry/bootstrap.el" original-dir))
-  (load (format "%sscxml-geometry/bootstrap-test.el" original-dir))
-  (cd original-dir))
-
-(let ((original-dir default-directory))
   (cl-pushnew default-directory load-path :test 'equal)
   (cl-pushnew (format "%s/test" default-directory) load-path :test 'equal)
   (cd (format "%stest" original-dir))

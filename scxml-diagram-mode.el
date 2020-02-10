@@ -13,7 +13,7 @@
 ;;; Code:
 (require 'scxml-element)
 (require 'scxml-draw)
-(require 'scxml-geometry)
+(require '2dg)
 ;; TODO - completely remove the dependency on artist.
 (require 'artist)
 

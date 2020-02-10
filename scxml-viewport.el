@@ -5,9 +5,9 @@
 ;; as well as how it should be made visible to the user (dilation/scaling).
 
 ;;; Code:
-(require 'scxml-geometry-rect)
-(require 'scxml-geometry-span)
-(require 'scxml-geometry-pixel)
+(require '2dg-rect)
+(require '2dg-span)
+(require '2dg-pixel)
 (require 'scxml-canvas)
 
 (defclass scxml-viewport (2dg-rect)

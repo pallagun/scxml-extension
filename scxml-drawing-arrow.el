@@ -12,7 +12,7 @@
 (require 'scxml-viewport)
 (require 'scxml-drawing)
 (require 'scxml-drawing-rect)
-(require 'scxml-geometry)
+(require '2dg)
 (require 'scxml-drawing-connector-rect)
 (require 'scxml-drawing-connector-point)
 
@@ -494,7 +494,7 @@ points."
   (let ((start-time (float-time)))
     (let* ((source (scxml-arrow-source arrow))
            (target (scxml-arrow-target arrow))
-           (full-path (scxml-build-path-cardinal (scxml-connection-point source)
+           (full-path (2dg-build-path-cardinal (scxml-connection-point source)
                                                  (scxml-connection-point target)
                                                  (2dg-vector-from-direction (scxml-from-node-direction source))
                                                  (2dg-vector-from-direction (2dg-reverse (scxml-from-node-direction target)))
